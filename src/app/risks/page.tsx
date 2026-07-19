@@ -209,7 +209,7 @@ export default async function RisksPage({ searchParams }: Props) {
                   </p>
                 </div>
                 <Metric
-                  label="Exposure"
+                  label="Estimated exposure"
                   value={formatMoney(risk.potential_exposure_cents)}
                 />
                 <Metric

@@ -34,6 +34,7 @@ export function RiskDetailActions({
   const [dismissOpen, setDismissOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [selectedOwnerId, setSelectedOwnerId] = useState(ownerId ?? "");
+  const [persistedOwnerId, setPersistedOwnerId] = useState(ownerId ?? "");
   const [selectedDueDate, setSelectedDueDate] = useState(
     dueAt?.slice(0, 10) ?? "",
   );
@@ -54,6 +55,7 @@ export function RiskDetailActions({
   return (
     <section
       aria-label="Risk actions"
+      data-persisted-owner-id={persistedOwnerId}
       className="border-border bg-surface mt-7 rounded-xl border p-5"
     >
       <div className="flex flex-wrap gap-3">
@@ -91,12 +93,14 @@ export function RiskDetailActions({
               const nextOwnerId = event.target.value;
               setSelectedOwnerId(nextOwnerId);
               run(
-                () =>
-                  updateRiskDetailAction({
+                async () => {
+                  await updateRiskDetailAction({
                     kind: "assign",
                     riskId,
                     userId: nextOwnerId || null,
-                  }),
+                  });
+                  setPersistedOwnerId(nextOwnerId);
+                },
                 () => setSelectedOwnerId(previousOwnerId),
               );
             }}

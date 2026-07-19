@@ -11,6 +11,7 @@ import {
 } from "@/features/daily-brief/formatters";
 import { getDailyBriefView } from "@/features/daily-brief/data";
 import { BriefRiskCard } from "@/features/daily-brief/risk-card";
+import { V2Walkthrough } from "@/features/onboarding/v2-walkthrough";
 
 export const metadata: Metadata = { title: "Daily Brief" };
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ export default async function BriefPage() {
         </p>
       </header>
 
+      <V2Walkthrough />
+
       {!brief ? (
         <EmptyState
           title="No brief is ready yet"
@@ -45,6 +48,23 @@ export default async function BriefPage() {
             openRiskCount={brief.openRiskCount}
             overallRiskLevel={brief.overallRiskLevel}
           />
+
+          <Card className="mb-7 p-4">
+            <p className="text-muted text-xs font-semibold uppercase">
+              Since the previous brief
+            </p>
+            <p className="mt-2 text-sm leading-6">
+              {brief.risks.filter((risk) => risk.acknowledged).length}{" "}
+              prioritized risks acknowledged ·{" "}
+              {
+                brief.risks.filter(
+                  (risk) => risk.primaryAction?.status === "in_progress",
+                ).length
+              }{" "}
+              actions in progress. Resolved items are removed from today’s
+              attention list.
+            </p>
+          </Card>
 
           <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
             <section aria-label="Prioritized risks" className="min-w-0">

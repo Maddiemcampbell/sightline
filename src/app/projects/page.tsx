@@ -96,7 +96,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
               </div>
               <dl className="mt-6 grid grid-cols-3 gap-3 border-y py-4">
                 <div>
-                  <dt className="text-muted text-xs">Projected margin</dt>
+                  <dt className="text-muted text-xs">Estimated projected margin</dt>
                   <dd className="mt-1 font-semibold">
                     {formatMoney(project.projectedMarginCents)}
                   </dd>
@@ -108,7 +108,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-muted text-xs">Exposure</dt>
+                  <dt className="text-muted text-xs">Estimated exposure</dt>
                   <dd className="mt-1 font-semibold">
                     {formatMoney(project.exposureCents)}
                   </dd>

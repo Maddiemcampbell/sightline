@@ -127,13 +127,13 @@ export function BriefRiskCard({
         </div>
         <div className="hidden text-right sm:block">
           <p className="text-muted text-xs font-semibold tracking-wide uppercase">
-            Margin impact
+            Estimated margin impact
           </p>
           <p className="mt-1 text-xl font-semibold">
             {formatMoney(risk.marginImpactCents)}
           </p>
           <p className="text-muted mt-1 text-xs">
-            {formatMoney(risk.exposureCents)} exposure
+            {formatMoney(risk.exposureCents)} estimated exposure
           </p>
         </div>
       </div>

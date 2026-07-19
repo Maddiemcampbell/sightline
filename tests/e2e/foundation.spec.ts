@@ -126,6 +126,7 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
+  await page.getByRole("link", { name: "Recommended actions" }).click();
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
   ).toBeVisible();
@@ -134,6 +135,45 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
 test("records a guided resolution and reopens it with a reason", async ({
   page,
 }) => {
+  await page.goto("/brief");
+  await page
+    .getByRole("article")
+    .nth(1)
+    .getByRole("link", { name: "View full risk" })
+    .click();
+  await page.getByRole("link", { name: /Evidence/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Evidence-grounded explanation" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Ask Sightline" }).click();
+  await page
+    .getByRole("button", { name: "What evidence supports this?" })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Sightline answer" }).last(),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Recommended actions" }).click();
+  const accept = page.getByRole("button", { name: "Accept", exact: true });
+  if (await accept.isVisible()) {
+    await accept.click();
+    await expect(page.getByText("accepted", { exact: true })).toBeVisible();
+  }
+  await page.reload();
+  const owner = page.getByLabel("Owner", { exact: true });
+  await owner.selectOption("11000000-0000-4000-8000-000000000002");
+  await expect(page.getByRole("region", { name: "Risk actions" })).toHaveAttribute(
+    "data-persisted-owner-id",
+    "11000000-0000-4000-8000-000000000002",
+  );
+  await page.reload();
+  await expect(page.getByLabel("Owner", { exact: true })).toHaveValue(
+    "11000000-0000-4000-8000-000000000002",
+  );
+  await page
+    .getByRole("link", { name: "Draft email", exact: true })
+    .first()
+    .click();
+  await expect(page.getByRole("heading", { name: /Draft/ })).toBeVisible();
   await page.goto("/risks/60000000-0000-4000-8000-000000000002");
   await page.getByRole("button", { name: "Resolve with details" }).click();
   const dialog = page.getByRole("dialog", { name: "Record what happened" });

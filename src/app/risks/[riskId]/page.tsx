@@ -32,7 +32,18 @@ export default async function RiskPage({ params, searchParams }: Props) {
     getRiskEvidenceExperience(riskId),
     tab === "ask" ? getAskSightlineHistory(riskId) : Promise.resolve([]),
   ]);
-  const activeTab = tab === "evidence" || tab === "ask" ? tab : "overview";
+  const tabs = [
+    "overview",
+    "evidence",
+    "activity",
+    "related",
+    "actions",
+    "ask",
+    "resolution",
+  ] as const;
+  const activeTab = tabs.includes(tab as (typeof tabs)[number])
+    ? (tab as (typeof tabs)[number])
+    : "overview";
   const closed = ["resolved", "dismissed"].includes(detail.risk.status);
   const ownerNameById = new Map(
     detail.users.map((user) => [user.id, user.full_name]),
@@ -75,6 +86,14 @@ export default async function RiskPage({ params, searchParams }: Props) {
           {detail.risk.title}
         </h1>
         <p className="text-muted mt-3 leading-7">{detail.risk.summary}</p>
+        {detail.project && (
+          <Link
+            href={`/projects/${detail.project.id}`}
+            className="text-deep-green mt-3 inline-block text-sm font-semibold"
+          >
+            {detail.project.name} · {detail.project.project_number}
+          </Link>
+        )}
       </header>
       <RiskDetailActions
         riskId={riskId}
@@ -97,7 +116,7 @@ export default async function RiskPage({ params, searchParams }: Props) {
         className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       >
         <Metric
-          label="Potential exposure"
+          label="Estimated potential exposure"
           value={formatMoney(detail.risk.potential_exposure_cents)}
         />
         <Metric label="Confidence" value={`${detail.risk.confidence_score}%`} />
@@ -115,25 +134,11 @@ export default async function RiskPage({ params, searchParams }: Props) {
           }
         />
       </section>
-      {detail.risk.status === "resolved" && detail.resolutions[0] && (
-        <ResolutionSummary
-          resolution={detail.resolutions[0]}
-          ownerName={
-            ownerNameById.get(detail.resolutions[0].final_owner_user_id) ??
-            "Unknown owner"
-          }
-          actionTitles={detail.actions
-            .filter((action) =>
-              detail.resolutions[0]?.completed_action_ids.includes(action.id),
-            )
-            .map((action) => action.title)}
-        />
-      )}
       <nav
         aria-label="Risk detail sections"
         className="border-border mt-7 border-b"
       >
-        <div className="flex gap-6">
+        <div className="flex gap-5 overflow-x-auto">
           <TabLink href={`/risks/${riskId}`} active={activeTab === "overview"}>
             Overview
           </TabLink>
@@ -144,10 +149,34 @@ export default async function RiskPage({ params, searchParams }: Props) {
             Evidence ({evidenceExperience.items.length})
           </TabLink>
           <TabLink
+            href={`/risks/${riskId}?tab=activity`}
+            active={activeTab === "activity"}
+          >
+            Activity
+          </TabLink>
+          <TabLink
+            href={`/risks/${riskId}?tab=related`}
+            active={activeTab === "related"}
+          >
+            Related
+          </TabLink>
+          <TabLink
+            href={`/risks/${riskId}?tab=actions`}
+            active={activeTab === "actions"}
+          >
+            Recommended actions
+          </TabLink>
+          <TabLink
             href={`/risks/${riskId}?tab=ask`}
             active={activeTab === "ask"}
           >
             Ask Sightline
+          </TabLink>
+          <TabLink
+            href={`/risks/${riskId}?tab=resolution`}
+            active={activeTab === "resolution"}
+          >
+            Resolution state
           </TabLink>
         </div>
       </nav>
@@ -164,6 +193,83 @@ export default async function RiskPage({ params, searchParams }: Props) {
       ) : activeTab === "evidence" ? (
         <div className="mt-6">
           <EvidenceExperience experience={evidenceExperience} />
+        </div>
+      ) : activeTab === "activity" ? (
+        <div className="mt-6 max-w-3xl">
+          <Panel title="Activity">
+            <RiskCommentForm riskId={riskId} users={detail.users} />
+            <ActivityTimeline items={activityPage.items} />
+          </Panel>
+        </div>
+      ) : activeTab === "actions" ? (
+        <div className="mt-6 max-w-4xl">
+          <Panel title="Recommended actions">
+            <ActionPanel
+              actions={detail.actions.map((action) =>
+                toActionView(
+                  action,
+                  action.owner_user_id
+                    ? (ownerNameById.get(action.owner_user_id) ?? null)
+                    : null,
+                ),
+              )}
+              owners={actionOwners}
+            />
+          </Panel>
+        </div>
+      ) : activeTab === "related" ? (
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <Panel title="Related project">
+            {detail.project ? (
+              <Link
+                href={`/projects/${detail.project.id}`}
+                className="text-deep-green font-semibold"
+              >
+                {detail.project.name}
+              </Link>
+            ) : (
+              <p className="text-muted text-sm">No project assigned.</p>
+            )}
+          </Panel>
+          <Panel title="Related vendor">
+            {detail.vendor ? (
+              <>
+                <p className="font-semibold">{detail.vendor.name}</p>
+                <p className="text-muted mt-1 text-sm">
+                  {detail.vendor.trade ?? "Trade not set"}
+                </p>
+              </>
+            ) : (
+              <p className="text-muted text-sm">No vendor assigned.</p>
+            )}
+          </Panel>
+        </div>
+      ) : activeTab === "resolution" ? (
+        <div className="mt-6">
+          {detail.resolutions[0] ? (
+            <ResolutionSummary
+              resolution={detail.resolutions[0]}
+              ownerName={
+                ownerNameById.get(detail.resolutions[0].final_owner_user_id) ??
+                "Unknown owner"
+              }
+              actionTitles={detail.actions
+                .filter((action) =>
+                  detail.resolutions[0]?.completed_action_ids.includes(
+                    action.id,
+                  ),
+                )
+                .map((action) => action.title)}
+            />
+          ) : (
+            <Card>
+              <h2 className="text-lg font-semibold">Resolution not recorded</h2>
+              <p className="text-muted mt-2 text-sm">
+                Use “Resolve with details” when the team has confirmed the
+                outcome and remaining estimated exposure.
+              </p>
+            </Card>
+          )}
         </div>
       ) : (
         <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -183,19 +289,6 @@ export default async function RiskPage({ params, searchParams }: Props) {
               >
                 Review why Sightline believes this →
               </Link>
-            </Panel>
-            <Panel title="Recommended actions">
-              <ActionPanel
-                actions={detail.actions.map((action) =>
-                  toActionView(
-                    action,
-                    action.owner_user_id
-                      ? (ownerNameById.get(action.owner_user_id) ?? null)
-                      : null,
-                  ),
-                )}
-                owners={actionOwners}
-              />
             </Panel>
           </div>
           <aside className="space-y-6">

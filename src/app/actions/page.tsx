@@ -22,15 +22,13 @@ export default async function ActionsPage({ searchParams }: Props) {
   return (
     <main className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
-        <p className="text-deep-green text-sm font-semibold">
-          V2 action management
-        </p>
+        <p className="text-deep-green text-sm font-semibold">Risk response</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
           Actions
         </h1>
         <p className="text-muted mt-2 max-w-2xl">
-          Track the concrete next steps attached to profit risks—not general
-          project tasks.
+          Decide who will act, what is due, and which profit risks still need a
+          response.
         </p>
       </header>
       <Card className="mt-6">

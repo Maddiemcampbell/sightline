@@ -48,7 +48,7 @@ export default async function ProjectPage({ params }: Props) {
           </div>
           <div className="text-right">
             <p className="text-muted text-xs font-semibold uppercase">
-              Project profit at risk
+              Estimated project profit at risk
             </p>
             <p className="mt-1 text-3xl font-semibold">
               {formatMoney(profitAtRisk)}
