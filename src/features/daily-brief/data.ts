@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { DailyBriefView } from "@/features/daily-brief/types";
+import { toActionView } from "@/features/actions/data";
 import { requireActorContext } from "@/lib/auth/request-context";
 export {
   BUILDCO_ORGANIZATION_ID,
@@ -43,6 +44,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
     actionsResult,
     activitiesResult,
     sourcesResult,
+    usersResult,
   ] = await Promise.all([
     client
       .from("brief_items")
@@ -75,6 +77,11 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
       .select("*")
       .eq("organization_id", organizationId)
       .eq("is_active", true),
+    client
+      .from("users")
+      .select("id,full_name")
+      .eq("organization_id", organizationId)
+      .order("full_name"),
   ]);
 
   const items = requireRows(itemsResult.data, itemsResult.error);
@@ -84,6 +91,8 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
   const actions = requireRows(actionsResult.data, actionsResult.error);
   const activities = requireRows(activitiesResult.data, activitiesResult.error);
   const sources = requireRows(sourcesResult.data, sourcesResult.error);
+  const users = requireRows(usersResult.data, usersResult.error);
+  const userById = new Map(users.map((user) => [user.id, user.full_name]));
   const projectById = new Map(projects.map((project) => [project.id, project]));
   const riskById = new Map(allRisks.map((risk) => [risk.id, risk]));
   const openRisks = allRisks.filter(
@@ -103,7 +112,10 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
     if (!project) return [];
     const riskEvidence = evidence.find((entry) => entry.risk_id === risk.id);
     const action = actions.find(
-      (entry) => entry.risk_id === risk.id && entry.status !== "dismissed",
+      (entry) =>
+        entry.risk_id === risk.id &&
+        entry.status !== "dismissed" &&
+        entry.status !== "completed",
     );
     const acknowledged = activities.some(
       (entry) =>
@@ -137,6 +149,14 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
           "Evidence is still being reviewed.",
         confidenceScore: risk.confidence_score,
         recommendedAction: action?.description ?? item.recommended_next_step,
+        primaryAction: action
+          ? toActionView(
+              action,
+              action.owner_user_id
+                ? (userById.get(action.owner_user_id) ?? null)
+                : null,
+            )
+          : null,
         acknowledged,
       },
     ];
@@ -194,5 +214,6 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
       name: source.name,
       lastSyncedAt: source.last_synced_at,
     })),
+    actionOwners: users.map((user) => ({ id: user.id, name: user.full_name })),
   };
 }

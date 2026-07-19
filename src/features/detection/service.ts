@@ -316,13 +316,17 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
     : await client.from("recommended_actions").insert({
         organization_id: BUILDCO_ORGANIZATION_ID,
         risk_id: risk.id,
-        assigned_user_id: MATT_USER_ID,
+        owner_user_id: MATT_USER_ID,
         detection_key: actionKey,
         title: "Address detected risk",
         description: detection.recommendedAction,
-        status: "open",
+        action_type: "add_mitigation",
+        status: "suggested",
+        priority: "high",
         due_at: detection.dueAt,
         completed_at: null,
+        created_by_user_id: MATT_USER_ID,
+        source: "deterministic_rule",
       });
   if (actionResult.error) throw new Error(actionResult.error.message);
 }

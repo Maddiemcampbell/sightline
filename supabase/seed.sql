@@ -82,12 +82,13 @@ values
   ('70000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'Repeated owner field direction', 'Daily logs on three shifts record added backing requested in the field.', 'Owner representative directed added backing at lobby feature wall; T&M tags pending.', '2026-07-18T12:30:00Z');
 
 insert into public.recommended_actions (
-  id, organization_id, risk_id, assigned_user_id, title, description, status, due_at
+  id, organization_id, risk_id, owner_user_id, title, description, action_type,
+  status, priority, due_at, created_by_user_id, source
 )
 values
-  ('80000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', 'Obtain renewed insurance certificate', 'Require Apex to provide a compliant renewal certificate before its current policy expires.', 'open', '2026-07-20T17:00:00Z'),
-  ('80000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '11000000-0000-4000-8000-000000000001', 'Approve a weather contingency plan', 'Confirm an alternate pour window or protected placement plan before releasing Friday labor and pump reservations.', 'open', '2026-07-20T16:00:00Z'),
-  ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'open', '2026-07-21T17:00:00Z');
+  ('80000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', 'Obtain renewed insurance certificate', 'Require Apex to provide a compliant renewal certificate before its current policy expires.', 'request_document', 'suggested', 'urgent', '2026-07-20T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
+  ('80000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '11000000-0000-4000-8000-000000000001', 'Approve a weather contingency plan', 'Confirm an alternate pour window or protected placement plan before releasing Friday labor and pump reservations.', 'update_schedule', 'suggested', 'high', '2026-07-20T16:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
+  ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'email', 'suggested', 'urgent', '2026-07-21T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule');
 
 insert into public.risk_activities (
   organization_id, risk_id, actor_user_id, activity_type, note, occurred_at

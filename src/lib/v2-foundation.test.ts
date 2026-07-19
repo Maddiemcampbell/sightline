@@ -81,6 +81,7 @@ describe("V2 audit and action conventions", () => {
       riskId: "60000000-0000-4000-8000-000000000001",
       title: "Confirm renewed certificate",
       description: "Obtain and verify the updated certificate.",
+      createdBy: context.userId,
     });
     expect(action.priority).toBe("normal");
   });

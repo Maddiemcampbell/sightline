@@ -18,10 +18,58 @@ test("loads the application shell and morning brief", async ({ page }) => {
   await expect(page.getByText("Total profit at risk")).toBeVisible();
 });
 
+test("filters the organization action register with shareable URL parameters", async ({
+  page,
+}) => {
+  await page.goto("/actions?status=suggested&priority=urgent");
+  await expect(
+    page.getByRole("heading", { name: "Actions", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('select[name="status"]')).toHaveValue("suggested");
+  await expect(page.locator('select[name="priority"]')).toHaveValue("urgent");
+  await expect(
+    page.getByRole("region", { name: "Organization actions" }),
+  ).toBeVisible();
+});
+
+test("updates an action optimistically and persists the change", async ({
+  page,
+}) => {
+  await page.goto("/actions");
+  const priority = page.locator('select[aria-label^="Priority for"]').first();
+  await expect(priority).toBeVisible();
+  const priorityLabel = await priority.getAttribute("aria-label");
+  if (!priorityLabel) throw new Error("Expected an action priority label.");
+  const action = priority.locator("xpath=ancestor::*[@data-action-id]");
+  const original = await priority.inputValue();
+  const changed = original === "low" ? "normal" : "low";
+  await priority.selectOption(changed);
+  await expect(priority).toHaveValue(changed);
+  await expect(action).toHaveAttribute("data-persisted-priority", changed);
+  await page.reload();
+  await expect(page.getByLabel(priorityLabel, { exact: true })).toHaveValue(
+    changed,
+  );
+  const persistedPriority = page.getByLabel(priorityLabel, { exact: true });
+  const persistedAction = persistedPriority.locator(
+    "xpath=ancestor::*[@data-action-id]",
+  );
+  await persistedPriority.selectOption(original);
+  await expect(persistedPriority).toHaveValue(original);
+  await expect(persistedAction).toHaveAttribute(
+    "data-persisted-priority",
+    original,
+  );
+  await page.reload();
+  await expect(page.getByLabel(priorityLabel, { exact: true })).toHaveValue(
+    original,
+  );
+});
+
 test("requires a reason before dismissing a brief risk", async ({ page }) => {
   await page.goto("/brief");
   const firstRisk = page.getByRole("article").first();
-  await firstRisk.getByRole("button", { name: "Dismiss" }).click();
+  await firstRisk.getByRole("button", { name: "Dismiss", exact: true }).click();
   await firstRisk.getByRole("button", { name: "Confirm dismissal" }).click();
   await expect(firstRisk.getByRole("alert")).toContainText(
     "at least 10 characters",
@@ -107,7 +155,9 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   await page.getByRole("link", { name: "View document" }).click();
   await page.getByLabel("Display name").fill("Weekly field log — reviewed");
   await page.getByRole("button", { name: "Save metadata" }).click();
-  await expect(page.getByText("Document metadata updated.")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText(
+    "Document metadata updated.",
+  );
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Weekly field log — reviewed" }),
@@ -115,7 +165,7 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive document" }).click();
-  await expect(page.getByText("Document archived.")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Document archived.");
   await page.reload();
   await expect(page.getByText("Archived", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Download file" })).toHaveCount(

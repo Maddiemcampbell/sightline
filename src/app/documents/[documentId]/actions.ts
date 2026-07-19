@@ -56,7 +56,11 @@ export async function editDocumentAction(
       actor_user_id: context.userId,
       activity_type: "edited",
       note: "Document metadata updated.",
-      metadata: { category: value.category },
+      metadata: {
+        category: value.category,
+        previousName: document.name,
+        updatedName: updatedDocument.name,
+      },
       occurred_at: new Date().toISOString(),
     });
   if (activityError) {

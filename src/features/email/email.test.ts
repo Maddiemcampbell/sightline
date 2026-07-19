@@ -32,11 +32,13 @@ const brief: DailyBriefView = {
     evidenceDetail: "Detail",
     confidenceScore: 90,
     recommendedAction: "Call the responsible project lead.",
+    primaryAction: null,
     acknowledged: false,
   })),
   projects: [],
   recentResolutions: [],
   sources: [],
+  actionOwners: [],
 };
 
 describe("morning brief rendering", () => {

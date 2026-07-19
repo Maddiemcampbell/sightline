@@ -51,6 +51,9 @@ and keeps unfinished V2 UI disabled.
 
 A risk-owned work item with an owner, status, due date, and priority (`low`,
 `normal`, `high`, or `urgent`). Action writes must also append risk activity.
+The lifecycle is `suggested → accepted → in_progress → completed`, with
+`dismissed` as a terminal branch requiring a retained reason. Completing work
+does not implicitly resolve its risk.
 
 ### Risk resolution
 

@@ -8,7 +8,8 @@ export type Json =
 
 export type DatabaseEnums = {
   ai_review_status: "pending" | "approved" | "rejected";
-  action_status: "open" | "in_progress" | "complete" | "dismissed";
+  action_status:
+    "suggested" | "accepted" | "in_progress" | "completed" | "dismissed";
   activity_type:
     | "created"
     | "status_changed"
@@ -279,8 +280,10 @@ export type Database = {
       }>;
       recommended_actions: Table<
         Timestamped & {
-          assigned_user_id: string | null;
+          owner_user_id: string | null;
           completed_at: string | null;
+          dismissed_at: string | null;
+          dismissal_reason: string | null;
           description: string;
           detection_key: string | null;
           due_at: string | null;
@@ -289,6 +292,19 @@ export type Database = {
           risk_id: string;
           status: DatabaseEnums["action_status"];
           priority: "low" | "normal" | "high" | "urgent";
+          action_type:
+            | "email"
+            | "review_document"
+            | "contact_vendor"
+            | "notify_team"
+            | "schedule_meeting"
+            | "open_rfi"
+            | "request_document"
+            | "update_schedule"
+            | "add_mitigation"
+            | "other";
+          created_by_user_id: string;
+          source: "human" | "deterministic_rule" | "ai_suggestion";
           title: string;
         }
       >;

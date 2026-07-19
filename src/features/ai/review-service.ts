@@ -92,11 +92,15 @@ export async function approveRiskSuggestion(input: {
     client.from("recommended_actions").insert({
       organization_id: input.organizationId,
       risk_id: risk.id,
-      assigned_user_id: input.reviewerUserId,
+      owner_user_id: input.reviewerUserId,
       detection_key: `${detectionKey}:action`,
       title: "Review and mitigate suggested risk",
       description: suggestedRisk.recommendedNextAction,
-      status: "open",
+      action_type: "add_mitigation",
+      status: "suggested",
+      priority: "normal",
+      created_by_user_id: input.reviewerUserId,
+      source: "ai_suggestion",
     }),
     client.from("risk_activities").insert({
       organization_id: input.organizationId,

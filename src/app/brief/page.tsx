@@ -80,7 +80,11 @@ export default async function BriefPage() {
                     </div>
                   )}
                   {brief.risks.map((risk) => (
-                    <BriefRiskCard key={risk.id} risk={risk} />
+                    <BriefRiskCard
+                      key={risk.id}
+                      risk={risk}
+                      actionOwners={brief.actionOwners}
+                    />
                   ))}
                 </div>
               )}

@@ -9,8 +9,16 @@ import { RiskBadge } from "@/components/ui/badge";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/button";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import type { BriefRiskView } from "@/features/daily-brief/types";
+import { ActionControls } from "@/features/actions/action-controls";
+import type { ActionOwner } from "@/features/actions/types";
 
-export function BriefRiskCard({ risk }: { risk: BriefRiskView }) {
+export function BriefRiskCard({
+  risk,
+  actionOwners,
+}: {
+  risk: BriefRiskView;
+  actionOwners: readonly ActionOwner[];
+}) {
   const [acknowledged, setAcknowledged] = useState(risk.acknowledged);
   const [dismissOpen, setDismissOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -150,6 +158,15 @@ export function BriefRiskCard({ risk }: { risk: BriefRiskView }) {
               <ShieldCheck className="size-4" /> Recommended next action
             </div>
             <p className="mt-2 text-sm leading-5">{risk.recommendedAction}</p>
+            {risk.primaryAction && (
+              <div className="border-deep-green/20 mt-3 border-t pt-3">
+                <ActionControls
+                  initialAction={risk.primaryAction}
+                  owners={actionOwners}
+                  compact
+                />
+              </div>
+            )}
           </div>
         </section>
       </div>

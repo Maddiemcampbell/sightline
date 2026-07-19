@@ -183,6 +183,23 @@ The featured risks are:
 Each featured risk includes evidence and a recommended action. No model output,
 external API, or current weather feed is required.
 
+## V2 recommended action lifecycle
+
+`recommended_actions` are deliberately risk-scoped rather than general project
+tasks. An action begins as `suggested`, can be `accepted`, moves to
+`in_progress`, and ends as `completed` or `dismissed`. Acceptance and completion
+never change the parent risk status; risk resolution remains an explicit,
+separate operation. A dismissal stores both its timestamp and required human
+reason so later evaluation can distinguish a poor recommendation from work that
+became unnecessary.
+
+Each row records an action type, priority, optional organization user owner,
+due date, creator, and source (`human`, `deterministic_rule`, or
+`ai_suggestion`). Organization/status/due, owner/status, priority/status, and
+risk/status indexes support the action register and risk panels. Every mutation
+is authorized by organization and appends an `action_updated` risk activity;
+the application restores the previous row if that audit append fails.
+
 ## Major assumptions
 
 - V1 users have one organization membership. A membership join table can be

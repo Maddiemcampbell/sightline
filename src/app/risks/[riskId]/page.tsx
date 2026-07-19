@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import { getRiskDetail } from "@/features/portfolio/data";
 import { RiskDetailActions } from "@/features/portfolio/risk-detail-actions";
+import { ActionPanel } from "@/features/actions/action-panel";
+import { toActionView } from "@/features/actions/data";
 
 type Props = { params: Promise<{ riskId: string }> };
 
@@ -18,6 +20,13 @@ export default async function RiskPage({ params }: Props) {
     detail.documents.map((document) => [document.id, document]),
   );
   const closed = ["resolved", "dismissed"].includes(detail.risk.status);
+  const ownerNameById = new Map(
+    detail.users.map((user) => [user.id, user.full_name]),
+  );
+  const actionOwners = detail.users.map((user) => ({
+    id: user.id,
+    name: user.full_name,
+  }));
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <Link href="/risks" className="text-muted text-sm font-semibold">
@@ -123,19 +132,17 @@ export default async function RiskPage({ params }: Props) {
             )}
           </Panel>
           <Panel title="Recommended actions">
-            <ul className="space-y-4">
-              {detail.actions.map((action) => (
-                <li key={action.id} className="border-border border-l-2 pl-4">
-                  <p className="font-semibold">{action.title}</p>
-                  <p className="text-muted mt-1 text-sm">
-                    {action.description}
-                  </p>
-                  <p className="mt-2 text-xs font-semibold capitalize">
-                    {action.status.replace("_", " ")}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <ActionPanel
+              actions={detail.actions.map((action) =>
+                toActionView(
+                  action,
+                  action.owner_user_id
+                    ? (ownerNameById.get(action.owner_user_id) ?? null)
+                    : null,
+                ),
+              )}
+              owners={actionOwners}
+            />
           </Panel>
         </div>
         <aside className="space-y-6">

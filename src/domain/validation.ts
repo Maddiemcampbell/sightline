@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import {
+  ACTION_PRIORITIES,
+  ACTION_SOURCES,
+  ACTION_STATUSES,
+  ACTION_TYPES,
   RISK_CATEGORIES,
   RISK_SEVERITIES,
   RISK_STATUSES,
@@ -239,33 +243,64 @@ export const updateRiskEvidenceSchema = nonEmptyUpdate(
 );
 
 const recommendedActionFieldsSchema = z.object({
-  assignedUserId: nullableIdSchema.default(null),
+  ownerUserId: nullableIdSchema.default(null),
   detectionKey: optionalText(240).default(null),
   title: z.string().trim().min(1).max(240),
   description: z.string().trim().min(1).max(2000),
-  status: z
-    .enum(["open", "in_progress", "complete", "dismissed"])
-    .default("open"),
-  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+  actionType: z.enum(ACTION_TYPES).default("other"),
+  status: z.enum(ACTION_STATUSES).default("suggested"),
+  priority: z.enum(ACTION_PRIORITIES).default("normal"),
   dueAt: nullableTimestampSchema.default(null),
   completedAt: nullableTimestampSchema.default(null),
+  dismissedAt: nullableTimestampSchema.default(null),
+  dismissalReason: z.string().trim().min(3).max(1000).nullable().default(null),
+  createdBy: idSchema,
+  source: z.enum(ACTION_SOURCES).default("human"),
 });
 
 export const createRecommendedActionSchema = recommendedActionFieldsSchema
   .extend({ organizationId: idSchema, riskId: idSchema })
   .strict()
   .superRefine((action, context) => {
-    if (action.status === "complete" && action.completedAt === null) {
+    if (action.status === "completed" && action.completedAt === null) {
       context.addIssue({
         code: "custom",
         path: ["completedAt"],
         message: "Completed actions require completedAt",
       });
     }
+    if (
+      action.status === "dismissed" &&
+      (!action.dismissedAt || !action.dismissalReason)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["dismissalReason"],
+        message: "Dismissed actions require a reason and timestamp",
+      });
+    }
   });
 export const updateRecommendedActionSchema = nonEmptyUpdate(
   recommendedActionFieldsSchema,
-);
+).superRefine((action, context) => {
+  if (action.status === "completed" && !action.completedAt) {
+    context.addIssue({
+      code: "custom",
+      path: ["completedAt"],
+      message: "Completing an action requires completedAt",
+    });
+  }
+  if (
+    action.status === "dismissed" &&
+    (!action.dismissedAt || !action.dismissalReason)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["dismissalReason"],
+      message: "Dismissing an action requires a reason and timestamp",
+    });
+  }
+});
 
 export const createRiskResolutionSchema = z
   .object({

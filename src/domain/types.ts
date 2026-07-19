@@ -38,8 +38,35 @@ export type DocumentType =
   | "financial"
   | "other";
 export type DocumentProcessingStatus = "pending" | "ready" | "failed";
-export type ActionStatus = "open" | "in_progress" | "complete" | "dismissed";
+export const ACTION_TYPES = [
+  "email",
+  "review_document",
+  "contact_vendor",
+  "notify_team",
+  "schedule_meeting",
+  "open_rfi",
+  "request_document",
+  "update_schedule",
+  "add_mitigation",
+  "other",
+] as const;
+export const ACTION_STATUSES = [
+  "suggested",
+  "accepted",
+  "in_progress",
+  "completed",
+  "dismissed",
+] as const;
+export const ACTION_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export const ACTION_SOURCES = [
+  "human",
+  "deterministic_rule",
+  "ai_suggestion",
+] as const;
+export type ActionType = (typeof ACTION_TYPES)[number];
+export type ActionStatus = (typeof ACTION_STATUSES)[number];
 export type ActionPriority = "low" | "normal" | "high" | "urgent";
+export type ActionSource = (typeof ACTION_SOURCES)[number];
 export type ResolutionType =
   "mitigated" | "avoided" | "accepted" | "realized" | "unknown";
 export type BriefStatus = "draft" | "published";
@@ -169,14 +196,19 @@ export interface RecommendedAction {
   id: string;
   organizationId: string;
   riskId: string;
-  assignedUserId: string | null;
+  ownerUserId: string | null;
   detectionKey: string | null;
   title: string;
   description: string;
+  actionType: ActionType;
   status: ActionStatus;
   priority: ActionPriority;
   dueAt: string | null;
   completedAt: string | null;
+  dismissedAt: string | null;
+  dismissalReason: string | null;
+  createdBy: string;
+  source: ActionSource;
   createdAt: string;
   updatedAt: string;
 }

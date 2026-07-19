@@ -33,7 +33,9 @@ export function DocumentMetadataForm({
   vendors: readonly Option[];
 }) {
   const router = useRouter();
+  const [name, setName] = useState(document.name);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const archived = Boolean(document.archived_at);
 
@@ -42,16 +44,21 @@ export function DocumentMetadataForm({
     const formData = new FormData(event.currentTarget);
     const input = {
       documentId: document.id,
-      name: formData.get("name"),
+      name,
       category: formData.get("category"),
       projectId: formData.get("projectId"),
       vendorId: formData.get("vendorId"),
       documentDate: formData.get("documentDate"),
     };
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       try {
-        await editDocumentAction(input);
+        const result = await editDocumentAction(input);
+        if (result.name !== name) {
+          throw new Error("The saved document name did not match the request.");
+        }
+        setSuccess("Document metadata updated.");
         router.refresh();
       } catch {
         setError("The metadata could not be saved.");
@@ -67,7 +74,8 @@ export function DocumentMetadataForm({
           name="name"
           required
           maxLength={240}
-          defaultValue={document.name}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
           disabled={pending || archived}
           className={`${inputClass} mt-2`}
         />
@@ -134,6 +142,11 @@ export function DocumentMetadataForm({
           {error}
         </p>
       ) : null}
+      {success ? (
+        <p role="status" className="text-deep-green text-sm font-semibold">
+          {success}
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-3">
         <PrimaryButton disabled={pending || archived} type="submit">
           Save metadata
@@ -151,6 +164,7 @@ export function DocumentMetadataForm({
             startTransition(async () => {
               try {
                 await archiveDocumentAction({ documentId: document.id });
+                setSuccess("Document archived.");
                 router.refresh();
               } catch {
                 setError("The document could not be archived.");

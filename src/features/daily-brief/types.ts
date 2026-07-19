@@ -1,4 +1,5 @@
 import type { RiskSeverity } from "@/domain/types";
+import type { ActionOwner, ActionView } from "@/features/actions/types";
 
 export type BriefRiskView = Readonly<{
   id: string;
@@ -15,6 +16,7 @@ export type BriefRiskView = Readonly<{
   evidenceDetail: string;
   confidenceScore: number;
   recommendedAction: string;
+  primaryAction: ActionView | null;
   acknowledged: boolean;
 }>;
 
@@ -40,4 +42,5 @@ export type DailyBriefView = Readonly<{
     projectName: string;
   }[];
   sources: readonly { id: string; name: string; lastSyncedAt: string | null }[];
+  actionOwners: readonly ActionOwner[];
 }>;
