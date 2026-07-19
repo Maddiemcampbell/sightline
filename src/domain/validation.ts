@@ -145,6 +145,7 @@ export const createRiskSchema = z
     projectId: nullableIdSchema.default(null),
     vendorId: nullableIdSchema.default(null),
     assignedUserId: nullableIdSchema.default(null),
+    detectionKey: optionalText(240).default(null),
     title: z.string().trim().min(1).max(240),
     summary: z.string().trim().min(1).max(2000),
     category: z.enum(RISK_CATEGORIES),
@@ -183,6 +184,7 @@ const updateRiskFieldsSchema = z.object({
   projectId: nullableIdSchema,
   vendorId: nullableIdSchema,
   assignedUserId: nullableIdSchema,
+  detectionKey: optionalText(240),
   title: z.string().trim().min(1).max(240),
   summary: z.string().trim().min(1).max(2000),
   category: z.enum(RISK_CATEGORIES),
@@ -213,6 +215,7 @@ export const createRiskEvidenceSchema = z
     organizationId: idSchema,
     riskId: idSchema,
     documentId: nullableIdSchema.default(null),
+    detectionKey: optionalText(240).default(null),
     integrationSourceId: nullableIdSchema.default(null),
     title: z.string().trim().min(1).max(240),
     description: z.string().trim().min(1).max(3000),
@@ -226,6 +229,7 @@ export const updateRiskEvidenceSchema = nonEmptyUpdate(
 
 const recommendedActionFieldsSchema = z.object({
   assignedUserId: nullableIdSchema.default(null),
+  detectionKey: optionalText(240).default(null),
   title: z.string().trim().min(1).max(240),
   description: z.string().trim().min(1).max(2000),
   status: z

@@ -55,6 +55,30 @@ portfolio experience adds projected project margin and risk ownership in
   requires exactly three distinct, prioritized items when a brief is published.
 - `brief_items` reference risks and preserve the deterministic explanation and
   recommended next step shown on that date.
+- `document_extracted_fields` stores the small structured field set consumed by
+  V1 rules. Values are seeded or manually supplied; no OCR or model runs.
+- `project_detection_settings` holds deterministic rule thresholds such as the
+  maximum concrete-placement temperature.
+- `detection_runs` records the trigger source, per-rule findings, created and
+  updated counts, completion state, and failures for every engine run.
+
+## Deterministic detection
+
+Each generated risk has an organization-scoped `detection_key`. Evidence and
+recommended actions have corresponding keys scoped to their parent risk. These
+database constraints make repeated runs update records instead of duplicating
+them. Reruns preserve human-closed risk statuses, original detection times, and
+completed action statuses.
+
+V1 evaluates three isolated rules: insurance expiration within 14 days for a
+vendor active on an open project; a concrete pour within seven days whose
+forecast temperature exceeds its project threshold; and the same issue keyword
+in three daily logs within seven days when no matching RFI exists. Confidence,
+explanations, exposure, and recommended actions are deterministic.
+
+After persistence, the engine applies the existing brief-priority comparator,
+replaces today's draft items, and publishes only when exactly three eligible
+risks are available.
 
 ## Daily brief selection
 

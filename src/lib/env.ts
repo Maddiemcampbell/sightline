@@ -9,6 +9,7 @@ export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
 const serverEnvSchema = publicEnvSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  CRON_SECRET: z.string().min(24).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -27,5 +28,6 @@ export function getServerEnv(): ServerEnv {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    CRON_SECRET: process.env.CRON_SECRET,
   });
 }

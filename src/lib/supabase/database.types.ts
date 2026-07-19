@@ -108,6 +108,7 @@ type RiskRow = Timestamped & {
   category: DatabaseEnums["risk_category"];
   confidence_score: number;
   detected_at: string;
+  detection_key: string | null;
   due_at: string | null;
   estimated_margin_impact_cents: number;
   id: string;
@@ -167,6 +168,36 @@ export type Database = {
           vendor_id: string | null;
         }
       >;
+      document_extracted_fields: Table<
+        Timestamped & {
+          document_id: string;
+          extracted_at: string;
+          field_key: string;
+          field_value: Json;
+          id: string;
+          organization_id: string;
+        }
+      >;
+      project_detection_settings: Table<
+        Timestamped & {
+          concrete_temperature_threshold_f: number;
+          organization_id: string;
+          project_id: string;
+        }
+      >;
+      detection_runs: Table<{
+        completed_at: string | null;
+        created_at: string;
+        error_message: string | null;
+        id: string;
+        organization_id: string;
+        risks_created: number;
+        risks_updated: number;
+        rule_results: Json;
+        started_at: string;
+        status: "running" | "complete" | "failed";
+        trigger_source: "manual" | "scheduled";
+      }>;
       document_activities: Table<{
         activity_type: "uploaded" | "edited" | "archived";
         actor_user_id: string | null;
@@ -183,6 +214,7 @@ export type Database = {
         created_at: string;
         description: string;
         document_id: string | null;
+        detection_key: string | null;
         id: string;
         integration_source_id: string | null;
         observed_at: string;
@@ -196,6 +228,7 @@ export type Database = {
           assigned_user_id: string | null;
           completed_at: string | null;
           description: string;
+          detection_key: string | null;
           due_at: string | null;
           id: string;
           organization_id: string;

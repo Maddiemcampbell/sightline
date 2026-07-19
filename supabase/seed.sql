@@ -138,3 +138,62 @@ end;
 update public.risks
 set assigned_user_id = '11000000-0000-4000-8000-000000000001'
 where status not in ('resolved', 'dismissed');
+
+update public.risks set detection_key = 'insurance:apex-electrical-systems:cedar-grove-medical-pavilion'
+where id = '60000000-0000-4000-8000-000000000001';
+update public.risks set detection_key = 'weather:riverfront-distribution-center:2026-07-20'
+where id = '60000000-0000-4000-8000-000000000002';
+update public.risks set detection_key = 'repeated-issue:northgate-civic-center:added-backing'
+where id = '60000000-0000-4000-8000-000000000003';
+
+insert into public.documents (
+  id, organization_id, project_id, integration_source_id, name,
+  document_type, document_date, processing_status
+)
+values
+  ('50000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'Northgate daily log - July 15', 'daily_log', '2026-07-15', 'ready'),
+  ('50000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'Northgate daily log - July 16', 'daily_log', '2026-07-16', 'ready');
+
+insert into public.project_detection_settings (
+  organization_id, project_id, concrete_temperature_threshold_f
+)
+values (
+  '10000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000002',
+  95
+);
+
+insert into public.document_extracted_fields (
+  organization_id, document_id, field_key, field_value, extracted_at
+)
+values
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', 'coi_expiration_date', '"2026-07-25"'::jsonb, '2026-07-18T12:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000002', 'concrete_pour_date', '"2026-07-20"'::jsonb, '2026-07-18T12:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000002', 'forecast_high_temperature_f', '101'::jsonb, '2026-07-18T12:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000003', 'issue_keywords', '["added backing"]'::jsonb, '2026-07-17T17:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000004', 'issue_keywords', '["added backing"]'::jsonb, '2026-07-15T17:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000005', 'issue_keywords', '["added backing"]'::jsonb, '2026-07-16T17:00:00Z');
+
+update public.risk_evidence
+set detection_key = case risk_id
+  when '60000000-0000-4000-8000-000000000001' then 'insurance:apex-electrical-systems:cedar-grove-medical-pavilion:50000000-0000-4000-8000-000000000001'
+  when '60000000-0000-4000-8000-000000000002' then 'weather:riverfront-distribution-center:2026-07-20:50000000-0000-4000-8000-000000000002'
+  when '60000000-0000-4000-8000-000000000003' then 'repeated-issue:northgate-civic-center:added-backing:50000000-0000-4000-8000-000000000003'
+end
+where risk_id in (
+  '60000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000002',
+  '60000000-0000-4000-8000-000000000003'
+);
+
+update public.recommended_actions
+set detection_key = case risk_id
+  when '60000000-0000-4000-8000-000000000001' then 'insurance:apex-electrical-systems:cedar-grove-medical-pavilion:action'
+  when '60000000-0000-4000-8000-000000000002' then 'weather:riverfront-distribution-center:2026-07-20:action'
+  when '60000000-0000-4000-8000-000000000003' then 'repeated-issue:northgate-civic-center:added-backing:action'
+end
+where risk_id in (
+  '60000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000002',
+  '60000000-0000-4000-8000-000000000003'
+);

@@ -128,6 +128,7 @@ export interface Risk {
   projectId: string | null;
   vendorId: string | null;
   assignedUserId: string | null;
+  detectionKey: string | null;
   title: string;
   summary: string;
   category: RiskCategory;
@@ -149,6 +150,7 @@ export interface RiskEvidence {
   organizationId: string;
   riskId: string;
   documentId: string | null;
+  detectionKey: string | null;
   integrationSourceId: string | null;
   title: string;
   description: string;
@@ -162,6 +164,7 @@ export interface RecommendedAction {
   organizationId: string;
   riskId: string;
   assignedUserId: string | null;
+  detectionKey: string | null;
   title: string;
   description: string;
   status: ActionStatus;

@@ -179,6 +179,7 @@ const mapRisk = (row: RiskRow): Risk => ({
   projectId: row.project_id,
   vendorId: row.vendor_id,
   assignedUserId: row.assigned_user_id,
+  detectionKey: row.detection_key,
   title: row.title,
   summary: row.summary,
   category: row.category,
@@ -200,6 +201,7 @@ const mapEvidence = (row: RiskEvidenceRow): RiskEvidence => ({
   organizationId: row.organization_id,
   riskId: row.risk_id,
   documentId: row.document_id,
+  detectionKey: row.detection_key,
   integrationSourceId: row.integration_source_id,
   title: row.title,
   description: row.description,
@@ -213,6 +215,7 @@ const mapAction = (row: RecommendedActionRow): RecommendedAction => ({
   organizationId: row.organization_id,
   riskId: row.risk_id,
   assignedUserId: row.assigned_user_id,
+  detectionKey: row.detection_key,
   title: row.title,
   description: row.description,
   status: row.status,
@@ -494,6 +497,7 @@ export class SightlineRepository {
         project_id: value.projectId,
         vendor_id: value.vendorId,
         assigned_user_id: value.assignedUserId,
+        detection_key: value.detectionKey,
         title: value.title,
         summary: value.summary,
         category: value.category,
@@ -523,6 +527,9 @@ export class SightlineRepository {
       ...(value.vendorId !== undefined ? { vendor_id: value.vendorId } : {}),
       ...(value.assignedUserId !== undefined
         ? { assigned_user_id: value.assignedUserId }
+        : {}),
+      ...(value.detectionKey !== undefined
+        ? { detection_key: value.detectionKey }
         : {}),
       ...(value.title !== undefined ? { title: value.title } : {}),
       ...(value.summary !== undefined ? { summary: value.summary } : {}),
@@ -567,6 +574,7 @@ export class SightlineRepository {
         organization_id: value.organizationId,
         risk_id: value.riskId,
         document_id: value.documentId,
+        detection_key: value.detectionKey,
         integration_source_id: value.integrationSourceId,
         title: value.title,
         description: value.description,
@@ -588,6 +596,7 @@ export class SightlineRepository {
         organization_id: value.organizationId,
         risk_id: value.riskId,
         assigned_user_id: value.assignedUserId,
+        detection_key: value.detectionKey,
         title: value.title,
         description: value.description,
         status: value.status,

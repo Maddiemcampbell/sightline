@@ -31,6 +31,11 @@ autonomous workflows.
 3. Replace the sample values with the URL and publishable key from your
    Supabase project settings.
 
+   Set `CRON_SECRET` to a random value of at least 24 characters before enabling
+   scheduled detection. A scheduler can call `GET /api/cron/detect-risks` with
+   `Authorization: Bearer <CRON_SECRET>`. Development also exposes the
+   internal-only `/internal/detection` manual-run page.
+
 4. Start the development server:
 
    ```bash
