@@ -14,7 +14,7 @@ export type NavigationItem = Readonly<{
 }>;
 
 export const primaryNavigation: readonly NavigationItem[] = [
-  { href: "/brief", label: "Morning brief", icon: Gauge },
+  { href: "/brief", label: "Daily Brief", icon: Gauge },
   { href: "/projects", label: "Projects", icon: BriefcaseBusiness },
   { href: "/risks", label: "Risks", icon: ShieldAlert },
   { href: "/documents", label: "Documents", icon: FileText },

@@ -25,6 +25,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full">
+        <a
+          href="#main-content"
+          className="bg-deep-green sr-only z-50 rounded-md px-4 py-2 text-white focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+        >
+          Skip to main content
+        </a>
         <AppShell>{children}</AppShell>
       </body>
     </html>

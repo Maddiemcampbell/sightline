@@ -2,11 +2,11 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: ComponentProps<"section">) {
+export function Card({ className, ...props }: ComponentProps<"div">) {
   return (
-    <section
+    <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white p-6 shadow-sm",
+        "border-border bg-surface shadow-surface rounded-lg border p-5 sm:p-6",
         className,
       )}
       {...props}

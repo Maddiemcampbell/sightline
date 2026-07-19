@@ -4,7 +4,7 @@ export default function BriefPage() {
   return (
     <PlaceholderPage
       eyebrow="Daily intelligence"
-      title="Morning brief"
+      title="Daily Brief"
       description="The three issues most likely to affect profit this week will appear here."
     />
   );
