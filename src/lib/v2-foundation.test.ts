@@ -63,15 +63,16 @@ describe("V2 audit and action conventions", () => {
   it("derives tenant and actor identity from context, not mutation input", () => {
     const record = buildRiskActivityRecord(context, {
       riskId: "60000000-0000-4000-8000-000000000001",
-      activityType: "action_updated",
-      note: "Recommended action assigned.",
+      activityType: "action_accepted",
+      summary: "Recommended action accepted.",
       metadata: { actionId: "action-1" },
       occurredAt: "2026-07-19T12:00:00.000Z",
     });
     expect(record).toMatchObject({
       organization_id: context.organizationId,
       actor_user_id: context.userId,
-      activity_type: "action_updated",
+      actor_type: "user",
+      activity_type: "action_accepted",
     });
   });
 

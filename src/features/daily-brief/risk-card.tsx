@@ -20,6 +20,9 @@ export function BriefRiskCard({
   actionOwners: readonly ActionOwner[];
 }) {
   const [acknowledged, setAcknowledged] = useState(risk.acknowledged);
+  const [acknowledgementPersisted, setAcknowledgementPersisted] = useState(
+    risk.acknowledged,
+  );
   const [dismissOpen, setDismissOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [hidden, setHidden] = useState(false);
@@ -35,6 +38,7 @@ export function BriefRiskCard({
     startTransition(async () => {
       try {
         await acknowledgeRiskAction(risk.id);
+        setAcknowledgementPersisted(true);
       } catch {
         setAcknowledged(previous);
         setError("We couldn’t save that acknowledgement. Please try again.");
@@ -74,6 +78,9 @@ export function BriefRiskCard({
     <article
       className="border-border bg-surface overflow-hidden rounded-xl border"
       aria-labelledby={`risk-${risk.id}`}
+      data-acknowledgement-persisted={
+        acknowledgementPersisted ? "true" : "false"
+      }
     >
       <div className="border-border flex items-start gap-4 border-b p-5 sm:p-6">
         <div

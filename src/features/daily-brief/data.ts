@@ -120,7 +120,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
     const acknowledged = activities.some(
       (entry) =>
         entry.risk_id === risk.id &&
-        entry.activity_type === "commented" &&
+        entry.activity_type === "risk_acknowledged" &&
         isJsonObject(entry.metadata) &&
         entry.metadata.acknowledged === true,
     );

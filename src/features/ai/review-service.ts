@@ -102,15 +102,33 @@ export async function approveRiskSuggestion(input: {
       created_by_user_id: input.reviewerUserId,
       source: "ai_suggestion",
     }),
-    client.from("risk_activities").insert({
-      organization_id: input.organizationId,
-      risk_id: risk.id,
-      actor_user_id: input.reviewerUserId,
-      activity_type: "created",
-      to_status: "monitoring",
-      note: "AI suggestion approved by a human reviewer.",
-      metadata: { aiSuggestionId: suggestion.id },
-    }),
+    client.from("risk_activities").insert([
+      {
+        organization_id: input.organizationId,
+        risk_id: risk.id,
+        actor_user_id: input.reviewerUserId,
+        actor_type: "user",
+        activity_type: "risk_detected",
+        to_status: "monitoring",
+        summary: "AI suggestion approved by a human reviewer.",
+        mentioned_user_ids: [],
+        metadata: { aiSuggestionId: suggestion.id },
+      },
+      {
+        organization_id: input.organizationId,
+        risk_id: risk.id,
+        actor_user_id: null,
+        actor_type: "ai",
+        activity_type: "system_analysis_completed",
+        summary:
+          "AI risk analysis completed and was retained for human review.",
+        mentioned_user_ids: [],
+        metadata: {
+          aiSuggestionId: suggestion.id,
+          analysisRunId: suggestion.analysis_run_id,
+        },
+      },
+    ]),
   ]);
   const childError =
     evidenceResult.error ?? actionResult.error ?? activityResult.error;

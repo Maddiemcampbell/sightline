@@ -187,8 +187,8 @@ export class RecommendedActionService {
     try {
       await this.activities.append(context, {
         riskId: value.riskId,
-        activityType: "action_updated",
-        note: "Recommended action created.",
+        activityType: "action_suggested",
+        summary: `Action suggested: ${value.title}`,
         metadata: { actionId: data.id, change: "created" },
       });
     } catch (error) {
@@ -218,8 +218,17 @@ export class RecommendedActionService {
     try {
       await this.activities.append(context, {
         riskId: before.risk_id,
-        activityType: "action_updated",
-        note,
+        activityType:
+          change === "accepted"
+            ? "action_accepted"
+            : change === "started"
+              ? "action_started"
+              : change === "completed"
+                ? "action_completed"
+                : change === "dismissed"
+                  ? "action_dismissed"
+                  : "risk_updated",
+        summary: note,
         metadata: {
           actionId: before.id,
           change,

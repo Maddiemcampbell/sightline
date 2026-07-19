@@ -229,6 +229,7 @@ async function loadDetectionContext(now: Date): Promise<DetectionContext> {
 
 async function persistDetection(detection: DetectedRisk, now: Date) {
   const client = createAdminSupabaseClient();
+  const ruleId = detection.detectionKey.split(":")[0] ?? "deterministic";
   const existingResult = await client
     .from("risks")
     .select("id,status,resolved_at")
@@ -329,6 +330,49 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
         source: "deterministic_rule",
       });
   if (actionResult.error) throw new Error(actionResult.error.message);
+  const activityRows = [
+    ...(!existingResult.data
+      ? [
+          {
+            organization_id: BUILDCO_ORGANIZATION_ID,
+            risk_id: risk.id,
+            actor_type: "system" as const,
+            actor_user_id: null,
+            activity_type: "risk_detected" as const,
+            summary: `Sightline detected this risk using the ${ruleId} rule.`,
+            metadata: { ruleId, detectionKey: detection.detectionKey },
+            mentioned_user_ids: [],
+            occurred_at: now.toISOString(),
+          },
+          {
+            organization_id: BUILDCO_ORGANIZATION_ID,
+            risk_id: risk.id,
+            actor_type: "system" as const,
+            actor_user_id: null,
+            activity_type: "action_suggested" as const,
+            summary: "Sightline suggested a mitigation action.",
+            metadata: { detectionKey: actionKey },
+            mentioned_user_ids: [],
+            occurred_at: now.toISOString(),
+          },
+        ]
+      : []),
+    {
+      organization_id: BUILDCO_ORGANIZATION_ID,
+      risk_id: risk.id,
+      actor_type: "system" as const,
+      actor_user_id: null,
+      activity_type: "system_analysis_completed" as const,
+      summary: `Deterministic analysis completed using the ${ruleId} rule.`,
+      metadata: { ruleId, detectionKey: detection.detectionKey },
+      mentioned_user_ids: [],
+      occurred_at: now.toISOString(),
+    },
+  ];
+  const { error: activityError } = await client
+    .from("risk_activities")
+    .insert(activityRows);
+  if (activityError) throw new Error(activityError.message);
 }
 
 async function regenerateDailyBrief(now: Date): Promise<number> {

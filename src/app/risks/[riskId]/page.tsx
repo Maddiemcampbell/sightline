@@ -9,6 +9,9 @@ import { getRiskDetail } from "@/features/portfolio/data";
 import { RiskDetailActions } from "@/features/portfolio/risk-detail-actions";
 import { ActionPanel } from "@/features/actions/action-panel";
 import { toActionView } from "@/features/actions/data";
+import { getActivityPage } from "@/features/activity/data";
+import { ActivityTimeline } from "@/features/activity/timeline";
+import { RiskCommentForm } from "@/features/activity/comment-form";
 
 type Props = { params: Promise<{ riskId: string }> };
 
@@ -16,6 +19,7 @@ export default async function RiskPage({ params }: Props) {
   const { riskId } = await params;
   const detail = await getRiskDetail(riskId);
   if (!detail) notFound();
+  const activityPage = await getActivityPage({ riskId, limit: 30 });
   const documentById = new Map(
     detail.documents.map((document) => [document.id, document]),
   );
@@ -177,26 +181,16 @@ export default async function RiskPage({ params }: Props) {
             )}
           </Panel>
           <Panel title="Activity timeline">
-            <ol className="space-y-4">
-              {detail.activities.map((activity) => (
-                <li key={activity.id} className="border-border border-l-2 pl-3">
-                  <p className="text-sm font-semibold capitalize">
-                    {activity.activity_type.replace("_", " ")}
-                  </p>
-                  <p className="text-muted mt-1 text-xs">
-                    {activity.note ?? "Risk updated"}
-                  </p>
-                  <time className="text-muted mt-1 block text-xs">
-                    {new Date(activity.occurred_at).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </time>
-                </li>
-              ))}
-            </ol>
+            <RiskCommentForm riskId={riskId} users={detail.users} />
+            <ActivityTimeline items={activityPage.items} condensed />
+            {activityPage.nextCursor && (
+              <Link
+                href={`/activity?riskId=${riskId}`}
+                className="text-deep-green mt-5 inline-block text-sm font-semibold"
+              >
+                View complete history
+              </Link>
+            )}
           </Panel>
         </aside>
       </div>

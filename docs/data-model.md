@@ -200,6 +200,20 @@ risk/status indexes support the action register and risk panels. Every mutation
 is authorized by organization and appends an `action_updated` risk activity;
 the application restores the previous row if that audit append fails.
 
+## V2 risk activity timeline
+
+Risk activity is an append-only user-facing event stream. Rows store an event
+type, actor type (`user`, `system`, `ai`, or `integration`), optional actor user,
+readable summary, structured JSON metadata, mentioned organization users, and
+an occurrence timestamp. Database triggers reject updates and deletes; a
+correction must be recorded as a new event. Legacy event types remain unchanged
+in storage and are normalized only for presentation.
+
+The organization and risk cursor indexes order events by `occurred_at` and `id`
+for stable pagination. Comment mentions are retained in the activity record but
+do not trigger external notifications in this version. Operational console logs
+and provider diagnostics remain separate from this executive-facing history.
+
 ## Major assumptions
 
 - V1 users have one organization membership. A membership join table can be

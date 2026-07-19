@@ -11,11 +11,28 @@ export type DatabaseEnums = {
   action_status:
     "suggested" | "accepted" | "in_progress" | "completed" | "dismissed";
   activity_type:
-    | "created"
+    | "risk_detected"
+    | "risk_acknowledged"
+    | "risk_updated"
     | "status_changed"
+    | "severity_changed"
+    | "owner_assigned"
+    | "due_date_changed"
+    | "action_suggested"
+    | "action_accepted"
+    | "action_started"
+    | "action_completed"
+    | "action_dismissed"
+    | "evidence_added"
+    | "document_uploaded"
+    | "email_drafted"
+    | "comment_added"
+    | "risk_resolved"
+    | "risk_reopened"
+    | "system_analysis_completed"
+    | "created"
     | "assigned"
     | "commented"
-    | "evidence_added"
     | "action_updated"
     | "resolved"
     | "dismissed";
@@ -344,12 +361,14 @@ export type Database = {
       }>;
       risk_activities: Table<{
         activity_type: DatabaseEnums["activity_type"];
+        actor_type: "user" | "system" | "ai" | "integration";
         actor_user_id: string | null;
         created_at: string;
         from_status: DatabaseEnums["risk_status"] | null;
         id: string;
         metadata: Json;
-        note: string | null;
+        summary: string;
+        mentioned_user_ids: string[];
         occurred_at: string;
         organization_id: string;
         risk_id: string;

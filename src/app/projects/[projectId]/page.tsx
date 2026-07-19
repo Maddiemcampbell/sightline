@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import { getProjectDetail } from "@/features/portfolio/data";
+import { getActivityPage } from "@/features/activity/data";
+import { ActivityTimeline } from "@/features/activity/timeline";
 
 type Props = { params: Promise<{ projectId: string }> };
 
@@ -11,6 +13,7 @@ export default async function ProjectPage({ params }: Props) {
   const { projectId } = await params;
   const detail = await getProjectDetail(projectId);
   if (!detail) notFound();
+  const activityPage = await getActivityPage({ projectId, limit: 8 });
   const openRisks = detail.risks.filter(
     (risk) => !["resolved", "dismissed"].includes(risk.status),
   );
@@ -131,18 +134,13 @@ export default async function ProjectPage({ params }: Props) {
             </ul>
           </Panel>
           <Panel title="Risk activity">
-            <ol className="space-y-4">
-              {detail.activities.map((activity) => (
-                <li key={activity.id} className="border-border border-l-2 pl-3">
-                  <p className="text-sm font-semibold capitalize">
-                    {activity.activity_type.replace("_", " ")}
-                  </p>
-                  <p className="text-muted mt-1 text-xs">
-                    {activity.note ?? "Risk record updated"}
-                  </p>
-                </li>
-              ))}
-            </ol>
+            <ActivityTimeline items={activityPage.items} condensed />
+            <Link
+              href={`/activity`}
+              className="text-deep-green mt-5 inline-block text-sm font-semibold"
+            >
+              View all activity
+            </Link>
           </Panel>
         </aside>
       </div>

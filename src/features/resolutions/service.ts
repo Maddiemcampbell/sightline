@@ -78,10 +78,10 @@ export class ResolutionTrackingService {
     try {
       await this.activities.append(context, {
         riskId: input.riskId,
-        activityType: "resolved",
+        activityType: "risk_resolved",
         fromStatus: risk.status,
         toStatus: "resolved",
-        note: value.summary,
+        summary: value.summary,
         metadata: {
           resolutionId: resolution.id,
           resolutionType: value.resolutionType,

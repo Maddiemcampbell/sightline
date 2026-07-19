@@ -72,15 +72,37 @@ export type ResolutionType =
 export type BriefStatus = "draft" | "published";
 export type IntegrationProvider =
   "manual" | "procore" | "autodesk" | "email" | "sharepoint" | "other";
-export type RiskActivityType =
+export const RISK_ACTIVITY_TYPES = [
+  "risk_detected",
+  "risk_acknowledged",
+  "risk_updated",
+  "status_changed",
+  "severity_changed",
+  "owner_assigned",
+  "due_date_changed",
+  "action_suggested",
+  "action_accepted",
+  "action_started",
+  "action_completed",
+  "action_dismissed",
+  "evidence_added",
+  "document_uploaded",
+  "email_drafted",
+  "comment_added",
+  "risk_resolved",
+  "risk_reopened",
+  "system_analysis_completed",
+] as const;
+export const ACTOR_TYPES = ["user", "system", "ai", "integration"] as const;
+export type RiskActivityType = (typeof RISK_ACTIVITY_TYPES)[number];
+export type LegacyRiskActivityType =
   | "created"
-  | "status_changed"
   | "assigned"
   | "commented"
-  | "evidence_added"
   | "action_updated"
   | "resolved"
   | "dismissed";
+export type ActorType = (typeof ACTOR_TYPES)[number];
 
 export interface Organization {
   id: string;
@@ -254,10 +276,12 @@ export interface RiskActivity {
   organizationId: string;
   riskId: string;
   actorUserId: string | null;
-  activityType: RiskActivityType;
+  actorType: ActorType;
+  activityType: RiskActivityType | LegacyRiskActivityType;
   fromStatus: RiskStatus | null;
   toStatus: RiskStatus | null;
-  note: string | null;
+  summary: string;
+  mentionedUserIds: readonly string[];
   metadata: Readonly<Record<string, unknown>>;
   occurredAt: string;
   createdAt: string;

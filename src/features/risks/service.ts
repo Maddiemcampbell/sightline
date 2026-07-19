@@ -19,8 +19,8 @@ export class RiskManagementService {
     await this.requireRisk(context, riskId);
     await this.activities.append(context, {
       riskId,
-      activityType: "commented",
-      note: "Risk acknowledged from the Daily Brief.",
+      activityType: "risk_acknowledged",
+      summary: "Risk acknowledged from the Daily Brief.",
       metadata: { acknowledged: true, source: "daily_brief" },
     });
   }
@@ -41,10 +41,10 @@ export class RiskManagementService {
     try {
       await this.activities.append(context, {
         riskId: input.riskId,
-        activityType: "dismissed",
+        activityType: "status_changed",
         fromStatus: risk.status,
         toStatus: "dismissed",
-        note: input.reason,
+        summary: `Risk dismissed: ${input.reason}`,
         metadata: { source: input.source },
       });
     } catch (error) {
@@ -66,10 +66,10 @@ export class RiskManagementService {
     try {
       await this.activities.append(context, {
         riskId,
-        activityType: "resolved",
+        activityType: "risk_resolved",
         fromStatus: risk.status,
         toStatus: "resolved",
-        note: "Risk marked resolved.",
+        summary: "Risk marked resolved.",
         metadata: { source: "risk_detail" },
       });
     } catch (error) {
@@ -92,10 +92,10 @@ export class RiskManagementService {
     try {
       await this.activities.append(context, {
         riskId,
-        activityType: "assigned",
+        activityType: "owner_assigned",
         fromStatus: risk.status,
         toStatus: risk.status,
-        note: "Risk owner updated.",
+        summary: userId ? "Risk owner assigned." : "Risk owner removed.",
         metadata: {
           source: "risk_detail",
           previousOwnerId: risk.assigned_user_id,
@@ -120,10 +120,10 @@ export class RiskManagementService {
     try {
       await this.activities.append(context, {
         riskId,
-        activityType: "commented",
+        activityType: "due_date_changed",
         fromStatus: risk.status,
         toStatus: risk.status,
-        note: "Risk due date updated.",
+        summary: dueAt ? "Risk due date changed." : "Risk due date removed.",
         metadata: {
           source: "risk_detail",
           previousDueAt: risk.due_at,
@@ -134,6 +134,22 @@ export class RiskManagementService {
       await this.updateRisk(context, riskId, { due_at: risk.due_at });
       throw error;
     }
+  }
+
+  async addComment(
+    context: ActorContext,
+    riskId: string,
+    comment: string,
+    mentionedUserIds: readonly string[],
+  ) {
+    await this.requireRisk(context, riskId);
+    await this.activities.append(context, {
+      riskId,
+      activityType: "comment_added",
+      summary: comment,
+      metadata: { source: "risk_detail" },
+      mentionedUserIds: [...mentionedUserIds],
+    });
   }
 
   private async requireRisk(

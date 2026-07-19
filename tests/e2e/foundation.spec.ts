@@ -89,6 +89,10 @@ test("acknowledges a risk and persists after reload", async ({ page }) => {
     await acknowledge.click();
   }
   await expect(acknowledgedStatus).toHaveText("Acknowledged");
+  await expect(firstRisk).toHaveAttribute(
+    "data-acknowledgement-persisted",
+    "true",
+  );
   await page.reload();
   await expect(
     page.getByRole("article").first().getByRole("status"),
@@ -122,6 +126,37 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
+  ).toBeVisible();
+});
+
+test("adds a risk comment with an organization-user mention", async ({
+  page,
+}) => {
+  await page.goto("/risks/60000000-0000-4000-8000-000000000001");
+  await page
+    .getByLabel("Comment")
+    .fill("Alex, please confirm the renewal certificate with Apex.");
+  await page
+    .getByLabel("Mention teammate")
+    .selectOption({ label: "Alex Rivera" });
+  await page.getByRole("button", { name: "Add comment" }).click();
+  await expect(page.getByRole("status")).toHaveText("Comment added.");
+  await expect(
+    page
+      .getByText("Alex, please confirm the renewal certificate with Apex.")
+      .last(),
+  ).toBeVisible();
+});
+
+test("shows the organization activity timeline", async ({ page }) => {
+  await page.goto("/activity");
+  await expect(
+    page.getByRole("heading", { name: "Activity", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByText("Deterministic V1 seed risk created for local development.")
+      .first(),
   ).toBeVisible();
 });
 

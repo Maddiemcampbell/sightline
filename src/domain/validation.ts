@@ -1,11 +1,13 @@
 import { z } from "zod";
 
 import {
+  ACTOR_TYPES,
   ACTION_PRIORITIES,
   ACTION_SOURCES,
   ACTION_STATUSES,
   ACTION_TYPES,
   RISK_CATEGORIES,
+  RISK_ACTIVITY_TYPES,
   RISK_SEVERITIES,
   RISK_STATUSES,
 } from "@/domain/types";
@@ -365,19 +367,12 @@ export const createRiskActivitySchema = z
     organizationId: idSchema,
     riskId: idSchema,
     actorUserId: nullableIdSchema.default(null),
-    activityType: z.enum([
-      "created",
-      "status_changed",
-      "assigned",
-      "commented",
-      "evidence_added",
-      "action_updated",
-      "resolved",
-      "dismissed",
-    ]),
+    actorType: z.enum(ACTOR_TYPES),
+    activityType: z.enum(RISK_ACTIVITY_TYPES),
     fromStatus: z.enum(RISK_STATUSES).nullable().default(null),
     toStatus: z.enum(RISK_STATUSES).nullable().default(null),
-    note: optionalText(3000).default(null),
+    summary: z.string().trim().min(1).max(3000),
+    mentionedUserIds: z.array(idSchema).max(20).default([]),
     metadata: z.record(z.string(), z.json()).default({}),
     occurredAt: timestampSchema,
   })
@@ -397,12 +392,6 @@ export const createRiskActivitySchema = z
       });
     }
   });
-export const updateRiskActivitySchema = nonEmptyUpdate(
-  z.object({
-    note: optionalText(3000),
-    metadata: z.record(z.string(), z.json()),
-  }),
-);
 
 export type CreateOrganizationInput = z.input<typeof createOrganizationSchema>;
 export type UpdateOrganizationInput = z.input<typeof updateOrganizationSchema>;
@@ -435,4 +424,3 @@ export type UpdateDailyBriefInput = z.input<typeof updateDailyBriefSchema>;
 export type CreateBriefItemInput = z.input<typeof createBriefItemSchema>;
 export type UpdateBriefItemInput = z.input<typeof updateBriefItemSchema>;
 export type CreateRiskActivityInput = z.input<typeof createRiskActivitySchema>;
-export type UpdateRiskActivityInput = z.input<typeof updateRiskActivitySchema>;

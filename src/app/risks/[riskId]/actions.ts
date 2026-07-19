@@ -21,6 +21,33 @@ const mutationSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+const commentSchema = z.object({
+  riskId: z.uuid(),
+  comment: z.string().trim().min(2).max(3_000),
+  mentionedUserId: z.uuid().nullable(),
+});
+
+export async function addRiskCommentAction(
+  input: z.input<typeof commentSchema>,
+) {
+  const value = await runServerMutation(
+    commentSchema,
+    input,
+    async (context, parsed) => {
+      const service = new RiskManagementService(createAdminSupabaseClient());
+      await service.addComment(
+        context,
+        parsed.riskId,
+        parsed.comment,
+        parsed.mentionedUserId ? [parsed.mentionedUserId] : [],
+      );
+      return parsed;
+    },
+  );
+  revalidatePath(`/risks/${value.riskId}`);
+  revalidatePath("/activity");
+}
+
 export async function updateRiskDetailAction(
   input: z.input<typeof mutationSchema>,
 ) {

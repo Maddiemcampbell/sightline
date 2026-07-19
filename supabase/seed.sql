@@ -11,6 +11,13 @@ values (
   'Matt Anderson',
   'Operations Director',
   'executive'
+), (
+  '11000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000001',
+  'alex.rivera@buildco.example',
+  'Alex Rivera',
+  'Senior Project Manager',
+  'project_manager'
 );
 
 insert into public.projects (
@@ -91,13 +98,14 @@ values
   ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'email', 'suggested', 'urgent', '2026-07-21T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule');
 
 insert into public.risk_activities (
-  organization_id, risk_id, actor_user_id, activity_type, note, occurred_at
+  organization_id, risk_id, actor_type, actor_user_id, activity_type, summary, occurred_at
 )
 select
   organization_id,
   id,
-  '11000000-0000-4000-8000-000000000001',
-  'created',
+  'system',
+  null,
+  'risk_detected',
   'Deterministic V1 seed risk created for local development.',
   detected_at
 from public.risks;
