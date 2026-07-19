@@ -18,6 +18,7 @@ export const projectFiltersSchema = z.object({
 });
 
 export const riskFiltersSchema = z.object({
+  view: firstValue.pipe(z.enum(["active", "resolved", "all"]).catch("active")),
   q: firstValue.transform((value) => value?.trim().slice(0, 120) ?? ""),
   category: firstValue.pipe(
     z

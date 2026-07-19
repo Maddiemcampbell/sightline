@@ -25,6 +25,7 @@ describe("portfolio filter validation", () => {
   it("accepts shareable risk filters", () => {
     expect(
       riskFiltersSchema.parse({
+        view: "resolved",
         q: "insurance",
         category: "insurance",
         severity: "high",
@@ -35,6 +36,7 @@ describe("portfolio filter validation", () => {
       }),
     ).toEqual({
       q: "insurance",
+      view: "resolved",
       category: "insurance",
       severity: "high",
       status: "action_needed",

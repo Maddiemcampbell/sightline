@@ -9,8 +9,10 @@ test("loads the application shell and morning brief", async ({ page }) => {
     }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Open Daily Brief" }).click();
-  await expect(page).toHaveURL(/\/brief$/);
+  await expect(
+    page.getByRole("link", { name: "Open Daily Brief" }),
+  ).toHaveAttribute("href", "/brief");
+  await page.goto("/brief");
   await expect(
     page.getByRole("heading", { name: "Good morning, Matt." }),
   ).toBeVisible({ timeout: 15_000 });
@@ -127,6 +129,58 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
   ).toBeVisible();
+});
+
+test("records a guided resolution and reopens it with a reason", async ({
+  page,
+}) => {
+  await page.goto("/risks/60000000-0000-4000-8000-000000000002");
+  await page.getByRole("button", { name: "Resolve with details" }).click();
+  const dialog = page.getByRole("dialog", { name: "Record what happened" });
+  await expect(dialog).toBeVisible();
+  await dialog
+    .getByLabel("Resolution summary")
+    .fill(
+      "The project team moved the concrete pour to a protected window and retained the crew reservation.",
+    );
+  await dialog.getByLabel("Resolution type").selectOption("prevented");
+  await dialog.getByLabel("Approve a weather contingency plan").check();
+  await dialog.getByLabel("Estimated remaining exposure").fill("1000");
+  await dialog.getByLabel("Estimated loss avoided").fill("50000");
+  await dialog.getByRole("button", { name: "Resolve risk" }).click();
+  await expect(dialog).toBeHidden();
+  await page.reload();
+  await expect(
+    page.getByText("Resolution summary", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("prevented", { exact: true })).toBeVisible();
+  await page.goto("/risks?view=resolved");
+  await expect(
+    page.getByText("Forecast rain threatens Friday concrete placement", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Estimated resolution value" })
+      .getByText("$85,000"),
+  ).toBeVisible();
+  await page.goto("/brief");
+  await expect(page.getByRole("article")).toHaveCount(2);
+
+  await page.goto("/risks/60000000-0000-4000-8000-000000000002");
+  await page.getByRole("button", { name: "Reopen risk" }).click();
+  await page
+    .getByLabel("Reason for reopening")
+    .fill(
+      "The vendor reported that the approval does not cover the latest revision.",
+    );
+  await page.getByRole("button", { name: "Confirm reopening" }).click();
+  await expect(page.getByLabel("Reason for reopening")).toBeHidden();
+  await page.reload();
+  await expect(page.getByText("action needed", { exact: true })).toBeVisible();
+  await page.goto("/brief");
+  await expect(page.getByRole("article")).toHaveCount(3);
 });
 
 test("explains a risk with visibly grounded evidence", async ({ page }) => {

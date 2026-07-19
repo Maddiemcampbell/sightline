@@ -15,6 +15,7 @@ import { getRiskEvidenceExperience } from "@/features/evidence/data";
 import { EvidenceExperience } from "@/features/evidence/evidence-experience";
 import { getAskSightlineHistory } from "@/features/ask-sightline/data";
 import { AskSightlinePanel } from "@/features/ask-sightline/ask-panel";
+import type { RiskResolutionRow } from "@/lib/supabase/database-row.types";
 
 type Props = {
   params: Promise<{ riskId: string }>;
@@ -80,6 +81,9 @@ export default async function RiskPage({ params, searchParams }: Props) {
         ownerId={detail.risk.assigned_user_id}
         dueAt={detail.risk.due_at}
         users={detail.users}
+        actions={detail.actions}
+        exposureCents={detail.risk.potential_exposure_cents}
+        status={detail.risk.status}
         closed={closed}
       />
       <Link
@@ -111,6 +115,20 @@ export default async function RiskPage({ params, searchParams }: Props) {
           }
         />
       </section>
+      {detail.risk.status === "resolved" && detail.resolutions[0] && (
+        <ResolutionSummary
+          resolution={detail.resolutions[0]}
+          ownerName={
+            ownerNameById.get(detail.resolutions[0].final_owner_user_id) ??
+            "Unknown owner"
+          }
+          actionTitles={detail.actions
+            .filter((action) =>
+              detail.resolutions[0]?.completed_action_ids.includes(action.id),
+            )
+            .map((action) => action.title)}
+        />
+      )}
       <nav
         aria-label="Risk detail sections"
         className="border-border mt-7 border-b"
@@ -247,6 +265,88 @@ function TabLink({
     >
       {children}
     </Link>
+  );
+}
+function ResolutionSummary({
+  resolution,
+  ownerName,
+  actionTitles,
+}: {
+  resolution: RiskResolutionRow;
+  ownerName: string;
+  actionTitles: readonly string[];
+}) {
+  return (
+    <Card className="border-deep-green/20 bg-soft-green mt-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-deep-green text-xs font-semibold uppercase">
+            Resolution summary
+          </p>
+          <h2 className="mt-1 text-xl font-semibold">
+            {resolution.resolution_type.replaceAll("_", " ")}
+          </h2>
+        </div>
+        <p className="text-muted text-sm">
+          Resolved{" "}
+          {new Date(
+            `${resolution.resolved_date}T12:00:00`,
+          ).toLocaleDateString()}
+        </p>
+      </div>
+      <p className="mt-4 leading-7">{resolution.summary}</p>
+      <dl className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <ResolutionFact label="Final owner" value={ownerName} />
+        <ResolutionFact
+          label="Estimated exposure before"
+          value={formatMoney(resolution.exposure_before_cents)}
+        />
+        <ResolutionFact
+          label="Estimated remaining exposure"
+          value={formatMoney(resolution.remaining_exposure_cents)}
+        />
+        <ResolutionFact
+          label="Estimated loss avoided"
+          value={formatMoney(resolution.estimated_loss_avoided_cents)}
+        />
+        <ResolutionFact
+          label="Sightline warning useful"
+          value={resolution.warning_useful ? "Yes" : "No"}
+        />
+        <ResolutionFact
+          label="Original prediction accurate"
+          value={resolution.prediction_accurate ? "Yes" : "No"}
+        />
+      </dl>
+      <div className="mt-5 border-t pt-4">
+        <p className="text-muted text-xs font-semibold uppercase">
+          Actions completed
+        </p>
+        <p className="mt-2 text-sm">
+          {actionTitles.length ? actionTitles.join(" · ") : "None recorded"}
+        </p>
+      </div>
+      {resolution.internal_notes && (
+        <div className="mt-4 border-t pt-4">
+          <p className="text-muted text-xs font-semibold uppercase">
+            Internal notes
+          </p>
+          <p className="mt-2 text-sm leading-6">{resolution.internal_notes}</p>
+        </div>
+      )}
+      <p className="text-muted mt-5 text-xs leading-5">
+        All financial figures are estimates. Warning usefulness is user
+        feedback, not proof that Sightline caused the outcome.
+      </p>
+    </Card>
+  );
+}
+function ResolutionFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-muted text-xs">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold">{value}</dd>
+    </div>
   );
 }
 function Metric({ label, value }: { label: string; value: string }) {

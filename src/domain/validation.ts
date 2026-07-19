@@ -322,24 +322,6 @@ export const updateRecommendedActionSchema = nonEmptyUpdate(
   }
 });
 
-export const createRiskResolutionSchema = z
-  .object({
-    organizationId: idSchema,
-    riskId: idSchema,
-    resolvedByUserId: idSchema,
-    resolutionType: z.enum([
-      "mitigated",
-      "avoided",
-      "accepted",
-      "realized",
-      "unknown",
-    ]),
-    summary: z.string().trim().min(3).max(3000),
-    realizedImpactCents: moneySchema.nullable().default(null),
-    resolvedAt: timestampSchema,
-  })
-  .strict();
-
 const dailyBriefFieldsSchema = z.object({
   status: z.enum(["draft", "published"]).default("draft"),
   headline: z.string().trim().min(1).max(240),

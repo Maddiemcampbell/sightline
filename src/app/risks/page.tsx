@@ -4,8 +4,13 @@ import { Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { MetricCard } from "@/components/metric-card";
 import { formatMoney } from "@/features/daily-brief/formatters";
-import { getProjects, getRisks } from "@/features/portfolio/data";
+import {
+  getProjects,
+  getResolutionValueSummary,
+  getRisks,
+} from "@/features/portfolio/data";
 import {
   projectFiltersSchema,
   riskFiltersSchema,
@@ -17,9 +22,10 @@ type Props = {
 
 export default async function RisksPage({ searchParams }: Props) {
   const filters = riskFiltersSchema.parse(await searchParams);
-  const [risks, projects] = await Promise.all([
+  const [risks, projects, valueSummary] = await Promise.all([
     getRisks(filters),
     getProjects(projectFiltersSchema.parse({})),
+    getResolutionValueSummary(),
   ]);
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
@@ -32,11 +38,51 @@ export default async function RisksPage({ searchParams }: Props) {
           Filter the issues that could reduce portfolio profit.
         </p>
       </header>
+      <nav aria-label="Risk register views" className="mt-6 flex gap-2">
+        {(["active", "resolved", "all"] as const).map((view) => (
+          <Link
+            key={view}
+            href={`/risks?view=${view}`}
+            aria-current={filters.view === view ? "page" : undefined}
+            className={`rounded-md px-4 py-2 text-sm font-semibold ${filters.view === view ? "bg-deep-green text-white" : "border-border bg-surface border"}`}
+          >
+            {view === "all"
+              ? "All risks"
+              : `${view[0]?.toUpperCase()}${view.slice(1)} risks`}
+          </Link>
+        ))}
+      </nav>
+      <section
+        aria-label="Estimated resolution value"
+        className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        <MetricCard
+          label="Risks resolved"
+          value={String(valueSummary.risksResolved)}
+        />
+        <MetricCard
+          label="Estimated exposure reduced"
+          value={formatMoney(valueSummary.estimatedExposureReducedCents)}
+        />
+        <MetricCard
+          label="Estimated loss avoided"
+          value={formatMoney(valueSummary.estimatedLossAvoidedCents)}
+        />
+        <MetricCard
+          label="Average time to resolution"
+          value={`${valueSummary.averageResolutionHours} hours`}
+        />
+      </section>
+      <p className="text-muted mt-2 text-xs">
+        Financial totals are user-entered estimates and do not establish
+        attribution to Sightline.
+      </p>
       <form
         method="get"
         className="border-border bg-surface mt-7 grid gap-3 rounded-xl border p-4 sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Risk filters"
       >
+        <input type="hidden" name="view" value={filters.view} />
         <label className="relative sm:col-span-2">
           <span className="sr-only">Search risks</span>
           <Search className="text-muted absolute top-3 left-3 size-4" />

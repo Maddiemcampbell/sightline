@@ -79,6 +79,40 @@ update public.risks
 set status = 'resolved', resolved_at = '2026-07-15T14:30:00Z'
 where id = '60000000-0000-4000-8000-000000000008';
 
+insert into public.risk_resolutions (
+  id, organization_id, risk_id, resolved_by_user_id, final_owner_user_id,
+  resolution_type, summary, resolved_date, resolved_at, completed_action_ids,
+  exposure_before_cents, remaining_exposure_cents,
+  estimated_loss_avoided_cents, warning_useful, prediction_accurate,
+  internal_notes, initial_prediction
+) values (
+  'b0000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000008',
+  '11000000-0000-4000-8000-000000000001',
+  '11000000-0000-4000-8000-000000000001',
+  'mitigated',
+  'The superintendent completed and documented the competent-person inspection before excavation work resumed.',
+  '2026-07-15',
+  '2026-07-15T14:30:00Z',
+  '{}',
+  5000000,
+  500000,
+  3500000,
+  true,
+  true,
+  'Seeded deterministic resolution for the V2 value summary.',
+  jsonb_build_object(
+    'title', 'Open excavation lacks documented daily inspection',
+    'category', 'safety',
+    'severity', 'high',
+    'confidenceScore', 90,
+    'potentialExposureCents', 5000000,
+    'estimatedMarginImpactCents', 1000000,
+    'detectedAt', '2026-07-14T14:00:00Z'
+  )
+);
+
 insert into public.risk_evidence (
   id, organization_id, risk_id, document_id, integration_source_id, evidence_type,
   title, why_it_matters, excerpt, source_label, source_location, relevance_score,

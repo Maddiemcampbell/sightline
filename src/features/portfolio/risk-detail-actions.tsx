@@ -6,18 +6,28 @@ import { useRouter } from "next/navigation";
 import { acknowledgeRiskAction, dismissRiskAction } from "@/app/brief/actions";
 import { updateRiskDetailAction } from "@/app/risks/[riskId]/actions";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/button";
+import {
+  ReopenRiskControl,
+  ResolutionWorkflow,
+} from "@/features/resolutions/resolution-workflow";
 
 export function RiskDetailActions({
   riskId,
   ownerId,
   dueAt,
   users,
+  actions,
+  exposureCents,
+  status,
   closed,
 }: {
   riskId: string;
   ownerId: string | null;
   dueAt: string | null;
   users: readonly { id: string; full_name: string }[];
+  actions: readonly { id: string; title: string; status: string }[];
+  exposureCents: number;
+  status: string;
   closed: boolean;
 }) {
   const router = useRouter();
@@ -59,14 +69,16 @@ export function RiskDetailActions({
         >
           Dismiss
         </SecondaryButton>
-        <SecondaryButton
-          disabled={pending || closed}
-          onClick={() =>
-            run(() => updateRiskDetailAction({ kind: "resolve", riskId }))
-          }
-        >
-          Resolve
-        </SecondaryButton>
+        {!closed && (
+          <ResolutionWorkflow
+            riskId={riskId}
+            ownerId={ownerId}
+            users={users}
+            actions={actions}
+            exposureCents={exposureCents}
+          />
+        )}
+        {status === "resolved" && <ReopenRiskControl riskId={riskId} />}
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-semibold">

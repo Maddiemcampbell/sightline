@@ -56,31 +56,6 @@ export class RiskManagementService {
     }
   }
 
-  async resolve(context: ActorContext, riskId: string): Promise<void> {
-    const risk = await this.requireRisk(context, riskId);
-    const resolvedAt = new Date().toISOString();
-    await this.updateRisk(context, riskId, {
-      status: "resolved",
-      resolved_at: resolvedAt,
-    });
-    try {
-      await this.activities.append(context, {
-        riskId,
-        activityType: "risk_resolved",
-        fromStatus: risk.status,
-        toStatus: "resolved",
-        summary: "Risk marked resolved.",
-        metadata: { source: "risk_detail" },
-      });
-    } catch (error) {
-      await this.updateRisk(context, riskId, {
-        status: risk.status,
-        resolved_at: risk.resolved_at,
-      });
-      throw error;
-    }
-  }
-
   async assignOwner(
     context: ActorContext,
     riskId: string,

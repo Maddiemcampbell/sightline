@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { reopenRiskSchema, resolveRiskSchema } from "@/domain/resolutions";
+import { ResolutionTrackingService } from "@/features/resolutions/service";
 import { RiskManagementService } from "@/features/risks/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 const mutationSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("resolve"), riskId: z.uuid() }),
   z.object({
     kind: z.literal("assign"),
     riskId: z.uuid(),
@@ -53,9 +54,7 @@ export async function updateRiskDetailAction(
 ) {
   await runServerMutation(mutationSchema, input, async (context, value) => {
     const service = new RiskManagementService(createAdminSupabaseClient());
-    if (value.kind === "resolve") {
-      await service.resolve(context, value.riskId);
-    } else if (value.kind === "assign") {
+    if (value.kind === "assign") {
       await service.assignOwner(context, value.riskId, value.userId);
     } else {
       await service.setDueDate(
@@ -69,4 +68,24 @@ export async function updateRiskDetailAction(
   revalidatePath(`/risks/${value.riskId}`);
   revalidatePath("/risks");
   revalidatePath("/projects");
+}
+
+export async function resolveRiskAction(input: unknown) {
+  const parsed = resolveRiskSchema.parse(input);
+  return runServerMutation(resolveRiskSchema, parsed, (context, value) =>
+    new ResolutionTrackingService(createAdminSupabaseClient()).resolve(
+      context,
+      value,
+    ),
+  );
+}
+
+export async function reopenRiskAction(input: unknown) {
+  const parsed = reopenRiskSchema.parse(input);
+  return runServerMutation(reopenRiskSchema, parsed, (context, value) =>
+    new ResolutionTrackingService(createAdminSupabaseClient()).reopen(
+      context,
+      value,
+    ),
+  );
 }

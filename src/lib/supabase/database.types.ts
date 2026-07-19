@@ -412,16 +412,36 @@ export type Database = {
         }
       >;
       risk_resolutions: Table<{
+        completed_action_ids: string[];
         created_at: string;
+        estimated_loss_avoided_cents: number;
+        exposure_before_cents: number;
+        final_owner_user_id: string;
         id: string;
+        initial_prediction: Json;
+        internal_notes: string | null;
         organization_id: string;
+        prediction_accurate: boolean;
         realized_impact_cents: number | null;
         resolution_type:
-          "mitigated" | "avoided" | "accepted" | "realized" | "unknown";
+          | "prevented"
+          | "mitigated"
+          | "accepted"
+          | "transferred"
+          | "expired"
+          | "false_positive"
+          | "duplicate"
+          | "no_longer_relevant"
+          | "other";
+        remaining_exposure_cents: number;
+        reopen_reason: string | null;
+        reopened_at: string | null;
         resolved_at: string;
         resolved_by_user_id: string;
+        resolved_date: string;
         risk_id: string;
         summary: string;
+        warning_useful: boolean;
       }>;
       daily_briefs: Table<
         Timestamped & {

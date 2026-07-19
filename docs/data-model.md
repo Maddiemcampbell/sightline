@@ -249,6 +249,24 @@ availability for troubleshooting. The route returns a 404 in production.
 
 ## Major assumptions
 
+### V2 risk resolution
+
+`risk_resolutions` stores an immutable outcome record for each resolution cycle.
+It includes the resolution type and summary, final owner, resolved date,
+completed action identifiers, estimated exposure before and after resolution,
+estimated loss avoided, warning-usefulness and prediction-accuracy feedback,
+and optional internal notes. `initial_prediction` snapshots the original risk
+title, classification, confidence, exposure estimates, explanation, dates, and
+owner so later edits cannot rewrite what Sightline originally presented.
+
+Reopening does not delete or replace a resolution. The resolution receives a
+reopen timestamp and required reason, the risk returns to `action_needed`, and
+an append-only `risk_reopened` activity is created. A later resolution creates a
+new resolution row. Portfolio value totals include only the latest unreopened
+resolution for risks that remain resolved. All financial values are explicitly
+treated as user-entered estimates; warning usefulness does not establish that
+Sightline caused an avoided loss.
+
 ### Risk conversations
 
 `risk_conversations` has one thread per organization, risk, and user.

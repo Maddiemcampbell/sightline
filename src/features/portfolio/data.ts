@@ -6,6 +6,7 @@ import type {
   RiskFilters,
 } from "@/features/portfolio/validation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { calculateResolutionValueSummary } from "@/domain/resolutions";
 
 function rows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -105,6 +106,10 @@ export async function getRisks(filters: RiskFilters) {
           due >= now &&
           due <= now + 30 * 86400000);
       return (
+        (filters.view === "all" ||
+          (filters.view === "resolved" && risk.status === "resolved") ||
+          (filters.view === "active" &&
+            !["resolved", "dismissed"].includes(risk.status))) &&
         (!search ||
           `${risk.title} ${risk.summary} ${risk.project?.name ?? ""}`
             .toLowerCase()
@@ -131,6 +136,44 @@ export async function getRisks(filters: RiskFilters) {
         return Date.parse(b.detected_at) - Date.parse(a.detected_at);
       return b.potential_exposure_cents - a.potential_exposure_cents;
     });
+}
+
+export async function getResolutionValueSummary() {
+  const { organizationId } = await requireActorContext();
+  const client = createAdminSupabaseClient();
+  const [risksResult, resolutionsResult] = await Promise.all([
+    client
+      .from("risks")
+      .select("id,detected_at,status")
+      .eq("organization_id", organizationId)
+      .eq("status", "resolved"),
+    client
+      .from("risk_resolutions")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .is("reopened_at", null)
+      .order("resolved_at", { ascending: false }),
+  ]);
+  const risks = rows(risksResult.data, risksResult.error);
+  const resolutions = rows(resolutionsResult.data, resolutionsResult.error);
+  const riskById = new Map(risks.map((risk) => [risk.id, risk]));
+  const seen = new Set<string>();
+  return calculateResolutionValueSummary(
+    resolutions.flatMap((resolution) => {
+      const risk = riskById.get(resolution.risk_id);
+      if (!risk || seen.has(risk.id)) return [];
+      seen.add(risk.id);
+      return [
+        {
+          exposureBeforeCents: resolution.exposure_before_cents,
+          remainingExposureCents: resolution.remaining_exposure_cents,
+          estimatedLossAvoidedCents: resolution.estimated_loss_avoided_cents,
+          detectedAt: risk.detected_at,
+          resolvedAt: resolution.resolved_at,
+        },
+      ];
+    }),
+  );
 }
 
 export async function getProjectDetail(projectId: string) {
@@ -211,6 +254,7 @@ export async function getRiskDetail(riskId: string) {
     evidenceResult,
     documentsResult,
     actionsResult,
+    resolutionsResult,
     activitiesResult,
     usersResult,
   ] = await Promise.all([
@@ -252,6 +296,12 @@ export async function getRiskDetail(riskId: string) {
       .eq("risk_id", riskId)
       .order("created_at"),
     client
+      .from("risk_resolutions")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .eq("risk_id", riskId)
+      .order("resolved_at", { ascending: false }),
+    client
       .from("risk_activities")
       .select("*")
       .eq("organization_id", organizationId)
@@ -271,6 +321,7 @@ export async function getRiskDetail(riskId: string) {
     evidence: rows(evidenceResult.data, evidenceResult.error),
     documents: rows(documentsResult.data, documentsResult.error),
     actions: rows(actionsResult.data, actionsResult.error),
+    resolutions: rows(resolutionsResult.data, resolutionsResult.error),
     activities: rows(activitiesResult.data, activitiesResult.error),
     users: rows(usersResult.data, usersResult.error),
   };
