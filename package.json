@@ -9,15 +9,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --max-warnings=0",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint src tests next.config.ts playwright.config.ts vitest.config.ts eslint.config.mjs --max-warnings=0",
+    "lint:fix": "eslint src tests next.config.ts playwright.config.ts vitest.config.ts eslint.config.mjs --fix",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset --local",
+    "db:status": "supabase status",
+    "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.generated.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -43,6 +48,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "supabase": "2.109.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

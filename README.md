@@ -59,6 +59,11 @@ The placeholder routes and production build do not require live credentials.
 | `npm run test:watch`   | Run Vitest in watch mode                            |
 | `npm run test:e2e`     | Run Playwright end-to-end tests                     |
 | `npm run check`        | Run formatting, lint, types, and unit tests         |
+| `npm run db:start`     | Start the local Supabase stack                      |
+| `npm run db:stop`      | Stop the local Supabase stack                       |
+| `npm run db:reset`     | Reapply migrations and deterministic seed data      |
+| `npm run db:status`    | Show local Supabase endpoints and status            |
+| `npm run db:types`     | Regenerate types from the local PostgreSQL schema   |
 
 Before the first E2E run, install Playwright's Chromium binary with
 `npx playwright install chromium`. The E2E command creates and serves a
@@ -96,10 +101,15 @@ The initial routes are:
 
 ## Data and forms
 
-Supabase access starts at `src/lib/supabase/client.ts`. Generate and supply
-database types before adding domain queries. Never expose service-role keys to
-the browser. Zod is the validation boundary for untrusted data; React Hook Form
-and `@hookform/resolvers` are available when interactive forms are introduced.
+Supabase access starts at `src/lib/supabase`. Browser-safe access and the
+server-only administrative client are separate. Never expose service-role keys
+to the browser. Zod is the validation boundary for untrusted data; React Hook
+Form and `@hookform/resolvers` are available when interactive forms are
+introduced.
+
+The V1 schema, selection rules, index strategy, and assumptions are documented
+in [`docs/data-model.md`](docs/data-model.md). Migration files and deterministic
+development data live under `supabase/`.
 
 ## Deployment
 
