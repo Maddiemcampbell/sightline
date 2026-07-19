@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 import { addRiskCommentAction } from "@/app/risks/[riskId]/actions";
 import { PrimaryButton } from "@/components/ui/button";
@@ -13,7 +12,6 @@ export function RiskCommentForm({
   riskId: string;
   users: readonly { id: string; full_name: string }[];
 }) {
-  const router = useRouter();
   const [comment, setComment] = useState("");
   const [mentionedUserId, setMentionedUserId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +33,6 @@ export function RiskCommentForm({
             setComment("");
             setMentionedUserId("");
             setSuccess(true);
-            router.refresh();
           } catch (caught) {
             setError(
               caught instanceof Error

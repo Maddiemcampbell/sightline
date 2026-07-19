@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Play, X } from "lucide-react";
+import Link from "next/link";
+import { Check, Mail, Play, X } from "lucide-react";
 
 import { mutateRecommendedAction } from "@/app/actions/actions";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/button";
@@ -90,6 +91,14 @@ export function ActionControls({
             ? `Due ${new Date(action.dueAt).toLocaleDateString()}`
             : "No due date"}
         </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/risks/${action.riskId}/email-draft?actionId=${action.id}`}
+          className="border-border bg-surface text-ink hover:bg-background inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+        >
+          <Mail className="size-4" /> Draft email
+        </Link>
       </div>
       {!terminal && (
         <div className="flex flex-wrap gap-2">

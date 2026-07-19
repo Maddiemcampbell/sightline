@@ -71,6 +71,10 @@ portfolio experience adds projected project margin and risk ownership in
   model, prompt version, latency, token usage, and failure/fallback state.
 - `ai_risk_suggestions` is the review queue. Only approved suggestions reference
   an activated risk; rejected suggestions retain the review reason.
+- `risk_email_drafts` stores human-editable risk communications and their
+  generation provenance. Drafts may reference a recommended action and a known
+  organization user or vendor contact. `manually_sent` records only a human
+  attestation; Sightline does not deliver the message.
 
 ## Deterministic detection
 

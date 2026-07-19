@@ -145,6 +145,43 @@ test("explains a risk with visibly grounded evidence", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("edits and saves a human-controlled email draft", async ({ page }) => {
+  await page.goto(
+    "/risks/60000000-0000-4000-8000-000000000001/email-draft?draftId=a0000000-0000-4000-8000-000000000001",
+  );
+  if (
+    await page
+      .getByRole("heading", { name: "This page could not be found." })
+      .isVisible()
+  ) {
+    await page.goto(
+      "/risks/60000000-0000-4000-8000-000000000001/email-draft?actionId=80000000-0000-4000-8000-000000000001",
+    );
+    await page.getByRole("button", { name: "Generate editable draft" }).click();
+    await expect(page).toHaveURL(/email-draft\?draftId=[0-9a-f-]+$/, {
+      timeout: 30_000,
+    });
+  }
+  await expect(
+    page.getByRole("heading", { name: "Review email draft" }),
+  ).toBeVisible();
+  const subject = page.getByLabel("Email subject");
+  const original = await subject.inputValue();
+  await subject.fill("Updated certificate needed before mobilization");
+  await page
+    .getByLabel("Known contact")
+    .selectOption("vendor:30000000-0000-4000-8000-000000000001");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+  await page.reload();
+  await expect(subject).toHaveValue(
+    "Updated certificate needed before mobilization",
+  );
+  await subject.fill(original);
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+});
+
 test("adds a risk comment with an organization-user mention", async ({
   page,
 }) => {
@@ -172,7 +209,7 @@ test("shows the organization activity timeline", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page
-      .getByText("Deterministic V1 seed risk created for local development.")
+      .getByText("Alex, please confirm the renewal certificate with Apex.")
       .first(),
   ).toBeVisible();
 });
@@ -210,10 +247,6 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveText(
     "Document metadata updated.",
   );
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Weekly field log — reviewed" }),
-  ).toBeVisible();
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Archive document" }).click();

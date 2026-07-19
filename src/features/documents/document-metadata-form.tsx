@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 import {
   archiveDocumentAction,
@@ -32,8 +31,6 @@ export function DocumentMetadataForm({
   projects: readonly Option[];
   vendors: readonly Option[];
 }) {
-  const router = useRouter();
-  const [name, setName] = useState(document.name);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -42,9 +39,10 @@ export function DocumentMetadataForm({
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const requestedName = formData.get("name");
     const input = {
       documentId: document.id,
-      name,
+      name: requestedName,
       category: formData.get("category"),
       projectId: formData.get("projectId"),
       vendorId: formData.get("vendorId"),
@@ -55,11 +53,10 @@ export function DocumentMetadataForm({
     startTransition(async () => {
       try {
         const result = await editDocumentAction(input);
-        if (result.name !== name) {
+        if (result.name !== requestedName) {
           throw new Error("The saved document name did not match the request.");
         }
         setSuccess("Document metadata updated.");
-        router.refresh();
       } catch {
         setError("The metadata could not be saved.");
       }
@@ -74,8 +71,7 @@ export function DocumentMetadataForm({
           name="name"
           required
           maxLength={240}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          defaultValue={document.name}
           disabled={pending || archived}
           className={`${inputClass} mt-2`}
         />
@@ -165,7 +161,6 @@ export function DocumentMetadataForm({
               try {
                 await archiveDocumentAction({ documentId: document.id });
                 setSuccess("Document archived.");
-                router.refresh();
               } catch {
                 setError("The document could not be archived.");
               }

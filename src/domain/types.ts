@@ -107,6 +107,7 @@ export const RISK_ACTIVITY_TYPES = [
   "evidence_added",
   "document_uploaded",
   "email_drafted",
+  "email_marked_sent",
   "comment_added",
   "risk_resolved",
   "risk_reopened",

@@ -26,6 +26,7 @@ export type DatabaseEnums = {
     | "evidence_added"
     | "document_uploaded"
     | "email_drafted"
+    | "email_marked_sent"
     | "comment_added"
     | "risk_resolved"
     | "risk_reopened"
@@ -313,6 +314,36 @@ export type Database = {
         title: string;
         why_it_matters: string;
       }>;
+      risk_email_drafts: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          risk_id: string;
+          recommended_action_id: string | null;
+          created_by_user_id: string;
+          recipient_user_id: string | null;
+          recipient_vendor_id: string | null;
+          recipient_name: string | null;
+          recipient_email: string | null;
+          intended_recipient_role: string;
+          desired_tone: "concise" | "collaborative" | "firm" | "formal";
+          suggested_urgency: "routine" | "soon" | "urgent";
+          subject: string;
+          body: string;
+          evidence_ids: string[];
+          generation_source: "ai" | "deterministic_fallback";
+          provider: string;
+          model_name: string;
+          prompt_version: string;
+          latency_ms: number;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          total_tokens: number | null;
+          status: "draft" | "manually_sent";
+          manually_sent_at: string | null;
+          manually_sent_by_user_id: string | null;
+        }
+      >;
       recommended_actions: Table<
         Timestamped & {
           owner_user_id: string | null;

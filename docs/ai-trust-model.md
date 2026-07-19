@@ -56,6 +56,27 @@ user boundary.
 - Review activation uses several database writes. A production version should
   wrap activation in a PostgreSQL transaction/RPC.
 
+## V2 email drafting
+
+Email drafting is a bounded, human-controlled use of the same provider
+abstraction. The server assembles risk, project, vendor, recommended-action,
+due-date, recipient-role, tone, and evidence context from organization-scoped
+records. Client input never supplies tenant identity or risk facts. Document
+excerpts pass through the existing prompt-injection sanitizer before generation.
+
+The structured response includes subject, body, recipient role, urgency,
+evidence IDs, and claim-level citations. Zod rejects malformed output. A second
+grounding validator rejects unavailable evidence IDs, claims absent from the
+draft, and claims that are not contained in their cited excerpt or evidence
+explanation. Provider or validation failure produces a deterministic template
+using only trusted structured context and the highest-relevance evidence.
+
+Draft rows retain provider, model, prompt version, latency, token usage,
+generation source, and evidence references. Users may edit, select a known
+organization or vendor contact, copy, save, and mark a draft as sent manually.
+Sightline has no email-sending capability in this workflow. Draft creation and
+manual sent status append separate user-facing risk activity records.
+
 ## Evaluation fixtures
 
 The fixture set covers expiring subcontractor insurance, a weather-sensitive

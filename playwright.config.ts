@@ -21,7 +21,7 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      "npm run build -- --webpack && npm run start -- --hostname 127.0.0.1",
+      "SIGHTLINE_E2E=true npm run build -- --webpack && SIGHTLINE_E2E=true npm run start -- --hostname 127.0.0.1",
     url: "http://127.0.0.1:3000/api/health",
     reuseExistingServer: !process.env.CI,
   },

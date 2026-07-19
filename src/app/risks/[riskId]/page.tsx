@@ -79,6 +79,12 @@ export default async function RiskPage({ params, searchParams }: Props) {
         users={detail.users}
         closed={closed}
       />
+      <Link
+        href={`/risks/${riskId}/email-draft`}
+        className="border-border bg-surface text-ink hover:bg-background mt-4 inline-flex min-h-10 items-center rounded-md border px-4 py-2 text-sm font-semibold"
+      >
+        Draft email
+      </Link>
       <section
         aria-label="Risk summary"
         className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"

@@ -98,6 +98,39 @@ values
   ('80000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '11000000-0000-4000-8000-000000000001', 'Approve a weather contingency plan', 'Confirm an alternate pour window or protected placement plan before releasing Friday labor and pump reservations.', 'update_schedule', 'suggested', 'high', '2026-07-20T16:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
   ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'email', 'suggested', 'urgent', '2026-07-21T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule');
 
+insert into public.risk_email_drafts (
+  id, organization_id, risk_id, recommended_action_id, created_by_user_id,
+  intended_recipient_role, desired_tone, suggested_urgency, subject, body,
+  evidence_ids, generation_source, provider, model_name, prompt_version,
+  latency_ms, input_tokens, output_tokens, total_tokens
+)
+values (
+  'a0000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000001',
+  '80000000-0000-4000-8000-000000000001',
+  '11000000-0000-4000-8000-000000000001',
+  'Vendor contact', 'concise', 'soon',
+  'Apex Electrical: updated certificate of insurance',
+  E'Hello,\n\nI’m following up for Cedar Grove Medical Pavilion. Policy expiration: July 25, 2026\n\nPlease provide an updated certificate of insurance by July 23.\n\nThank you,\nMatt Anderson',
+  array['70000000-0000-4000-8000-000000000001']::uuid[],
+  'deterministic_fallback', 'deterministic', 'deterministic-template-v1',
+  'risk-email-draft-v1', 0, null, null, null
+);
+
+insert into public.risk_activities (
+  organization_id, risk_id, actor_type, actor_user_id, activity_type, summary,
+  metadata, occurred_at
+)
+values (
+  '10000000-0000-4000-8000-000000000001',
+  '60000000-0000-4000-8000-000000000001',
+  'system', null, 'email_drafted',
+  'Seed email draft created for human review.',
+  '{"draftId":"a0000000-0000-4000-8000-000000000001","generationSource":"deterministic_fallback"}'::jsonb,
+  '2026-07-18T12:45:00Z'
+);
+
 insert into public.risk_activities (
   organization_id, risk_id, actor_type, actor_user_id, activity_type, summary, occurred_at
 )

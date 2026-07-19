@@ -2,7 +2,14 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, FileText, ShieldCheck, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  FileText,
+  Mail,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 
 import { acknowledgeRiskAction, dismissRiskAction } from "@/app/brief/actions";
 import { RiskBadge } from "@/components/ui/badge";
@@ -199,6 +206,12 @@ export function BriefRiskCard({
         >
           Dismiss
         </SecondaryButton>
+        <Link
+          href={`/risks/${risk.id}/email-draft`}
+          className="border-border bg-surface text-ink hover:bg-background inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+        >
+          <Mail className="size-4" /> Draft email
+        </Link>
         <Link
           href={`/risks/${risk.id}`}
           className="text-deep-green ml-auto inline-flex min-h-10 items-center gap-2 text-sm font-semibold hover:underline"
