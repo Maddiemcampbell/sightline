@@ -222,6 +222,7 @@ const mapAction = (row: RecommendedActionRow): RecommendedAction => ({
   title: row.title,
   description: row.description,
   status: row.status,
+  priority: row.priority,
   dueAt: row.due_at,
   completedAt: row.completed_at,
   createdAt: row.created_at,
@@ -606,6 +607,7 @@ export class SightlineRepository {
         title: value.title,
         description: value.description,
         status: value.status,
+        priority: value.priority,
         due_at: value.dueAt,
         completed_at: value.completedAt,
       })

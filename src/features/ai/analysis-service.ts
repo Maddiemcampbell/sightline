@@ -11,11 +11,16 @@ import {
 import { OpenAiRiskAnalysisProvider } from "@/features/ai/openai-provider";
 import type { RiskAnalysisProvider } from "@/features/ai/provider";
 import { sanitizeAnalysisInput } from "@/features/ai/prompt-security";
+import {
+  assertSameOrganization,
+  type ActorContext,
+} from "@/lib/auth/authorization";
 import { getServerEnv } from "@/lib/env";
 import type { Json } from "@/lib/supabase/database.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export type AnalysisRequest = {
+  context: ActorContext;
   input: RiskAnalysisInput;
   deterministicFallback?: RiskAnalysisOutput;
   provider?: RiskAnalysisProvider;
@@ -25,6 +30,7 @@ export async function createRiskAnalysisSuggestion(request: AnalysisRequest) {
   const input = sanitizeAnalysisInput(
     riskAnalysisInputSchema.parse(request.input),
   );
+  assertSameOrganization(request.context, input.organizationId);
   const provider = request.provider ?? configuredProvider();
   let output: RiskAnalysisOutput;
   let status: "complete" | "fallback" = "complete";

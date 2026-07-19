@@ -246,6 +246,7 @@ const recommendedActionFieldsSchema = z.object({
   status: z
     .enum(["open", "in_progress", "complete", "dismissed"])
     .default("open"),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   dueAt: nullableTimestampSchema.default(null),
   completedAt: nullableTimestampSchema.default(null),
 });
@@ -265,6 +266,24 @@ export const createRecommendedActionSchema = recommendedActionFieldsSchema
 export const updateRecommendedActionSchema = nonEmptyUpdate(
   recommendedActionFieldsSchema,
 );
+
+export const createRiskResolutionSchema = z
+  .object({
+    organizationId: idSchema,
+    riskId: idSchema,
+    resolvedByUserId: idSchema,
+    resolutionType: z.enum([
+      "mitigated",
+      "avoided",
+      "accepted",
+      "realized",
+      "unknown",
+    ]),
+    summary: z.string().trim().min(3).max(3000),
+    realizedImpactCents: moneySchema.nullable().default(null),
+    resolvedAt: timestampSchema,
+  })
+  .strict();
 
 const dailyBriefFieldsSchema = z.object({
   status: z.enum(["draft", "published"]).default("draft"),

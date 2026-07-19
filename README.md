@@ -127,6 +127,10 @@ Controlled AI analysis is optional. Set `OPENAI_API_KEY` and optionally
 fall back to deterministic V1 suggestions. No suggestion becomes a risk without
 human review. See [`docs/ai-trust-model.md`](docs/ai-trust-model.md).
 
+The V2 application-service boundaries, authorization model, mutation flow,
+feature flags, and testing strategy are documented in
+[`docs/v2-architecture.md`](docs/v2-architecture.md).
+
 ## Deployment
 
 The application can deploy to any host that supports Next.js 16 and Node.js 22.

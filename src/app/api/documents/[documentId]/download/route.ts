@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
 
-import { BUILDCO_ORGANIZATION_ID } from "@/features/daily-brief/data";
 import { assertOrganizationAccess } from "@/features/documents/authorization";
 import { DOCUMENT_BUCKET } from "@/features/documents/validation";
+import { requireActorContext } from "@/lib/auth/request-context";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 type Context = { params: Promise<{ documentId: string }> };
 
 export async function GET(_request: Request, { params }: Context) {
+  const context = await requireActorContext();
   const { documentId } = await params;
   const client = createAdminSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
     .select("organization_id,storage_path,archived_at")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", documentId)
     .maybeSingle();
   if (error)
     return NextResponse.json({ error: "File unavailable." }, { status: 500 });
   try {
-    assertOrganizationAccess(document, BUILDCO_ORGANIZATION_ID);
+    assertOrganizationAccess(document, context.organizationId);
   } catch {
     return NextResponse.json({ error: "File not found." }, { status: 404 });
   }

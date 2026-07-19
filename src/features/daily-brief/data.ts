@@ -1,11 +1,13 @@
 import "server-only";
 
 import type { DailyBriefView } from "@/features/daily-brief/types";
+import { requireActorContext } from "@/lib/auth/request-context";
+export {
+  BUILDCO_ORGANIZATION_ID,
+  MATT_USER_ID,
+} from "@/lib/auth/v1-identities";
 import type { Json } from "@/lib/supabase/database.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
-
-export const BUILDCO_ORGANIZATION_ID = "10000000-0000-4000-8000-000000000001";
-export const MATT_USER_ID = "11000000-0000-4000-8000-000000000001";
 
 function requireRows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -20,11 +22,12 @@ function isJsonObject(
 }
 
 export async function getDailyBriefView(): Promise<DailyBriefView | null> {
+  const { organizationId } = await requireActorContext();
   const client = createAdminSupabaseClient();
   const { data: brief, error: briefError } = await client
     .from("daily_briefs")
     .select("*")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", organizationId)
     .eq("status", "published")
     .order("brief_date", { ascending: false })
     .limit(1)
@@ -46,34 +49,31 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
       .select("*")
       .eq("daily_brief_id", brief.id)
       .order("priority"),
-    client
-      .from("risks")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+    client.from("risks").select("*").eq("organization_id", organizationId),
     client
       .from("projects")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("name"),
     client
       .from("risk_evidence")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("observed_at", { ascending: false }),
     client
       .from("recommended_actions")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("created_at"),
     client
       .from("risk_activities")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("occurred_at", { ascending: false }),
     client
       .from("integration_sources")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("is_active", true),
   ]);
 

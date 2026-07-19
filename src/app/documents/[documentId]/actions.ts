@@ -2,10 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { assertOrganizationAccess } from "@/features/documents/authorization";
 import { validateDocumentAssociations } from "@/features/documents/data";
 import {
@@ -13,10 +9,12 @@ import {
   editDocumentSchema,
 } from "@/features/documents/validation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function editDocumentAction(
   input: Parameters<typeof editDocumentSchema.parse>[0],
 ) {
+  const context = await requireActorContext();
   const value = editDocumentSchema.parse(input);
   const client = createAdminSupabaseClient();
   const { data: document, error } = await client
@@ -24,11 +22,11 @@ export async function editDocumentAction(
     .select(
       "organization_id,archived_at,name,document_type,project_id,vendor_id,document_date",
     )
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", value.documentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  assertOrganizationAccess(document, BUILDCO_ORGANIZATION_ID);
+  assertOrganizationAccess(document, context.organizationId);
   if (document.archived_at)
     throw new Error("Archived documents cannot be edited.");
   await validateDocumentAssociations(value.projectId, value.vendorId);
@@ -42,7 +40,7 @@ export async function editDocumentAction(
       vendor_id: value.vendorId,
       document_date: value.documentDate,
     })
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", value.documentId)
     .select("id,name")
     .single();
@@ -53,9 +51,9 @@ export async function editDocumentAction(
   const { error: activityError } = await client
     .from("document_activities")
     .insert({
-      organization_id: BUILDCO_ORGANIZATION_ID,
+      organization_id: context.organizationId,
       document_id: value.documentId,
-      actor_user_id: MATT_USER_ID,
+      actor_user_id: context.userId,
       activity_type: "edited",
       note: "Document metadata updated.",
       metadata: { category: value.category },
@@ -71,7 +69,7 @@ export async function editDocumentAction(
         vendor_id: document.vendor_id,
         document_date: document.document_date,
       })
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", context.organizationId)
       .eq("id", value.documentId);
     throw new Error(activityError.message);
   }
@@ -81,30 +79,31 @@ export async function editDocumentAction(
 }
 
 export async function archiveDocumentAction(input: { documentId: string }) {
+  const context = await requireActorContext();
   const value = archiveDocumentSchema.parse(input);
   const client = createAdminSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
     .select("organization_id,archived_at")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", value.documentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  assertOrganizationAccess(document, BUILDCO_ORGANIZATION_ID);
+  assertOrganizationAccess(document, context.organizationId);
   if (document.archived_at) return;
   const archivedAt = new Date().toISOString();
   const { error: updateError } = await client
     .from("documents")
     .update({ archived_at: archivedAt })
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", value.documentId);
   if (updateError) throw new Error(updateError.message);
   const { error: activityError } = await client
     .from("document_activities")
     .insert({
-      organization_id: BUILDCO_ORGANIZATION_ID,
+      organization_id: context.organizationId,
       document_id: value.documentId,
-      actor_user_id: MATT_USER_ID,
+      actor_user_id: context.userId,
       activity_type: "archived",
       note: "Document archived.",
       metadata: {},
@@ -114,7 +113,7 @@ export async function archiveDocumentAction(input: { documentId: string }) {
     await client
       .from("documents")
       .update({ archived_at: null })
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", context.organizationId)
       .eq("id", value.documentId);
     throw new Error(activityError.message);
   }

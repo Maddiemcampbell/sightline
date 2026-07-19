@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { validateDocumentAssociations } from "@/features/documents/data";
 import { allowDocumentUpload } from "@/features/documents/rate-limit";
 import {
@@ -14,8 +10,10 @@ import {
   validateUploadFile,
 } from "@/features/documents/validation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function POST(request: Request) {
+  const context = await requireActorContext();
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0];
   const rateKey = forwardedFor?.trim() || "local";
   if (!allowDocumentUpload(rateKey)) {
@@ -51,7 +49,7 @@ export async function POST(request: Request) {
 
     const client = createAdminSupabaseClient();
     const documentId = crypto.randomUUID();
-    const storagePath = `${BUILDCO_ORGANIZATION_ID}/${documentId}/${validatedFile.safeFilename}`;
+    const storagePath = `${context.organizationId}/${documentId}/${validatedFile.safeFilename}`;
     const { error: storageError } = await client.storage
       .from(DOCUMENT_BUCKET)
       .upload(storagePath, validatedFile.bytes, {
@@ -62,7 +60,7 @@ export async function POST(request: Request) {
 
     const { error: documentError } = await client.from("documents").insert({
       id: documentId,
-      organization_id: BUILDCO_ORGANIZATION_ID,
+      organization_id: context.organizationId,
       project_id: metadata.projectId,
       vendor_id: metadata.vendorId,
       integration_source_id: null,
@@ -85,9 +83,9 @@ export async function POST(request: Request) {
     const { error: activityError } = await client
       .from("document_activities")
       .insert({
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: context.organizationId,
         document_id: documentId,
-        actor_user_id: MATT_USER_ID,
+        actor_user_id: context.userId,
         activity_type: "uploaded",
         note: "Document uploaded manually.",
         metadata: {
@@ -101,7 +99,7 @@ export async function POST(request: Request) {
       await client
         .from("documents")
         .delete()
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+        .eq("organization_id", context.organizationId)
         .eq("id", documentId);
       await client.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
       throw new Error(activityError.message);

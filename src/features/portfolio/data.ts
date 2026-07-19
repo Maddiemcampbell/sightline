@@ -1,6 +1,6 @@
 import "server-only";
 
-import { BUILDCO_ORGANIZATION_ID } from "@/features/daily-brief/data";
+import { requireActorContext } from "@/lib/auth/request-context";
 import type {
   ProjectFilters,
   RiskFilters,
@@ -13,17 +13,11 @@ function rows<T>(data: T | null, error: { message: string } | null): T {
   return data;
 }
 
-async function portfolioRows() {
+async function portfolioRows(organizationId: string) {
   const client = createAdminSupabaseClient();
   const [projectsResult, risksResult] = await Promise.all([
-    client
-      .from("projects")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID),
-    client
-      .from("risks")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+    client.from("projects").select("*").eq("organization_id", organizationId),
+    client.from("risks").select("*").eq("organization_id", organizationId),
   ]);
   return {
     projects: rows(projectsResult.data, projectsResult.error),
@@ -32,7 +26,8 @@ async function portfolioRows() {
 }
 
 export async function getProjects(filters: ProjectFilters) {
-  const { projects, risks } = await portfolioRows();
+  const { organizationId } = await requireActorContext();
+  const { projects, risks } = await portfolioRows(organizationId);
   const search = filters.q.toLowerCase();
   const views = projects
     .map((project) => {
@@ -80,7 +75,8 @@ export async function getProjects(filters: ProjectFilters) {
 }
 
 export async function getRisks(filters: RiskFilters) {
-  const { projects, risks } = await portfolioRows();
+  const { organizationId } = await requireActorContext();
+  const { projects, risks } = await portfolioRows(organizationId);
   const projectById = new Map(projects.map((project) => [project.id, project]));
   const now = Date.now();
   const search = filters.q.toLowerCase();
@@ -138,6 +134,7 @@ export async function getRisks(filters: RiskFilters) {
 }
 
 export async function getProjectDetail(projectId: string) {
+  const { organizationId } = await requireActorContext();
   const client = createAdminSupabaseClient();
   const [
     projectResult,
@@ -150,34 +147,31 @@ export async function getProjectDetail(projectId: string) {
     client
       .from("projects")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("id", projectId)
       .maybeSingle(),
     client
       .from("risks")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("project_id", projectId)
       .order("detected_at", { ascending: false }),
     client
       .from("documents")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("project_id", projectId)
       .order("document_date", { ascending: false }),
     client
       .from("project_vendors")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("project_id", projectId),
-    client
-      .from("vendors")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+    client.from("vendors").select("*").eq("organization_id", organizationId),
     client
       .from("risk_activities")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("occurred_at", { ascending: false }),
   ]);
   if (projectResult.error) throw new Error(projectResult.error.message);
@@ -200,11 +194,12 @@ export async function getProjectDetail(projectId: string) {
 }
 
 export async function getRiskDetail(riskId: string) {
+  const { organizationId } = await requireActorContext();
   const client = createAdminSupabaseClient();
   const { data: risk, error } = await client
     .from("risks")
     .select("*")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", organizationId)
     .eq("id", riskId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -223,7 +218,7 @@ export async function getRiskDetail(riskId: string) {
       ? client
           .from("projects")
           .select("*")
-          .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+          .eq("organization_id", organizationId)
           .eq("id", risk.project_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -231,7 +226,7 @@ export async function getRiskDetail(riskId: string) {
       ? client
           .from("vendors")
           .select("*")
-          .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+          .eq("organization_id", organizationId)
           .eq("id", risk.vendor_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -239,36 +234,33 @@ export async function getRiskDetail(riskId: string) {
       ? client
           .from("users")
           .select("*")
-          .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+          .eq("organization_id", organizationId)
           .eq("id", risk.assigned_user_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
     client
       .from("risk_evidence")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("risk_id", riskId)
       .order("observed_at", { ascending: false }),
-    client
-      .from("documents")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+    client.from("documents").select("*").eq("organization_id", organizationId),
     client
       .from("recommended_actions")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("risk_id", riskId)
       .order("created_at"),
     client
       .from("risk_activities")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("risk_id", riskId)
       .order("occurred_at", { ascending: false }),
     client
       .from("users")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("full_name"),
   ]);
   return {

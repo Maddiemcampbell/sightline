@@ -288,9 +288,22 @@ export type Database = {
           organization_id: string;
           risk_id: string;
           status: DatabaseEnums["action_status"];
+          priority: "low" | "normal" | "high" | "urgent";
           title: string;
         }
       >;
+      risk_resolutions: Table<{
+        created_at: string;
+        id: string;
+        organization_id: string;
+        realized_impact_cents: number | null;
+        resolution_type:
+          "mitigated" | "avoided" | "accepted" | "realized" | "unknown";
+        resolved_at: string;
+        resolved_by_user_id: string;
+        risk_id: string;
+        summary: string;
+      }>;
       daily_briefs: Table<
         Timestamped & {
           brief_date: string;

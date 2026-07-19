@@ -39,6 +39,9 @@ export type DocumentType =
   | "other";
 export type DocumentProcessingStatus = "pending" | "ready" | "failed";
 export type ActionStatus = "open" | "in_progress" | "complete" | "dismissed";
+export type ActionPriority = "low" | "normal" | "high" | "urgent";
+export type ResolutionType =
+  "mitigated" | "avoided" | "accepted" | "realized" | "unknown";
 export type BriefStatus = "draft" | "published";
 export type IntegrationProvider =
   "manual" | "procore" | "autodesk" | "email" | "sharepoint" | "other";
@@ -171,10 +174,23 @@ export interface RecommendedAction {
   title: string;
   description: string;
   status: ActionStatus;
+  priority: ActionPriority;
   dueAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface RiskResolution {
+  id: string;
+  organizationId: string;
+  riskId: string;
+  resolvedByUserId: string;
+  resolutionType: ResolutionType;
+  summary: string;
+  realizedImpactCents: number | null;
+  resolvedAt: string;
+  createdAt: string;
 }
 
 export interface DailyBrief {

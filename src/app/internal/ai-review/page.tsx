@@ -7,19 +7,20 @@ import {
 } from "@/app/internal/ai-review/actions";
 import { Card } from "@/components/ui/card";
 import { riskAnalysisOutputSchema } from "@/domain/ai/risk-analysis";
-import { BUILDCO_ORGANIZATION_ID } from "@/features/daily-brief/data";
 import { riskAnalysisFixtures } from "@/features/ai/evaluation-fixtures";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 export default async function AiReviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
+  const context = await requireActorContext();
   const client = createAdminSupabaseClient();
   const { data, error } = await client
     .from("ai_risk_suggestions")
     .select(
       "*,ai_analysis_runs(model_name,prompt_version,status,latency_ms,input_tokens,output_tokens,total_tokens)",
     )
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .order("created_at", { ascending: false })
     .limit(20);
   if (error) throw new Error(error.message);

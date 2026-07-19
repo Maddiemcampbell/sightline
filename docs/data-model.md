@@ -50,6 +50,8 @@ portfolio experience adds projected project margin and risk ownership in
 - `risk_evidence` preserves the observable basis for a risk and may reference a
   source document.
 - `recommended_actions` captures human-owned mitigation work.
+- V2 adds action priority and `risk_resolutions`, an append-only record of the
+  reviewer, resolution type, summary, and optional realized impact in cents.
 - `risk_activities` is an append-oriented audit timeline for status changes and
   human actions. Arbitrary structured context belongs in `metadata`.
 - `daily_briefs` are assembled as drafts. A deferred database constraint

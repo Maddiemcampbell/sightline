@@ -3,16 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { createRiskAnalysisSuggestion } from "@/features/ai/analysis-service";
 import { getRiskAnalysisFixture } from "@/features/ai/evaluation-fixtures";
 import {
   approveRiskSuggestion,
   rejectRiskSuggestion,
 } from "@/features/ai/review-service";
+import { assertSameOrganization } from "@/lib/auth/authorization";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 function requireDevelopment() {
   if (process.env.NODE_ENV === "production")
@@ -21,10 +19,13 @@ function requireDevelopment() {
 
 export async function analyzeFixtureAction(formData: FormData) {
   requireDevelopment();
+  const context = await requireActorContext();
   const fixture = getRiskAnalysisFixture(
     String(formData.get("fixtureId") ?? ""),
   );
+  assertSameOrganization(context, fixture.input.organizationId);
   await createRiskAnalysisSuggestion({
+    context,
     input: fixture.input,
     deterministicFallback: fixture.deterministicFallback,
   });
@@ -33,11 +34,12 @@ export async function analyzeFixtureAction(formData: FormData) {
 
 export async function approveSuggestionAction(formData: FormData) {
   requireDevelopment();
+  const context = await requireActorContext();
   const suggestionId = z.uuid().parse(formData.get("suggestionId"));
   await approveRiskSuggestion({
-    organizationId: BUILDCO_ORGANIZATION_ID,
+    organizationId: context.organizationId,
     suggestionId,
-    reviewerUserId: MATT_USER_ID,
+    reviewerUserId: context.userId,
     reviewNote: String(formData.get("reviewNote") ?? ""),
   });
   revalidatePath("/internal/ai-review");
@@ -46,11 +48,12 @@ export async function approveSuggestionAction(formData: FormData) {
 
 export async function rejectSuggestionAction(formData: FormData) {
   requireDevelopment();
+  const context = await requireActorContext();
   const suggestionId = z.uuid().parse(formData.get("suggestionId"));
   await rejectRiskSuggestion({
-    organizationId: BUILDCO_ORGANIZATION_ID,
+    organizationId: context.organizationId,
     suggestionId,
-    reviewerUserId: MATT_USER_ID,
+    reviewerUserId: context.userId,
     reason: String(formData.get("reviewNote") ?? ""),
   });
   revalidatePath("/internal/ai-review");

@@ -2,26 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { sendTestMorningBrief } from "@/features/email/delivery-service";
 import { emailPreferencesSchema } from "@/features/email/preferences";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function updateEmailPreferencesAction(input: {
   enabled: boolean;
   preferredTime: string;
   timezone: string;
 }) {
+  const context = await requireActorContext();
   const value = emailPreferencesSchema.parse(input);
   const client = createAdminSupabaseClient();
   const { data: user, error } = await client
     .from("users")
     .select("id")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-    .eq("id", MATT_USER_ID)
+    .eq("organization_id", context.organizationId)
+    .eq("id", context.userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!user) throw new Error("User not found");
@@ -32,7 +30,7 @@ export async function updateEmailPreferencesAction(input: {
       preferred_delivery_time: value.preferredTime,
       delivery_timezone: value.timezone,
     })
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", context.organizationId)
     .eq("id", user.id);
   if (updateError) throw new Error(updateError.message);
   revalidatePath("/settings");
@@ -40,7 +38,8 @@ export async function updateEmailPreferencesAction(input: {
 
 export async function sendTestEmailAction() {
   try {
-    await sendTestMorningBrief(MATT_USER_ID);
+    const context = await requireActorContext();
+    await sendTestMorningBrief(context.userId);
     revalidatePath("/settings");
     return { success: true as const };
   } catch (error) {

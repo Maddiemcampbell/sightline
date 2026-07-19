@@ -1,27 +1,25 @@
 import { Card } from "@/components/ui/card";
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { EmailPreferencesForm } from "@/features/email/email-preferences-form";
+import { requireActorContext } from "@/lib/auth/request-context";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
+  const context = await requireActorContext();
   const client = createAdminSupabaseClient();
   const [userResult, deliveriesResult] = await Promise.all([
     client
       .from("users")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-      .eq("id", MATT_USER_ID)
+      .eq("organization_id", context.organizationId)
+      .eq("id", context.userId)
       .single(),
     client
       .from("daily_brief_deliveries")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-      .eq("user_id", MATT_USER_ID)
+      .eq("organization_id", context.organizationId)
+      .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
