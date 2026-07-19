@@ -121,6 +121,7 @@ const mapProject = (row: ProjectRow): Project => ({
   stateCode: row.state_code,
   postalCode: row.postal_code,
   contractValueCents: row.contract_value_cents,
+  projectedMarginCents: row.projected_margin_cents,
   startDate: row.start_date,
   targetCompletionDate: row.target_completion_date,
   createdAt: row.created_at,
@@ -172,6 +173,7 @@ const mapRisk = (row: RiskRow): Risk => ({
   organizationId: row.organization_id,
   projectId: row.project_id,
   vendorId: row.vendor_id,
+  assignedUserId: row.assigned_user_id,
   title: row.title,
   summary: row.summary,
   category: row.category,
@@ -332,6 +334,7 @@ export class SightlineRepository {
         state_code: value.stateCode,
         postal_code: value.postalCode,
         contract_value_cents: value.contractValueCents,
+        projected_margin_cents: value.projectedMarginCents,
         start_date: value.startDate,
         target_completion_date: value.targetCompletionDate,
       })
@@ -480,6 +483,7 @@ export class SightlineRepository {
         organization_id: value.organizationId,
         project_id: value.projectId,
         vendor_id: value.vendorId,
+        assigned_user_id: value.assignedUserId,
         title: value.title,
         summary: value.summary,
         category: value.category,
@@ -507,6 +511,9 @@ export class SightlineRepository {
     const patch: Database["public"]["Tables"]["risks"]["Update"] = {
       ...(value.projectId !== undefined ? { project_id: value.projectId } : {}),
       ...(value.vendorId !== undefined ? { vendor_id: value.vendorId } : {}),
+      ...(value.assignedUserId !== undefined
+        ? { assigned_user_id: value.assignedUserId }
+        : {}),
       ...(value.title !== undefined ? { title: value.title } : {}),
       ...(value.summary !== undefined ? { summary: value.summary } : {}),
       ...(value.category !== undefined ? { category: value.category } : {}),

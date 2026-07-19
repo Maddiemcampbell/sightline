@@ -66,6 +66,7 @@ export const createProjectSchema = z
     stateCode: z.string().length(2).toUpperCase().nullable().default(null),
     postalCode: optionalText(20).default(null),
     contractValueCents: moneySchema.nullable().default(null),
+    projectedMarginCents: moneySchema.default(0),
     startDate: nullableDateSchema.default(null),
     targetCompletionDate: nullableDateSchema.default(null),
   })
@@ -136,6 +137,7 @@ export const createRiskSchema = z
     organizationId: idSchema,
     projectId: nullableIdSchema.default(null),
     vendorId: nullableIdSchema.default(null),
+    assignedUserId: nullableIdSchema.default(null),
     title: z.string().trim().min(1).max(240),
     summary: z.string().trim().min(1).max(2000),
     category: z.enum(RISK_CATEGORIES),
@@ -173,6 +175,7 @@ export const createRiskSchema = z
 const updateRiskFieldsSchema = z.object({
   projectId: nullableIdSchema,
   vendorId: nullableIdSchema,
+  assignedUserId: nullableIdSchema,
   title: z.string().trim().min(1).max(240),
   summary: z.string().trim().min(1).max(2000),
   category: z.enum(RISK_CATEGORIES),

@@ -52,3 +52,23 @@ test("exposes a healthy service endpoint", async ({ request }) => {
     status: "ok",
   });
 });
+
+test("filters projects with shareable URL parameters", async ({ page }) => {
+  await page.goto("/projects");
+  await page.getByLabel("Search projects").fill("Medical");
+  await page.getByRole("button", { name: "Apply" }).click();
+
+  await expect(page).toHaveURL(/projects\?q=Medical/);
+  await expect(page.getByRole("heading", { name: /Medical/ })).toBeVisible();
+});
+
+test("opens a risk detail with evidence and actions", async ({ page }) => {
+  await page.goto("/risks");
+  await page.getByRole("link", { name: "View risk" }).first().click();
+
+  await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Recommended actions" }),
+  ).toBeVisible();
+});

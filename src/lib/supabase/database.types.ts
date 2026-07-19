@@ -79,6 +79,7 @@ type ProjectRow = Timestamped & {
   address_line_1: string | null;
   city: string | null;
   contract_value_cents: number | null;
+  projected_margin_cents: number;
   id: string;
   name: string;
   organization_id: string;
@@ -100,6 +101,7 @@ type VendorRow = Timestamped & {
 };
 
 type RiskRow = Timestamped & {
+  assigned_user_id: string | null;
   category: DatabaseEnums["risk_category"];
   confidence_score: number;
   detected_at: string;

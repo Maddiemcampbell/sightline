@@ -81,6 +81,7 @@ export interface Project {
   stateCode: string | null;
   postalCode: string | null;
   contractValueCents: number | null;
+  projectedMarginCents: number;
   startDate: string | null;
   targetCompletionDate: string | null;
   createdAt: string;
@@ -118,6 +119,7 @@ export interface Risk {
   organizationId: string;
   projectId: string | null;
   vendorId: string | null;
+  assignedUserId: string | null;
   title: string;
   summary: string;
   category: RiskCategory;

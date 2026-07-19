@@ -23,24 +23,25 @@ erDiagram
   RISK ||--o{ BRIEF_ITEM : appears_in
 ```
 
-The source of truth is the SQL migration in
-`supabase/migrations/20260718235900_initial_v1_model.sql`.
+The source of truth is the SQL migrations in `supabase/migrations/`. The
+portfolio experience adds projected project margin and risk ownership in
+`20260719010000_project_margin_and_risk_owner.sql`.
 
 ## Entity notes
 
 - `organizations` is the tenant boundary for every V1 record.
 - `users` represents an application profile. `auth_user_id` is nullable until
   authentication is connected; one V1 user belongs to one organization.
-- `projects` stores basic portfolio and contract context. Contract value is
-  stored in integer cents.
+- `projects` stores basic portfolio and contract context. Contract value and
+  projected margin are stored in integer cents.
 - `vendors` can be assigned to many projects through `project_vendors`.
 - `integration_sources` records provenance without implementing an integration.
   The seed uses a deterministic `manual` source.
 - `documents` can optionally reference a project, vendor, and integration
   source. File storage is deliberately separate from document metadata.
-- `risks` carries the executive-facing risk assessment. Exposure and margin
-  impact are non-negative integer cents; confidence is an integer percentage
-  from 0 through 100.
+- `risks` carries the executive-facing risk assessment and may be assigned to
+  an organization user. Exposure and margin impact are non-negative integer
+  cents; confidence is an integer percentage from 0 through 100.
 - `risk_evidence` preserves the observable basis for a risk and may reference a
   source document.
 - `recommended_actions` captures human-owned mitigation work.
@@ -133,3 +134,6 @@ external API, or current weather feed is required.
   a historical brief item references the risk.
 - Authenticated-user RLS policies are deferred until the authentication model is
   implemented.
+- V1 server queries and mutations use the seeded BuildCo organization as their
+  explicit tenant boundary. Replacing that constant with the authenticated
+  user's organization context is required when authentication is introduced.

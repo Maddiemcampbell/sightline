@@ -125,3 +125,16 @@ values
 update public.daily_briefs
 set status = 'published', published_at = '2026-07-18T13:00:00Z'
 where id = '90000000-0000-4000-8000-000000000001';
+
+update public.projects
+set projected_margin_cents = case id
+  when '20000000-0000-4000-8000-000000000001' then 256500000
+  when '20000000-0000-4000-8000-000000000002' then 334400000
+  when '20000000-0000-4000-8000-000000000003' then 187625000
+  when '20000000-0000-4000-8000-000000000004' then 100800000
+  else 0
+end;
+
+update public.risks
+set assigned_user_id = '11000000-0000-4000-8000-000000000001'
+where status not in ('resolved', 'dismissed');

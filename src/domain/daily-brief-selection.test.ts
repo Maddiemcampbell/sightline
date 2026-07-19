@@ -14,6 +14,7 @@ function makeRisk(overrides: Partial<Risk> & Pick<Risk, "id">): Risk {
     organizationId: "10000000-0000-4000-8000-000000000001",
     projectId: null,
     vendorId: null,
+    assignedUserId: null,
     title: "Test risk",
     summary: "Test summary",
     category: "other",
