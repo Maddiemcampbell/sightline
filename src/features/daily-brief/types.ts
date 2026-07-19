@@ -26,6 +26,7 @@ export type ProjectGlanceView = Readonly<{
 }>;
 
 export type DailyBriefView = Readonly<{
+  briefId: string;
   briefDate: string;
   totalProfitAtRiskCents: number;
   activeProjectCount: number;

@@ -36,6 +36,12 @@ autonomous workflows.
    `Authorization: Bearer <CRON_SECRET>`. Development also exposes the
    internal-only `/internal/detection` manual-run page.
 
+   Morning email uses Resend through its HTTPS API. Configure `RESEND_API_KEY`,
+   a verified `EMAIL_FROM` sender, and the public `APP_URL`. Run the email cron
+   on a regular interval with `GET /api/cron/send-briefs` and the same Bearer
+   secret; Sightline evaluates each recipient's preferred local delivery time.
+   Development exposes `/internal/email-preview` for HTML and plain-text review.
+
 4. Start the development server:
 
    ```bash

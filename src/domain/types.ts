@@ -69,6 +69,9 @@ export interface User {
   fullName: string;
   title: string | null;
   role: UserRole;
+  emailDeliveryEnabled: boolean;
+  preferredDeliveryTime: string;
+  deliveryTimezone: string;
   createdAt: string;
   updatedAt: string;
 }

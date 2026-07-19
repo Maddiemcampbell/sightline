@@ -70,10 +70,13 @@ type OrganizationRow = Timestamped & {
 
 type UserRow = Timestamped & {
   auth_user_id: string | null;
+  delivery_timezone: string;
   email: string;
+  email_delivery_enabled: boolean;
   full_name: string;
   id: string;
   organization_id: string;
+  preferred_delivery_time: string;
   role: DatabaseEnums["user_role"];
   title: string | null;
 };
@@ -198,6 +201,25 @@ export type Database = {
         status: "running" | "complete" | "failed";
         trigger_source: "manual" | "scheduled";
       }>;
+      daily_brief_deliveries: Table<
+        Timestamped & {
+          attempt_count: number;
+          daily_brief_id: string;
+          delivery_kind: "scheduled" | "test";
+          error_message: string | null;
+          id: string;
+          idempotency_key: string;
+          last_attempt_at: string | null;
+          next_retry_at: string | null;
+          organization_id: string;
+          provider: string;
+          provider_message_id: string | null;
+          recipient_email: string;
+          sent_at: string | null;
+          status: "pending" | "sending" | "sent" | "failed";
+          user_id: string;
+        }
+      >;
       document_activities: Table<{
         activity_type: "uploaded" | "edited" | "archived";
         actor_user_id: string | null;

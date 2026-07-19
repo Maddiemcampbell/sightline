@@ -106,6 +106,9 @@ const mapUser = (row: UserRow): User => ({
   fullName: row.full_name,
   title: row.title,
   role: row.role,
+  emailDeliveryEnabled: row.email_delivery_enabled,
+  preferredDeliveryTime: row.preferred_delivery_time,
+  deliveryTimezone: row.delivery_timezone,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -313,6 +316,9 @@ export class SightlineRepository {
         full_name: value.fullName,
         title: value.title,
         role: value.role,
+        email_delivery_enabled: value.emailDeliveryEnabled,
+        preferred_delivery_time: value.preferredDeliveryTime,
+        delivery_timezone: value.deliveryTimezone,
       })
       .select()
       .single();

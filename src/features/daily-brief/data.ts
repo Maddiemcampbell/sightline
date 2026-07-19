@@ -157,6 +157,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
           : "Low";
 
   return {
+    briefId: brief.id,
     briefDate: brief.brief_date,
     totalProfitAtRiskCents: risks.reduce(
       (sum, risk) => sum + risk.marginImpactCents,

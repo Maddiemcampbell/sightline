@@ -80,6 +80,20 @@ After persistence, the engine applies the existing brief-priority comparator,
 replaces today's draft items, and publishes only when exactly three eligible
 risks are available.
 
+## Morning email delivery
+
+User profiles store whether morning email is enabled, the preferred local
+delivery time, and an IANA timezone. `daily_brief_deliveries` is the durable
+delivery ledger. A partial unique index permits only one scheduled delivery per
+organization, brief, and user; test sends are recorded separately.
+
+Scheduled rows use a stable provider idempotency key derived from the brief and
+user. Failed attempts reuse that key, retry up to three times with increasing
+delays, and retain the provider error. A sent row is never submitted again.
+Email content is rendered to both responsive, inline-styled HTML and plain text.
+Only application deep links are included; provider credentials and delivery
+identifiers are never placed in links.
+
 ## Daily brief selection
 
 `selectDailyBriefRisks` excludes `resolved` and `dismissed` risks, then sorts

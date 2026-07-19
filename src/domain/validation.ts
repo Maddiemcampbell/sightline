@@ -47,6 +47,17 @@ export const createUserSchema = z
     role: z
       .enum(["executive", "operations", "project_manager", "admin"])
       .default("operations"),
+    emailDeliveryEnabled: z.boolean().default(true),
+    preferredDeliveryTime: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .default("07:00"),
+    deliveryTimezone: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .default("America/Los_Angeles"),
   })
   .strict();
 export const updateUserSchema = nonEmptyUpdate(
