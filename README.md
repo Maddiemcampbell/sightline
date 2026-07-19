@@ -122,6 +122,11 @@ The V1 schema, selection rules, index strategy, and assumptions are documented
 in [`docs/data-model.md`](docs/data-model.md). Migration files and deterministic
 development data live under `supabase/`.
 
+Controlled AI analysis is optional. Set `OPENAI_API_KEY` and optionally
+`OPENAI_MODEL` to use the initial provider. Without a key, development fixtures
+fall back to deterministic V1 suggestions. No suggestion becomes a risk without
+human review. See [`docs/ai-trust-model.md`](docs/ai-trust-model.md).
+
 ## Deployment
 
 The application can deploy to any host that supports Next.js 16 and Node.js 22.

@@ -149,7 +149,9 @@ describe("Resend provider", () => {
   it("includes Resend's error message when a send is rejected", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
-        JSON.stringify({ message: "The example.com domain is not verified." }),
+        JSON.stringify({
+          message: "The example.com domain is not verified.",
+        }),
         { status: 403 },
       ),
     );

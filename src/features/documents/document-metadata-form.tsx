@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   archiveDocumentAction,
@@ -31,6 +32,7 @@ export function DocumentMetadataForm({
   projects: readonly Option[];
   vendors: readonly Option[];
 }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const archived = Boolean(document.archived_at);
@@ -50,6 +52,7 @@ export function DocumentMetadataForm({
     startTransition(async () => {
       try {
         await editDocumentAction(input);
+        router.refresh();
       } catch {
         setError("The metadata could not be saved.");
       }
@@ -148,6 +151,7 @@ export function DocumentMetadataForm({
             startTransition(async () => {
               try {
                 await archiveDocumentAction({ documentId: document.id });
+                router.refresh();
               } catch {
                 setError("The document could not be archived.");
               }

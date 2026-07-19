@@ -7,6 +7,7 @@ export type Json =
   | readonly Json[];
 
 export type DatabaseEnums = {
+  ai_review_status: "pending" | "approved" | "rejected";
   action_status: "open" | "in_progress" | "complete" | "dismissed";
   activity_type:
     | "created"
@@ -201,6 +202,37 @@ export type Database = {
         status: "running" | "complete" | "failed";
         trigger_source: "manual" | "scheduled";
       }>;
+      ai_analysis_runs: Table<{
+        created_at: string;
+        error_message: string | null;
+        id: string;
+        input_snapshot: Json;
+        input_tokens: number | null;
+        latency_ms: number;
+        model_name: string;
+        organization_id: string;
+        output_snapshot: Json | null;
+        output_tokens: number | null;
+        project_id: string | null;
+        prompt_version: string;
+        provider: string;
+        status: "complete" | "failed" | "fallback";
+        total_tokens: number | null;
+      }>;
+      ai_risk_suggestions: Table<
+        Timestamped & {
+          activated_risk_id: string | null;
+          analysis_run_id: string;
+          id: string;
+          organization_id: string;
+          project_id: string | null;
+          review_note: string | null;
+          review_status: DatabaseEnums["ai_review_status"];
+          reviewed_at: string | null;
+          reviewed_by_user_id: string | null;
+          suggested_risk: Json;
+        }
+      >;
       daily_brief_deliveries: Table<
         Timestamped & {
           attempt_count: number;

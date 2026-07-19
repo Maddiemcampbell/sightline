@@ -33,7 +33,7 @@ export async function editDocumentAction(
     throw new Error("Archived documents cannot be edited.");
   await validateDocumentAssociations(value.projectId, value.vendorId);
 
-  const { error: updateError } = await client
+  const { data: updatedDocument, error: updateError } = await client
     .from("documents")
     .update({
       name: value.name,
@@ -43,8 +43,13 @@ export async function editDocumentAction(
       document_date: value.documentDate,
     })
     .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-    .eq("id", value.documentId);
-  if (updateError) throw new Error(updateError.message);
+    .eq("id", value.documentId)
+    .select("id,name")
+    .single();
+  if (updateError || !updatedDocument)
+    throw new Error(
+      updateError?.message ?? "Document update was not persisted.",
+    );
   const { error: activityError } = await client
     .from("document_activities")
     .insert({
@@ -72,6 +77,7 @@ export async function editDocumentAction(
   }
   revalidatePath("/documents");
   revalidatePath(`/documents/${value.documentId}`);
+  return { name: updatedDocument.name };
 }
 
 export async function archiveDocumentAction(input: { documentId: string }) {

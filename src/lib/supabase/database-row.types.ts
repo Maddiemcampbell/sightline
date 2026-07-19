@@ -2,6 +2,8 @@ import type { Database, Json } from "@/lib/supabase/database.types";
 
 export type { Json };
 type Tables = Database["public"]["Tables"];
+export type AiAnalysisRunRow = Tables["ai_analysis_runs"]["Row"];
+export type AiRiskSuggestionRow = Tables["ai_risk_suggestions"]["Row"];
 export type BriefItemRow = Tables["brief_items"]["Row"];
 export type DailyBriefRow = Tables["daily_briefs"]["Row"];
 export type DocumentRow = Tables["documents"]["Row"];

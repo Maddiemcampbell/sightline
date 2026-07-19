@@ -1,7 +1,8 @@
 # Sightline V1 data model
 
 Sightline V1 stores the evidence and human decisions behind a deterministic
-weekly profit-risk brief. It does not generate risks or brief language with AI.
+weekly profit-risk brief. Its optional AI layer produces evidence-grounded
+suggestions only; suggestions require human approval before becoming risks.
 
 ## Model overview
 
@@ -61,6 +62,10 @@ portfolio experience adds projected project margin and risk ownership in
   maximum concrete-placement temperature.
 - `detection_runs` records the trigger source, per-rule findings, created and
   updated counts, completion state, and failures for every engine run.
+- `ai_analysis_runs` records sanitized context, structured output, provider,
+  model, prompt version, latency, token usage, and failure/fallback state.
+- `ai_risk_suggestions` is the review queue. Only approved suggestions reference
+  an activated risk; rejected suggestions retain the review reason.
 
 ## Deterministic detection
 

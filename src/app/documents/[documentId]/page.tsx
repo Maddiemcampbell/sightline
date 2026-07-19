@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { DocumentMetadataForm } from "@/features/documents/document-metadata-form";
 import { getDocumentDetail } from "@/features/documents/data";
 
+export const dynamic = "force-dynamic";
+
 type Props = { params: Promise<{ documentId: string }> };
 
 export default async function DocumentDetailPage({ params }: Props) {
