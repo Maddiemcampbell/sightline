@@ -129,6 +129,22 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("explains a risk with visibly grounded evidence", async ({ page }) => {
+  await page.goto("/risks/60000000-0000-4000-8000-000000000001?tab=evidence");
+  await expect(
+    page.getByRole("heading", { name: "Evidence-grounded explanation" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Direct evidence", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Policy expiration: July 25, 2026"),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Source document is unavailable or archived."),
+  ).toBeVisible();
+});
+
 test("adds a risk comment with an organization-user mention", async ({
   page,
 }) => {
@@ -141,6 +157,7 @@ test("adds a risk comment with an organization-user mention", async ({
     .selectOption({ label: "Alex Rivera" });
   await page.getByRole("button", { name: "Add comment" }).click();
   await expect(page.getByRole("status")).toHaveText("Comment added.");
+  await page.reload();
   await expect(
     page
       .getByText("Alex, please confirm the renewal certificate with Apex.")

@@ -38,6 +38,25 @@ export type DocumentType =
   | "financial"
   | "other";
 export type DocumentProcessingStatus = "pending" | "ready" | "failed";
+export const EVIDENCE_TYPES = [
+  "document_excerpt",
+  "contract_clause",
+  "insurance_expiration",
+  "daily_log_entry",
+  "weather_event",
+  "schedule_event",
+  "project_metadata",
+  "historical_risk",
+  "manual_note",
+  "system_rule",
+] as const;
+export const EVIDENCE_SUPPORT_TYPES = [
+  "direct",
+  "inferred",
+  "assumption",
+] as const;
+export type EvidenceType = (typeof EVIDENCE_TYPES)[number];
+export type EvidenceSupportType = (typeof EVIDENCE_SUPPORT_TYPES)[number];
 export const ACTION_TYPES = [
   "email",
   "review_document",
@@ -205,12 +224,18 @@ export interface RiskEvidence {
   organizationId: string;
   riskId: string;
   documentId: string | null;
-  detectionKey: string | null;
-  integrationSourceId: string | null;
+  evidenceType: EvidenceType;
   title: string;
-  description: string;
-  sourceExcerpt: string | null;
-  observedAt: string;
+  excerpt: string;
+  sourceLabel: string;
+  sourceLocation: string | null;
+  pageNumber: number | null;
+  lineStart: number | null;
+  lineEnd: number | null;
+  occurredAt: string;
+  relevanceScore: number;
+  supportType: EvidenceSupportType;
+  whyItMatters: string;
   createdAt: string;
 }
 

@@ -284,16 +284,34 @@ export type Database = {
       risks: Table<RiskRow>;
       risk_evidence: Table<{
         created_at: string;
-        description: string;
         document_id: string | null;
         detection_key: string | null;
+        evidence_type:
+          | "document_excerpt"
+          | "contract_clause"
+          | "insurance_expiration"
+          | "daily_log_entry"
+          | "weather_event"
+          | "schedule_event"
+          | "project_metadata"
+          | "historical_risk"
+          | "manual_note"
+          | "system_rule";
+        excerpt: string;
         id: string;
         integration_source_id: string | null;
-        observed_at: string;
+        occurred_at: string;
         organization_id: string;
+        page_number: number | null;
+        line_start: number | null;
+        line_end: number | null;
+        relevance_score: number;
         risk_id: string;
-        source_excerpt: string | null;
+        source_label: string;
+        source_location: string | null;
+        support_type: "direct" | "inferred" | "assumption";
         title: string;
+        why_it_matters: string;
       }>;
       recommended_actions: Table<
         Timestamped & {

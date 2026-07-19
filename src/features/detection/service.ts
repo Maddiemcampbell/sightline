@@ -286,10 +286,20 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
         document_id: evidence.documentId,
         integration_source_id: null,
         detection_key: evidence.detectionKey,
+        evidence_type:
+          ruleId === "insurance"
+            ? "insurance_expiration"
+            : ruleId === "weather"
+              ? "weather_event"
+              : "daily_log_entry",
         title: evidence.title,
-        description: evidence.description,
-        source_excerpt: evidence.sourceExcerpt,
-        observed_at: evidence.observedAt,
+        why_it_matters: evidence.description,
+        excerpt: evidence.sourceExcerpt,
+        source_label: evidence.title,
+        source_location: null,
+        relevance_score: detection.confidenceScore,
+        support_type: "direct",
+        occurred_at: evidence.observedAt,
       },
       { onConflict: "organization_id,risk_id,detection_key" },
     );

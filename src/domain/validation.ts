@@ -6,6 +6,8 @@ import {
   ACTION_SOURCES,
   ACTION_STATUSES,
   ACTION_TYPES,
+  EVIDENCE_SUPPORT_TYPES,
+  EVIDENCE_TYPES,
   RISK_CATEGORIES,
   RISK_ACTIVITY_TYPES,
   RISK_SEVERITIES,
@@ -227,21 +229,37 @@ export const updateRiskSchema = nonEmptyUpdate(
   }
 });
 
-export const createRiskEvidenceSchema = z
-  .object({
-    organizationId: idSchema,
-    riskId: idSchema,
-    documentId: nullableIdSchema.default(null),
-    detectionKey: optionalText(240).default(null),
-    integrationSourceId: nullableIdSchema.default(null),
-    title: z.string().trim().min(1).max(240),
-    description: z.string().trim().min(1).max(3000),
-    sourceExcerpt: optionalText(5000).default(null),
-    observedAt: timestampSchema,
-  })
-  .strict();
+const riskEvidenceFieldsSchema = z.object({
+  organizationId: idSchema,
+  riskId: idSchema,
+  documentId: nullableIdSchema.default(null),
+  evidenceType: z.enum(EVIDENCE_TYPES),
+  title: z.string().trim().min(1).max(240),
+  excerpt: z.string().trim().min(1).max(5000),
+  sourceLabel: z.string().trim().min(1).max(240),
+  sourceLocation: optionalText(500).default(null),
+  pageNumber: z.number().int().positive().nullable().default(null),
+  lineStart: z.number().int().positive().nullable().default(null),
+  lineEnd: z.number().int().positive().nullable().default(null),
+  occurredAt: timestampSchema,
+  relevanceScore: z.number().int().min(0).max(100),
+  supportType: z.enum(EVIDENCE_SUPPORT_TYPES).default("direct"),
+  whyItMatters: z.string().trim().min(1).max(3000),
+});
+
+export const createRiskEvidenceSchema = riskEvidenceFieldsSchema
+  .strict()
+  .refine(
+    (value) =>
+      !value.lineStart || !value.lineEnd || value.lineEnd >= value.lineStart,
+    { path: ["lineEnd"], message: "lineEnd cannot precede lineStart" },
+  );
 export const updateRiskEvidenceSchema = nonEmptyUpdate(
-  createRiskEvidenceSchema.omit({ organizationId: true, riskId: true }),
+  riskEvidenceFieldsSchema.omit({ organizationId: true, riskId: true }),
+).refine(
+  (value) =>
+    !value.lineStart || !value.lineEnd || value.lineEnd >= value.lineStart,
+  { path: ["lineEnd"], message: "lineEnd cannot precede lineStart" },
 );
 
 const recommendedActionFieldsSchema = z.object({

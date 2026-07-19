@@ -243,7 +243,7 @@ export async function getRiskDetail(riskId: string) {
       .select("*")
       .eq("organization_id", organizationId)
       .eq("risk_id", riskId)
-      .order("observed_at", { ascending: false }),
+      .order("occurred_at", { ascending: false }),
     client.from("documents").select("*").eq("organization_id", organizationId),
     client
       .from("recommended_actions")

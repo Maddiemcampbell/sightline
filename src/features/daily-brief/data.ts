@@ -61,7 +61,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
       .from("risk_evidence")
       .select("*")
       .eq("organization_id", organizationId)
-      .order("observed_at", { ascending: false }),
+      .order("occurred_at", { ascending: false }),
     client
       .from("recommended_actions")
       .select("*")
@@ -144,8 +144,8 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
         whyItMatters: risk.why_it_matters,
         evidenceTitle: riskEvidence?.title ?? "No supporting evidence attached",
         evidenceDetail:
-          riskEvidence?.source_excerpt ??
-          riskEvidence?.description ??
+          riskEvidence?.excerpt ??
+          riskEvidence?.why_it_matters ??
           "Evidence is still being reviewed.",
         confidenceScore: risk.confidence_score,
         recommendedAction: action?.description ?? item.recommended_next_step,

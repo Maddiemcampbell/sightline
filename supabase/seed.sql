@@ -80,13 +80,14 @@ set status = 'resolved', resolved_at = '2026-07-15T14:30:00Z'
 where id = '60000000-0000-4000-8000-000000000008';
 
 insert into public.risk_evidence (
-  id, organization_id, risk_id, document_id, integration_source_id, title,
-  description, source_excerpt, observed_at
+  id, organization_id, risk_id, document_id, integration_source_id, evidence_type,
+  title, why_it_matters, excerpt, source_label, source_location, relevance_score,
+  support_type, occurred_at
 )
 values
-  ('70000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'Certificate expiration date', 'The current certificate lists a policy expiration during active electrical work.', 'Policy expiration: July 25, 2026', '2026-07-18T12:00:00Z'),
-  ('70000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000001', 'Pour overlaps forecast storm', 'The lookahead schedules slab placement during the current storm window.', 'Place slab S2 Friday, 5:00 AM–4:00 PM', '2026-07-18T12:15:00Z'),
-  ('70000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'Repeated owner field direction', 'Daily logs on three shifts record added backing requested in the field.', 'Owner representative directed added backing at lobby feature wall; T&M tags pending.', '2026-07-18T12:30:00Z');
+  ('70000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', '50000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'insurance_expiration', 'Certificate expiration date', 'The current certificate lists a policy expiration during active electrical work.', 'Policy expiration: July 25, 2026', 'Apex Electrical certificate of insurance', 'Certificate details', 98, 'direct', '2026-07-18T12:00:00Z'),
+  ('70000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '50000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000001', 'schedule_event', 'Pour overlaps forecast storm', 'The lookahead schedules slab placement during the current storm window.', 'Place slab S2 Friday, 5:00 AM–4:00 PM', 'Riverfront three-week lookahead', 'Slab S2 activity', 94, 'direct', '2026-07-18T12:15:00Z'),
+  ('70000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '50000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'daily_log_entry', 'Repeated owner field direction', 'Daily logs on three shifts record added backing requested in the field.', 'Owner representative directed added backing at lobby feature wall; T&M tags pending.', 'Northgate daily field log', 'Lobby feature wall entry', 91, 'direct', '2026-07-18T12:30:00Z');
 
 insert into public.recommended_actions (
   id, organization_id, risk_id, owner_user_id, title, description, action_type,

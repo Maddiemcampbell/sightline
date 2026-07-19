@@ -48,7 +48,10 @@ portfolio experience adds projected project margin and risk ownership in
   an organization user. Exposure and margin impact are non-negative integer
   cents; confidence is an integer percentage from 0 through 100.
 - `risk_evidence` preserves the observable basis for a risk and may reference a
-  source document.
+  source document. It records a typed source, excerpt, human-readable source
+  label and location, optional page and line range, source date, relevance
+  score, and whether the item is direct evidence, an inference, or an
+  assumption.
 - `recommended_actions` captures human-owned mitigation work.
 - V2 adds action priority and `risk_resolutions`, an append-only record of the
   reviewer, resolution type, summary, and optional realized impact in cents.
@@ -213,6 +216,32 @@ The organization and risk cursor indexes order events by `occurred_at` and `id`
 for stable pagination. Comment mentions are retained in the activity record but
 do not trigger external notifications in this version. Operational console logs
 and provider diagnostics remain separate from this executive-facing history.
+
+## V2 evidence and trust boundary
+
+Evidence reads begin with an organization-scoped risk lookup and every evidence
+and document query repeats the organization predicate. Document links use the
+existing authorized download endpoint, which re-checks the tenant and returns a
+short-lived signed URL; archived or missing source objects render as unavailable
+instead of producing a broken or public link.
+
+The risk evidence view separates direct evidence from inferred conclusions and
+assumptions. Excerpts, source labels, dates, page or line locations, relevance,
+and confidence factors remain visible to reviewers. The explanation panel is a
+concise product rationale assembled from those records; it never displays model
+chain-of-thought. Missing citations and unavailable documents are shown
+explicitly rather than silently omitted.
+
+AI analysis remains a suggestion boundary. Every material structured output
+field must cite supplied evidence IDs, and `validateEvidenceGrounding` rejects
+the entire output when any top-level or claim-level citation is absent from the
+request context. AI output is not itself direct evidence. It remains an inferred
+conclusion until a human reviews it, and activation still requires explicit
+approval.
+
+In development only, `/internal/evidence-debug` exposes evidence identifiers,
+types, support classification, relevance, citation location, and document
+availability for troubleshooting. The route returns a 404 in production.
 
 ## Major assumptions
 

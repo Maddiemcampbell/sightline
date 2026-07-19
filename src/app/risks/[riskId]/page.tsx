@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { FileText } from "lucide-react";
 
 import { RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -12,17 +11,24 @@ import { toActionView } from "@/features/actions/data";
 import { getActivityPage } from "@/features/activity/data";
 import { ActivityTimeline } from "@/features/activity/timeline";
 import { RiskCommentForm } from "@/features/activity/comment-form";
+import { getRiskEvidenceExperience } from "@/features/evidence/data";
+import { EvidenceExperience } from "@/features/evidence/evidence-experience";
 
-type Props = { params: Promise<{ riskId: string }> };
+type Props = {
+  params: Promise<{ riskId: string }>;
+  searchParams: Promise<{ tab?: string }>;
+};
 
-export default async function RiskPage({ params }: Props) {
+export default async function RiskPage({ params, searchParams }: Props) {
   const { riskId } = await params;
+  const { tab } = await searchParams;
   const detail = await getRiskDetail(riskId);
   if (!detail) notFound();
-  const activityPage = await getActivityPage({ riskId, limit: 30 });
-  const documentById = new Map(
-    detail.documents.map((document) => [document.id, document]),
-  );
+  const [activityPage, evidenceExperience] = await Promise.all([
+    getActivityPage({ riskId, limit: 30 }),
+    getRiskEvidenceExperience(riskId),
+  ]);
+  const activeTab = tab === "evidence" ? "evidence" : "overview";
   const closed = ["resolved", "dismissed"].includes(detail.risk.status);
   const ownerNameById = new Map(
     detail.users.map((user) => [user.id, user.full_name]),
@@ -96,105 +102,126 @@ export default async function RiskPage({ params }: Props) {
           }
         />
       </section>
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="space-y-6">
-          <Panel title="Why it matters">
-            <p className="leading-7">{detail.risk.why_it_matters}</p>
-          </Panel>
-          <Panel title="Evidence">
-            {detail.evidence.length ? (
-              <ul className="space-y-4">
-                {detail.evidence.map((evidence) => (
-                  <li
-                    key={evidence.id}
-                    className="bg-background rounded-lg border p-4"
-                  >
-                    <div className="flex items-center gap-2 font-semibold">
-                      <FileText className="size-4" />
-                      {evidence.title}
-                    </div>
-                    <p className="text-muted mt-2 text-sm">
-                      {evidence.description}
-                    </p>
-                    {evidence.source_excerpt && (
-                      <blockquote className="border-deep-green mt-3 border-l-2 pl-3 text-sm">
-                        “{evidence.source_excerpt}”
-                      </blockquote>
-                    )}
-                    <p className="text-muted mt-3 text-xs">
-                      Source:{" "}
-                      {evidence.document_id
-                        ? (documentById.get(evidence.document_id)?.name ??
-                          "Document")
-                        : "Manual evidence"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted text-sm">No evidence attached.</p>
-            )}
-          </Panel>
-          <Panel title="Recommended actions">
-            <ActionPanel
-              actions={detail.actions.map((action) =>
-                toActionView(
-                  action,
-                  action.owner_user_id
-                    ? (ownerNameById.get(action.owner_user_id) ?? null)
-                    : null,
-                ),
-              )}
-              owners={actionOwners}
-            />
-          </Panel>
+      <nav
+        aria-label="Risk detail sections"
+        className="border-border mt-7 border-b"
+      >
+        <div className="flex gap-6">
+          <TabLink href={`/risks/${riskId}`} active={activeTab === "overview"}>
+            Overview
+          </TabLink>
+          <TabLink
+            href={`/risks/${riskId}?tab=evidence`}
+            active={activeTab === "evidence"}
+          >
+            Evidence ({evidenceExperience.items.length})
+          </TabLink>
         </div>
-        <aside className="space-y-6">
-          <Panel title="Related project">
-            {detail.project ? (
-              <>
-                <Link
-                  href={`/projects/${detail.project.id}`}
-                  className="hover:text-deep-green font-semibold"
-                >
-                  {detail.project.name}
-                </Link>
-                <p className="text-muted mt-1 text-sm">
-                  {detail.project.project_number} · {detail.project.city},{" "}
-                  {detail.project.state_code}
-                </p>
-              </>
-            ) : (
-              <p className="text-muted text-sm">No project assigned.</p>
-            )}
-          </Panel>
-          <Panel title="Related vendor">
-            {detail.vendor ? (
-              <>
-                <p className="font-semibold">{detail.vendor.name}</p>
-                <p className="text-muted mt-1 text-sm">
-                  {detail.vendor.trade ?? "Trade not set"}
-                </p>
-              </>
-            ) : (
-              <p className="text-muted text-sm">No vendor assigned.</p>
-            )}
-          </Panel>
-          <Panel title="Activity timeline">
-            <RiskCommentForm riskId={riskId} users={detail.users} />
-            <ActivityTimeline items={activityPage.items} condensed />
-            {activityPage.nextCursor && (
+      </nav>
+      {activeTab === "evidence" ? (
+        <div className="mt-6">
+          <EvidenceExperience experience={evidenceExperience} />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="space-y-6">
+            <Panel title="Why it matters">
+              <p className="leading-7">{detail.risk.why_it_matters}</p>
+            </Panel>
+            <Panel title="Evidence">
+              <p className="text-muted text-sm leading-6">
+                {evidenceExperience.items.length} cited source
+                {evidenceExperience.items.length === 1 ? "" : "s"} support this
+                risk.
+              </p>
               <Link
-                href={`/activity?riskId=${riskId}`}
-                className="text-deep-green mt-5 inline-block text-sm font-semibold"
+                href={`/risks/${riskId}?tab=evidence`}
+                className="text-deep-green mt-4 inline-block text-sm font-semibold"
               >
-                View complete history
+                Review why Sightline believes this →
               </Link>
-            )}
-          </Panel>
-        </aside>
-      </div>
+            </Panel>
+            <Panel title="Recommended actions">
+              <ActionPanel
+                actions={detail.actions.map((action) =>
+                  toActionView(
+                    action,
+                    action.owner_user_id
+                      ? (ownerNameById.get(action.owner_user_id) ?? null)
+                      : null,
+                  ),
+                )}
+                owners={actionOwners}
+              />
+            </Panel>
+          </div>
+          <aside className="space-y-6">
+            <Panel title="Related project">
+              {detail.project ? (
+                <>
+                  <Link
+                    href={`/projects/${detail.project.id}`}
+                    className="hover:text-deep-green font-semibold"
+                  >
+                    {detail.project.name}
+                  </Link>
+                  <p className="text-muted mt-1 text-sm">
+                    {detail.project.project_number} · {detail.project.city},{" "}
+                    {detail.project.state_code}
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted text-sm">No project assigned.</p>
+              )}
+            </Panel>
+            <Panel title="Related vendor">
+              {detail.vendor ? (
+                <>
+                  <p className="font-semibold">{detail.vendor.name}</p>
+                  <p className="text-muted mt-1 text-sm">
+                    {detail.vendor.trade ?? "Trade not set"}
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted text-sm">No vendor assigned.</p>
+              )}
+            </Panel>
+            <Panel title="Activity timeline">
+              <RiskCommentForm riskId={riskId} users={detail.users} />
+              <ActivityTimeline items={activityPage.items} condensed />
+              {activityPage.nextCursor && (
+                <Link
+                  href={`/activity?riskId=${riskId}`}
+                  className="text-deep-green mt-5 inline-block text-sm font-semibold"
+                >
+                  View complete history
+                </Link>
+              )}
+            </Panel>
+          </aside>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TabLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`border-b-2 px-1 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 ${active ? "border-deep-green text-deep-green" : "text-muted border-transparent"}`}
+    >
+      {children}
+    </Link>
   );
 }
 function Metric({ label, value }: { label: string; value: string }) {

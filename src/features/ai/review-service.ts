@@ -81,10 +81,15 @@ export async function approveRiskSuggestion(input: {
       risk_id: risk.id,
       document_id: evidence.documentId,
       detection_key: `${detectionKey}:evidence:${id}`,
+      evidence_type: evidence.documentId ? "document_excerpt" : "manual_note",
       title: evidence.label,
-      description: `Evidence cited by reviewed AI suggestion ${suggestion.id}.`,
-      source_excerpt: evidence.excerpt,
-      observed_at: evidence.observedAt,
+      why_it_matters: `This evidence was explicitly cited by reviewed AI suggestion ${suggestion.id}.`,
+      excerpt: evidence.excerpt,
+      source_label: evidence.label,
+      source_location: null,
+      relevance_score: suggestedRisk.confidenceScore,
+      support_type: "direct",
+      occurred_at: evidence.observedAt,
     };
   });
   const [evidenceResult, actionResult, activityResult] = await Promise.all([
