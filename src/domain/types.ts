@@ -30,11 +30,14 @@ export type DocumentType =
   | "contract"
   | "insurance"
   | "daily_log"
+  | "rfi"
   | "schedule"
   | "change_order"
+  | "incident_report"
   | "safety"
   | "financial"
   | "other";
+export type DocumentProcessingStatus = "pending" | "ready" | "failed";
 export type ActionStatus = "open" | "in_progress" | "complete" | "dismissed";
 export type BriefStatus = "draft" | "published";
 export type IntegrationProvider =
@@ -108,6 +111,11 @@ export interface Document {
   name: string;
   documentType: DocumentType;
   storagePath: string | null;
+  originalFilename: string | null;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  processingStatus: DocumentProcessingStatus;
+  archivedAt: string | null;
   externalId: string | null;
   documentDate: string | null;
   createdAt: string;

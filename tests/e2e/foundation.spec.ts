@@ -35,8 +35,12 @@ test("acknowledges a risk and persists after reload", async ({ page }) => {
     name: "Acknowledge",
     exact: true,
   });
-  if (await acknowledge.isVisible()) await acknowledge.click();
-  await expect(firstRisk.getByRole("status")).toHaveText("Acknowledged");
+  const acknowledgedStatus = firstRisk.getByRole("status");
+  await expect(acknowledgedStatus.or(acknowledge)).toBeVisible();
+  if (await acknowledge.isVisible()) {
+    await acknowledge.click();
+  }
+  await expect(acknowledgedStatus).toHaveText("Acknowledged");
   await page.reload();
   await expect(
     page.getByRole("article").first().getByRole("status"),
@@ -71,4 +75,50 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
   ).toBeVisible();
+});
+
+test("shows the secure document upload workflow", async ({ page }) => {
+  await page.goto("/documents");
+
+  await expect(
+    page.getByRole("heading", { name: "Upload source document" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("File")).toHaveAttribute(
+    "accept",
+    ".pdf,.docx,.csv,.jpg,.jpeg,.png",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Document library" }),
+  ).toBeVisible();
+});
+
+test("uploads, edits, and archives document metadata", async ({ page }) => {
+  await page.goto("/documents");
+  await page.getByLabel("File").setInputFiles({
+    name: "weekly-log.pdf",
+    mimeType: "text/plain",
+    buffer: Buffer.from("%PDF-1.4\n%%EOF"),
+  });
+  await page.getByLabel("Display name").fill("Weekly field log");
+  await page.getByLabel("Category").selectOption("daily_log");
+  await page.getByRole("button", { name: "Upload document" }).click();
+
+  await expect(page.getByText("Upload complete.")).toBeVisible();
+  await page.getByRole("link", { name: "View document" }).click();
+  await page.getByLabel("Display name").fill("Weekly field log — reviewed");
+  await page.getByRole("button", { name: "Save metadata" }).click();
+  await expect(page.getByText("Document metadata updated.")).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Weekly field log — reviewed" }),
+  ).toBeVisible();
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Archive document" }).click();
+  await expect(page.getByText("Document archived.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Archived", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Download file" })).toHaveCount(
+    0,
+  );
 });

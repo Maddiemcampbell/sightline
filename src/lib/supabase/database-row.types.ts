@@ -5,6 +5,7 @@ type Tables = Database["public"]["Tables"];
 export type BriefItemRow = Tables["brief_items"]["Row"];
 export type DailyBriefRow = Tables["daily_briefs"]["Row"];
 export type DocumentRow = Tables["documents"]["Row"];
+export type DocumentActivityRow = Tables["document_activities"]["Row"];
 export type IntegrationSourceRow = Tables["integration_sources"]["Row"];
 export type OrganizationRow = Tables["organizations"]["Row"];
 export type ProjectRow = Tables["projects"]["Row"];

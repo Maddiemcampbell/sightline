@@ -38,7 +38,11 @@ portfolio experience adds projected project margin and risk ownership in
 - `integration_sources` records provenance without implementing an integration.
   The seed uses a deterministic `manual` source.
 - `documents` can optionally reference a project, vendor, and integration
-  source. File storage is deliberately separate from document metadata.
+  source. File storage is deliberately separate from document metadata. The
+  document workflow adds original filename, verified MIME type, byte size,
+  processing status, and archival timestamp fields.
+- `document_activities` records manual upload, metadata edit, and archive
+  events without exposing storage credentials or file URLs.
 - `risks` carries the executive-facing risk assessment and may be assigned to
   an organization user. Exposure and margin impact are non-negative integer
   cents; confidence is an integer percentage from 0 through 100.
@@ -79,6 +83,20 @@ through `createAdminSupabaseClient`.
 
 The service-role key must never use the `NEXT_PUBLIC_` prefix or be imported by
 a Client Component.
+
+## Document storage
+
+Source files are stored in the private `source-documents` Supabase Storage
+bucket. Object paths begin with the trusted organization ID and a generated
+document ID; sanitized filenames are used only as the final path component.
+The application checks file signatures instead of trusting browser MIME values.
+Downloads re-check the organization-scoped document row and issue a signed URL
+that expires after 60 seconds. Archiving preserves the object for audit and
+future retention-policy work but disables application downloads.
+
+V1 accepts PDF, DOCX, CSV, JPG, and PNG files up to 10 MB. The processing status
+is present for future OCR or extraction work; successful manual uploads are
+marked `ready`, and no extraction is performed.
 
 ## Index strategy
 
@@ -137,3 +155,5 @@ external API, or current weather feed is required.
 - V1 server queries and mutations use the seeded BuildCo organization as their
   explicit tenant boundary. Replacing that constant with the authenticated
   user's organization context is required when authentication is introduced.
+- Upload throttling is process-local and intentionally basic. A shared limiter
+  should replace it before horizontally scaled production deployment.

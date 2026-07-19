@@ -22,11 +22,14 @@ export type DatabaseEnums = {
     | "contract"
     | "insurance"
     | "daily_log"
+    | "rfi"
     | "schedule"
     | "change_order"
+    | "incident_report"
     | "safety"
     | "financial"
     | "other";
+  document_processing_status: "pending" | "ready" | "failed";
   integration_provider:
     "manual" | "procore" | "autodesk" | "email" | "sharepoint" | "other";
   project_status: "planning" | "active" | "on_hold" | "complete" | "cancelled";
@@ -147,18 +150,34 @@ export type Database = {
       >;
       documents: Table<
         Timestamped & {
+          archived_at: string | null;
           document_date: string | null;
           document_type: DatabaseEnums["document_type"];
           external_id: string | null;
           id: string;
           integration_source_id: string | null;
+          mime_type: string | null;
           name: string;
           organization_id: string;
+          original_filename: string | null;
+          processing_status: DatabaseEnums["document_processing_status"];
           project_id: string | null;
+          size_bytes: number | null;
           storage_path: string | null;
           vendor_id: string | null;
         }
       >;
+      document_activities: Table<{
+        activity_type: "uploaded" | "edited" | "archived";
+        actor_user_id: string | null;
+        created_at: string;
+        document_id: string;
+        id: string;
+        metadata: Json;
+        note: string;
+        occurred_at: string;
+        organization_id: string;
+      }>;
       risks: Table<RiskRow>;
       risk_evidence: Table<{
         created_at: string;
