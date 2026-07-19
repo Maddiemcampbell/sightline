@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { assertOrganizationAccess } from "@/features/documents/authorization";
 import { validateDocumentAssociations } from "@/features/documents/data";
 import {
@@ -77,8 +75,6 @@ export async function editDocumentAction(
       .eq("id", value.documentId);
     throw new Error(activityError.message);
   }
-  revalidatePath("/documents");
-  revalidatePath(`/documents/${value.documentId}`);
   return { name: updatedDocument.name };
 }
 
@@ -121,6 +117,4 @@ export async function archiveDocumentAction(input: { documentId: string }) {
       .eq("id", value.documentId);
     throw new Error(activityError.message);
   }
-  revalidatePath("/documents");
-  revalidatePath(`/documents/${value.documentId}`);
 }

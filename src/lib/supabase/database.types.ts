@@ -344,6 +344,43 @@ export type Database = {
           manually_sent_by_user_id: string | null;
         }
       >;
+      risk_conversations: Table<{
+        id: string;
+        organization_id: string;
+        risk_id: string;
+        user_id: string;
+        created_at: string;
+        updated_at: string;
+      }>;
+      risk_conversation_messages: Table<{
+        id: string;
+        organization_id: string;
+        conversation_id: string;
+        role: "user" | "assistant";
+        content: string;
+        answer_status: "answered" | "unavailable" | null;
+        evidence_ids: string[];
+        confidence: number | null;
+        missing_information: string[];
+        suggested_follow_ups: string[];
+        provider: string | null;
+        model_name: string | null;
+        prompt_version: string | null;
+        latency_ms: number | null;
+        input_tokens: number | null;
+        output_tokens: number | null;
+        total_tokens: number | null;
+        created_at: string;
+      }>;
+      risk_answer_feedback: Table<{
+        id: string;
+        organization_id: string;
+        message_id: string;
+        user_id: string;
+        rating: "helpful" | "not_helpful" | "incorrect";
+        created_at: string;
+        updated_at: string;
+      }>;
       recommended_actions: Table<
         Timestamped & {
           owner_user_id: string | null;

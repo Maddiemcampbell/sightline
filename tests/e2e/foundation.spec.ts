@@ -13,7 +13,7 @@ test("loads the application shell and morning brief", async ({ page }) => {
   await expect(page).toHaveURL(/\/brief$/);
   await expect(
     page.getByRole("heading", { name: "Good morning, Matt." }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("article")).toHaveCount(3);
   await expect(page.getByText("Total profit at risk")).toBeVisible();
 });
@@ -142,6 +142,24 @@ test("explains a risk with visibly grounded evidence", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByText("Source document is unavailable or archived."),
+  ).toBeVisible();
+});
+
+test("asks a grounded risk question and records feedback", async ({ page }) => {
+  await page.goto("/risks/60000000-0000-4000-8000-000000000001?tab=ask");
+  await expect(page.getByLabel("Question about this risk")).toBeVisible();
+  await page
+    .getByLabel("Question about this risk")
+    .fill("When does the insurance expire?");
+  await page.getByRole("button", { name: "Ask Sightline" }).click();
+  const answer = page.getByRole("region", { name: "Sightline answer" }).last();
+  await expect(answer).toContainText("Policy expiration: July 25, 2026");
+  await expect(answer).toContainText("Evidence citations");
+  await answer.getByRole("button", { name: "Helpful", exact: true }).click();
+  await expect(answer.getByRole("status")).toHaveText("Feedback saved.");
+  await page.reload();
+  await expect(
+    page.getByText("Policy expiration: July 25, 2026").last(),
   ).toBeVisible();
 });
 

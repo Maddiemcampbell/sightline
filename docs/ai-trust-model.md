@@ -77,6 +77,28 @@ organization or vendor contact, copy, save, and mark a draft as sent manually.
 Sightline has no email-sending capability in this workflow. Draft creation and
 manual sent status append separate user-facing risk activity records.
 
+## Ask Sightline
+
+Ask Sightline is a risk-scoped evidence question service, not a general chat
+surface. The server—not the browser—loads the authorized risk and selects at
+most four relevant evidence records plus only the related project, vendor,
+documents, actions, recent activity, or historical risks needed for the
+question. Document and conversation content is treated as untrusted text and
+sanitized before it enters the provider context.
+
+Answers have a validated status, concise response, evidence IDs, confidence,
+missing information, and suggested follow-up questions. An answered factual
+response without an available evidence citation is rejected. When evidence is
+missing, or provider output fails validation, Sightline returns a deterministic
+bounded response that states what is unavailable. The provider cannot browse,
+retrieve other tenants, call tools, mutate a risk, or expose its prompt or
+reasoning.
+
+Conversation rows are scoped to organization, risk, and user. Only the latest
+20 messages are retained. Feedback and model usage are persisted for future
+evaluation; a process-local ten-questions-per-minute limit provides initial
+abuse protection. A shared rate limiter is required before horizontal scaling.
+
 ## Evaluation fixtures
 
 The fixture set covers expiring subcontractor insurance, a weather-sensitive

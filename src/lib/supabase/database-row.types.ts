@@ -15,6 +15,9 @@ export type RecommendedActionRow = Tables["recommended_actions"]["Row"];
 export type RiskActivityRow = Tables["risk_activities"]["Row"];
 export type RiskEvidenceRow = Tables["risk_evidence"]["Row"];
 export type RiskEmailDraftRow = Tables["risk_email_drafts"]["Row"];
+export type RiskConversationRow = Tables["risk_conversations"]["Row"];
+export type RiskConversationMessageRow =
+  Tables["risk_conversation_messages"]["Row"];
 export type RiskRow = Tables["risks"]["Row"];
 export type RiskResolutionRow = Tables["risk_resolutions"]["Row"];
 export type UserRow = Tables["users"]["Row"];

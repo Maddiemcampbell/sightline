@@ -249,6 +249,17 @@ availability for troubleshooting. The route returns a 404 in production.
 
 ## Major assumptions
 
+### Risk conversations
+
+`risk_conversations` has one thread per organization, risk, and user.
+`risk_conversation_messages` stores user questions and assistant answers,
+including answer availability, cited evidence IDs, confidence, missing
+information, follow-ups, provider metadata, latency, and token usage.
+`risk_answer_feedback` stores one current rating per answer and user. The
+application retains the newest 20 messages per conversation; message deletion
+for retention is the one intentional exception to the otherwise append-only
+risk activity model.
+
 - V1 users have one organization membership. A membership join table can be
   introduced later if cross-organization access is required.
 - All money shares the organization's operating currency; V1 does not perform

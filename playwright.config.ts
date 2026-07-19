@@ -10,7 +10,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["html", { open: "never" }]],
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:3100",
     trace: "on-first-retry",
   },
   projects: [
@@ -21,8 +21,8 @@ export default defineConfig({
   ],
   webServer: {
     command:
-      "SIGHTLINE_E2E=true npm run build -- --webpack && SIGHTLINE_E2E=true npm run start -- --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3000/api/health",
-    reuseExistingServer: !process.env.CI,
+      "SIGHTLINE_E2E=true npm run build -- --webpack && SIGHTLINE_E2E=true npm run start -- --hostname 127.0.0.1 --port 3100",
+    url: "http://127.0.0.1:3100/api/health",
+    reuseExistingServer: false,
   },
 });

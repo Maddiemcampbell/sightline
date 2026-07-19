@@ -6,6 +6,10 @@ import type {
   EmailDraftInput,
   EmailDraftOutput,
 } from "@/domain/ai/email-draft";
+import type {
+  RiskQuestionContext,
+  RiskQuestionOutput,
+} from "@/domain/ai/risk-question";
 
 export type LlmUsage = {
   inputTokens: number | null;
@@ -37,4 +41,15 @@ export interface EmailDraftProvider {
   readonly name: string;
   readonly model: string;
   draft(input: EmailDraftInput): Promise<LlmEmailDraftResult>;
+}
+
+export interface RiskQuestionProvider {
+  readonly name: string;
+  readonly model: string;
+  answer(input: RiskQuestionContext): Promise<{
+    output: RiskQuestionOutput;
+    model: string;
+    latencyMs: number;
+    usage: LlmUsage;
+  }>;
 }

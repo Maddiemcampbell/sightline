@@ -13,6 +13,8 @@ import { ActivityTimeline } from "@/features/activity/timeline";
 import { RiskCommentForm } from "@/features/activity/comment-form";
 import { getRiskEvidenceExperience } from "@/features/evidence/data";
 import { EvidenceExperience } from "@/features/evidence/evidence-experience";
+import { getAskSightlineHistory } from "@/features/ask-sightline/data";
+import { AskSightlinePanel } from "@/features/ask-sightline/ask-panel";
 
 type Props = {
   params: Promise<{ riskId: string }>;
@@ -24,11 +26,12 @@ export default async function RiskPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
   const detail = await getRiskDetail(riskId);
   if (!detail) notFound();
-  const [activityPage, evidenceExperience] = await Promise.all([
+  const [activityPage, evidenceExperience, askMessages] = await Promise.all([
     getActivityPage({ riskId, limit: 30 }),
     getRiskEvidenceExperience(riskId),
+    tab === "ask" ? getAskSightlineHistory(riskId) : Promise.resolve([]),
   ]);
-  const activeTab = tab === "evidence" ? "evidence" : "overview";
+  const activeTab = tab === "evidence" || tab === "ask" ? tab : "overview";
   const closed = ["resolved", "dismissed"].includes(detail.risk.status);
   const ownerNameById = new Map(
     detail.users.map((user) => [user.id, user.full_name]),
@@ -122,9 +125,25 @@ export default async function RiskPage({ params, searchParams }: Props) {
           >
             Evidence ({evidenceExperience.items.length})
           </TabLink>
+          <TabLink
+            href={`/risks/${riskId}?tab=ask`}
+            active={activeTab === "ask"}
+          >
+            Ask Sightline
+          </TabLink>
         </div>
       </nav>
-      {activeTab === "evidence" ? (
+      {activeTab === "ask" ? (
+        <div className="mt-6">
+          <AskSightlinePanel
+            riskId={riskId}
+            initialMessages={askMessages}
+            evidenceLabels={Object.fromEntries(
+              evidenceExperience.items.map((item) => [item.id, item.title]),
+            )}
+          />
+        </div>
+      ) : activeTab === "evidence" ? (
         <div className="mt-6">
           <EvidenceExperience experience={evidenceExperience} />
         </div>
