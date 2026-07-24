@@ -11,6 +11,7 @@ import {
   assertAuthorized,
   canAssignAction,
   canEditAction,
+  canCompleteAction,
 } from "@/lib/auth/authorization";
 
 export async function mutateAction(input: ActionMutationInput) {
@@ -21,7 +22,25 @@ export async function mutateAction(input: ActionMutationInput) {
       const service = new RecommendedActionService(
         await createServerSupabaseClient(),
       );
-      assertAuthorized(canEditAction(context));
+      assertAuthorized(
+        value.operation === "complete"
+          ? canCompleteAction(context)
+          : canEditAction(context),
+      );
+      if (
+        value.operation === "complete" &&
+        context.organizationRole === "contributor"
+      ) {
+        const client = await createServerSupabaseClient();
+        const { data, error } = await client
+          .from("recommended_actions")
+          .select("owner_user_id")
+          .eq("organization_id", context.organizationId)
+          .eq("id", value.actionId)
+          .maybeSingle();
+        if (error) throw new Error(error.message);
+        assertAuthorized(data?.owner_user_id === context.userId);
+      }
       if (value.operation === "assign") {
         assertAuthorized(canAssignAction(context));
       }

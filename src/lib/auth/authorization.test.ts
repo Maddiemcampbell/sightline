@@ -36,10 +36,15 @@ const permissions: readonly Permission[] = [
   "risk:edit",
   "risk:resolve",
   "action:edit",
+  "action:complete",
   "action:assign",
   "document:view",
   "document:edit",
   "document:upload",
+  "project_members:manage",
+  "comment:create",
+  "ai:use",
+  "integrations:manage",
   "members:manage",
   "organization:manage",
   "financial_exposure:view",
@@ -75,16 +80,45 @@ describe("central authorization service", () => {
     ).toBe(false);
   });
 
-  it("keeps future roles deny-by-default until their policy is approved", () => {
-    const futureRoles: readonly OrganizationRole[] = [
-      "administrator",
-      "manager",
-      "contributor",
-    ];
-    for (const organizationRole of futureRoles) {
-      for (const permission of permissions) {
-        expect(can({ ...owner, organizationRole }, permission)).toBe(false);
-      }
+  it("implements the approved role capability matrix", () => {
+    const allowed: Record<OrganizationRole, readonly Permission[]> = {
+      owner: permissions,
+      administrator: permissions.filter(
+        (permission) =>
+          permission !== "financial_exposure:view" &&
+          permission !== "internal_admin:access",
+      ),
+      manager: [
+        "project:view",
+        "risk:view",
+        "risk:edit",
+        "risk:resolve",
+        "action:edit",
+        "action:complete",
+        "action:assign",
+        "document:view",
+        "document:edit",
+        "document:upload",
+        "project_members:manage",
+        "comment:create",
+        "ai:use",
+      ],
+      contributor: [
+        "project:view",
+        "risk:view",
+        "action:complete",
+        "document:view",
+        "document:upload",
+        "comment:create",
+      ],
+    };
+    for (const organizationRole of Object.keys(
+      allowed,
+    ) as OrganizationRole[]) {
+      for (const permission of permissions)
+        expect(can({ ...owner, organizationRole }, permission)).toBe(
+          allowed[organizationRole].includes(permission),
+        );
     }
   });
 

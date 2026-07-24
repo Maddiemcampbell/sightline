@@ -6,6 +6,7 @@ import { RiskActivityService } from "@/features/activity/service";
 import {
   assertAuthorized,
   canEditRisk,
+  canComment,
   type ActorContext,
 } from "@/lib/auth/authorization";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
@@ -125,7 +126,7 @@ export class RiskManagementService {
     comment: string,
     mentionedUserIds: readonly string[],
   ) {
-    assertAuthorized(canEditRisk(context));
+    assertAuthorized(canComment(context));
     await this.requireRisk(context, riskId);
     await this.activities.append(context, {
       riskId,

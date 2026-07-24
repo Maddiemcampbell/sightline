@@ -95,25 +95,62 @@ export class OrganizationRepository {
     if (error) throw new Error(error.message);
     if (!memberships.length) return [];
 
-    const { data: users, error: usersError } = await this.client
-      .from("users")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .in(
-        "id",
-        memberships.map((membership) => membership.application_user_id),
-      );
+    const [{ data: users, error: usersError }, assignmentsResult] =
+      await Promise.all([
+        this.client
+          .from("users")
+          .select("*")
+          .eq("organization_id", organizationId)
+          .in(
+            "id",
+            memberships.map((membership) => membership.application_user_id),
+          ),
+        this.client
+          .from("project_memberships")
+          .select("organization_membership_id,project_id")
+          .eq("organization_id", organizationId),
+      ]);
     if (usersError) throw new Error(usersError.message);
+    if (assignmentsResult.error)
+      throw new Error(assignmentsResult.error.message);
+    const projectIds = [
+      ...new Set(
+        (assignmentsResult.data ?? []).map((assignment) => assignment.project_id),
+      ),
+    ];
+    const projectsResult = projectIds.length
+      ? await this.client
+          .from("projects")
+          .select("id,name")
+          .eq("organization_id", organizationId)
+          .in("id", projectIds)
+      : { data: [], error: null };
+    if (projectsResult.error) throw new Error(projectsResult.error.message);
     const userById = new Map(users.map((user) => [user.id, user]));
+    const projectById = new Map(
+      (projectsResult.data ?? []).map((project) => [project.id, project]),
+    );
     return memberships.flatMap((membership) => {
       const user = userById.get(membership.application_user_id);
       return user
         ? [
             {
               membershipId: membership.id,
+              applicationUserId: membership.application_user_id,
+              avatarUrl: membership.avatar_url,
               email: user.email,
               fullName: user.full_name,
               role: membership.role,
+              lastActiveAt: membership.last_active_at,
+              assignedProjects: (assignmentsResult.data ?? [])
+                .filter(
+                  (assignment) =>
+                    assignment.organization_membership_id === membership.id,
+                )
+                .flatMap((assignment) => {
+                  const project = projectById.get(assignment.project_id);
+                  return project ? [project] : [];
+                }),
             },
           ]
         : [];
@@ -158,6 +195,7 @@ export class OrganizationRepository {
     tokenHash: string;
     invitedByMembershipId: string;
     expiresAt: string;
+    role: "administrator" | "manager" | "contributor";
   }): Promise<void> {
     const { error } = await this.client.from("invitations").insert({
       organization_id: input.organizationId,
@@ -165,6 +203,7 @@ export class OrganizationRepository {
       token_hash: input.tokenHash,
       invited_by_membership_id: input.invitedByMembershipId,
       expires_at: input.expiresAt,
+      role: input.role,
     });
     if (error) throw new Error(error.message);
   }
@@ -180,7 +219,11 @@ export class OrganizationRepository {
       id: invitation.id,
       organizationId: invitation.organization_id,
       email: invitation.email,
+      role: invitation.role,
+      createdAt: invitation.created_at,
       expiresAt: invitation.expires_at,
+      lastSentAt: invitation.last_sent_at,
+      sendCount: invitation.send_count,
       acceptedAt: invitation.accepted_at,
       revokedAt: invitation.revoked_at,
     }));
@@ -210,7 +253,11 @@ export class OrganizationRepository {
         id: invitation.id,
         organizationId: invitation.organization_id,
         email: invitation.email,
+        role: invitation.role,
+        createdAt: invitation.created_at,
         expiresAt: invitation.expires_at,
+        lastSentAt: invitation.last_sent_at,
+        sendCount: invitation.send_count,
         acceptedAt: invitation.accepted_at,
         revokedAt: invitation.revoked_at,
       },

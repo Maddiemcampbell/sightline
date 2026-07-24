@@ -26,6 +26,9 @@ export const updateOrganizationSchema = createOrganizationSchema;
 
 export const createInvitationSchema = z.object({
   email: z.email("Enter a valid email address.").trim().toLowerCase(),
+  role: z
+    .enum(["administrator", "manager", "contributor"])
+    .default("contributor"),
 });
 
 export const invitationTokenSchema = z

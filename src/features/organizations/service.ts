@@ -80,7 +80,7 @@ export class OrganizationService {
     );
     assertOrganizationMember(membership);
     assertAuthorized(canManageMembers(membership));
-    const { email } = createInvitationSchema.parse(input);
+    const { email, role } = createInvitationSchema.parse(input);
     const token = randomBytes(32).toString("hex");
     await this.repository.createInvitation({
       organizationId,
@@ -88,6 +88,7 @@ export class OrganizationService {
       tokenHash: hashInvitationToken(token),
       invitedByMembershipId: membership.id,
       expiresAt: new Date(Date.now() + INVITATION_LIFETIME_MS).toISOString(),
+      role,
     });
     return token;
   }

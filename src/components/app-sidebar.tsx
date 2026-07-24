@@ -109,12 +109,18 @@ export async function AppSidebar() {
       </nav>
 
       {currentMembership ? (
-        <div className="px-4 pb-3">
+        <div className="flex flex-col gap-2 px-4 pb-3">
           <Link
             href="/organization"
             className="text-muted hover:text-deep-green text-sm font-semibold"
           >
             Organization profile
+          </Link>
+          <Link
+            href="/settings/team"
+            className="text-muted hover:text-deep-green text-sm font-semibold"
+          >
+            Team management
           </Link>
         </div>
       ) : null}
@@ -132,7 +138,9 @@ export async function AppSidebar() {
               {principal?.email ?? "Sightline user"}
             </p>
             <p className="text-muted truncate text-xs">
-              {currentMembership ? "Organization owner" : "No organization"}
+              {currentMembership
+                ? `${currentMembership.role[0]?.toUpperCase()}${currentMembership.role.slice(1)}`
+                : "No organization"}
             </p>
           </div>
         </div>

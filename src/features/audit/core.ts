@@ -9,6 +9,8 @@ export type AuditAction =
   | "auth.password_reset_requested"
   | "auth.password_reset_completed"
   | "invitation.created"
+  | "invitation.revoked"
+  | "invitation.resent"
   | "invitation.accepted"
   | "organization.created"
   | "organization.updated"

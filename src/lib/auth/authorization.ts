@@ -8,10 +8,15 @@ export type Permission =
   | "risk:edit"
   | "risk:resolve"
   | "action:edit"
+  | "action:complete"
   | "action:assign"
   | "document:view"
   | "document:edit"
   | "document:upload"
+  | "project_members:manage"
+  | "comment:create"
+  | "ai:use"
+  | "integrations:manage"
   | "members:manage"
   | "organization:manage"
   | "financial_exposure:view"
@@ -46,10 +51,15 @@ const OWNER_PERMISSIONS = {
   "risk:edit": true,
   "risk:resolve": true,
   "action:edit": true,
+  "action:complete": true,
   "action:assign": true,
   "document:view": true,
   "document:edit": true,
   "document:upload": true,
+  "project_members:manage": true,
+  "comment:create": true,
+  "ai:use": true,
+  "integrations:manage": true,
   "members:manage": true,
   "organization:manage": true,
   "financial_exposure:view": true,
@@ -57,15 +67,40 @@ const OWNER_PERMISSIONS = {
   "internal_admin:access": true,
 } as const satisfies Record<Permission, boolean>;
 
-// Future roles are deliberately deny-by-default. Enabling a role is one policy
-// table change; call sites do not need to change.
 const PERMISSIONS_BY_ROLE: Readonly<
   Record<OrganizationRole, Readonly<Record<Permission, boolean>>>
 > = {
   owner: OWNER_PERMISSIONS,
-  administrator: denyAllPermissions(),
-  manager: denyAllPermissions(),
-  contributor: denyAllPermissions(),
+  administrator: {
+    ...OWNER_PERMISSIONS,
+    "financial_exposure:view": false,
+    "internal_admin:access": false,
+  },
+  manager: {
+    ...denyAllPermissions(),
+    "project:view": true,
+    "risk:view": true,
+    "risk:edit": true,
+    "risk:resolve": true,
+    "action:edit": true,
+    "action:complete": true,
+    "action:assign": true,
+    "document:view": true,
+    "document:edit": true,
+    "document:upload": true,
+    "project_members:manage": true,
+    "comment:create": true,
+    "ai:use": true,
+  },
+  contributor: {
+    ...denyAllPermissions(),
+    "project:view": true,
+    "risk:view": true,
+    "action:complete": true,
+    "document:view": true,
+    "document:upload": true,
+    "comment:create": true,
+  },
 };
 
 function denyAllPermissions(): Record<Permission, boolean> {
@@ -76,10 +111,15 @@ function denyAllPermissions(): Record<Permission, boolean> {
     "risk:edit": false,
     "risk:resolve": false,
     "action:edit": false,
+    "action:complete": false,
     "action:assign": false,
     "document:view": false,
     "document:edit": false,
     "document:upload": false,
+    "project_members:manage": false,
+    "comment:create": false,
+    "ai:use": false,
+    "integrations:manage": false,
     "members:manage": false,
     "organization:manage": false,
     "financial_exposure:view": false,
@@ -153,6 +193,12 @@ export function canEditAction(
   return can(subject, "action:edit", resource);
 }
 
+export function canCompleteAction(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "action:complete");
+}
+
 export function canAssignAction(
   subject: AuthorizationSubject | null,
   resource?: OrganizationResource | null,
@@ -184,6 +230,26 @@ export function canManageMembers(
   subject: AuthorizationSubject | null,
 ): boolean {
   return can(subject, "members:manage");
+}
+
+export function canManageProjectMembers(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "project_members:manage");
+}
+
+export function canComment(subject: AuthorizationSubject | null): boolean {
+  return can(subject, "comment:create");
+}
+
+export function canUseAi(subject: AuthorizationSubject | null): boolean {
+  return can(subject, "ai:use");
+}
+
+export function canManageIntegrations(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "integrations:manage");
 }
 
 export function canManageOrganization(

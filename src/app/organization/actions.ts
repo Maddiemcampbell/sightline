@@ -24,6 +24,7 @@ import {
   recordAuditEvents,
 } from "@/features/audit/service";
 import { getServerEnv } from "@/lib/env";
+import { TeamRepository } from "@/features/team/repository";
 
 export type OrganizationActionState = Readonly<{
   error?: boolean;
@@ -206,6 +207,7 @@ export async function createInvitationAction(
     const membership = await requireCurrentMembership();
     const input = createInvitationSchema.parse({
       email: formData.get("email"),
+      role: formData.get("role") || "contributor",
     });
     const token = await service().createInvitation(
       principal,
@@ -218,10 +220,36 @@ export async function createInvitationAction(
       actorUserId: membership.applicationUserId,
       action: "invitation.created",
       resourceType: "invitation",
-      metadata: { inviteeIdentifierHash: auditIdentifier(input.email) },
+      metadata: {
+        inviteeIdentifierHash: auditIdentifier(input.email),
+        role: input.role,
+      },
     });
+    const teamRepository = new TeamRepository(createAdminSupabaseClient());
+    await Promise.all([
+      teamRepository.appendEvent({
+        organizationId: membership.organizationId,
+        actorMembershipId: membership.id,
+        eventType: "member_invited",
+        summary: `A ${input.role} was invited to the organization.`,
+        metadata: {
+          inviteeIdentifierHash: auditIdentifier(input.email),
+          role: input.role,
+        },
+      }),
+      teamRepository.createNotification({
+        organizationId: membership.organizationId,
+        recipientMembershipId: null,
+        eventType: "member_invited",
+        payload: {
+          inviteeIdentifierHash: auditIdentifier(input.email),
+          role: input.role,
+        },
+      }),
+    ]);
     const origin = getServerEnv().APP_URL;
     revalidatePath("/organization/settings");
+    revalidatePath("/settings/team");
     return {
       message: "Invitation created. Share this single-use link securely.",
       invitationUrl: `${origin}/invitations/${token}`,

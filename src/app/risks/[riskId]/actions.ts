@@ -12,6 +12,7 @@ import {
   assertAuthorized,
   canResolveRisk,
   canViewRisk,
+  canComment,
 } from "@/lib/auth/authorization";
 
 const mutationSchema = z.discriminatedUnion("kind", [
@@ -40,7 +41,7 @@ export async function addRiskCommentAction(
     commentSchema,
     input,
     async (context, parsed) => {
-      assertAuthorized(canViewRisk(context));
+      assertAuthorized(canComment(context));
       const service = new RiskManagementService(
         await createServerSupabaseClient(),
       );

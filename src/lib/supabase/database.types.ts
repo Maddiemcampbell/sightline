@@ -73,8 +73,10 @@ export type OrganizationMembershipRow = Timestamped & {
   application_user_id: string;
   auth_user_id: string;
   id: string;
+  avatar_url: string | null;
+  last_active_at: string | null;
   organization_id: string;
-  role: "owner";
+  role: "owner" | "administrator" | "manager" | "contributor";
 };
 
 export type InvitationRow = {
@@ -85,8 +87,11 @@ export type InvitationRow = {
   expires_at: string;
   id: string;
   invited_by_membership_id: string;
+  last_sent_at: string;
   organization_id: string;
+  role: "administrator" | "manager" | "contributor";
   revoked_at: string | null;
+  send_count: number;
   token_hash: string;
 };
 
@@ -192,6 +197,40 @@ export type Database = {
       organization_memberships: Table<OrganizationMembershipRow>;
       invitations: Table<InvitationRow>;
       audit_logs: Table<AuditLogRow>;
+      project_memberships: Table<{
+        created_at: string;
+        created_by_membership_id: string | null;
+        id: string;
+        organization_id: string;
+        organization_membership_id: string;
+        project_id: string;
+      }>;
+      team_activity_events: Table<{
+        actor_membership_id: string | null;
+        created_at: string;
+        event_type:
+          | "member_invited"
+          | "invitation_revoked"
+          | "invitation_resent"
+          | "member_removed"
+          | "member_role_changed"
+          | "ownership_transferred"
+          | "project_members_changed";
+        id: string;
+        metadata: Json;
+        organization_id: string;
+        summary: string;
+        target_membership_id: string | null;
+      }>;
+      notification_placeholders: Table<{
+        created_at: string;
+        delivered_at: string | null;
+        event_type: string;
+        id: string;
+        organization_id: string;
+        payload: Json;
+        recipient_membership_id: string | null;
+      }>;
       users: Table<UserRow>;
       projects: Table<ProjectRow>;
       vendors: Table<VendorRow>;
@@ -547,6 +586,14 @@ export type Database = {
         Args: {
           target_membership_id: string;
           principal_auth_user_id: string;
+        };
+        Returns: undefined;
+      };
+      transfer_organization_ownership: {
+        Args: {
+          target_organization_id: string;
+          actor_membership_id: string;
+          target_membership_id: string;
         };
         Returns: undefined;
       };

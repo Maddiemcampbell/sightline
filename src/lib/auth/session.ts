@@ -100,7 +100,22 @@ export async function requireCurrentMembership(): Promise<OrganizationMembership
   await requireAuthenticatedUser();
   const membership = await getCurrentMembership();
   if (!membership) redirect("/organizations/new");
+  void touchMembershipActivity(membership.id, membership.organizationId);
   return membership;
+}
+
+async function touchMembershipActivity(
+  membershipId: string,
+  organizationId: string,
+): Promise<void> {
+  const client = createAdminSupabaseClient();
+  const cutoff = new Date(Date.now() - 15 * 60_000).toISOString();
+  await client
+    .from("organization_memberships")
+    .update({ last_active_at: new Date().toISOString() })
+    .eq("id", membershipId)
+    .eq("organization_id", organizationId)
+    .or(`last_active_at.is.null,last_active_at.lt.${cutoff}`);
 }
 
 export async function requireCurrentOrganization(): Promise<Organization> {
