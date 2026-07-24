@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import {
   cancelDeletionAction,
@@ -6,11 +7,15 @@ import {
   updatePrivacySettingsAction,
 } from "@/app/settings/privacy/actions";
 import { PrivacyRepository } from "@/features/privacy/repository";
+import { DataExportRepository } from "@/features/data-exports/repository";
 import { PrivacyForm } from "@/features/privacy/privacy-forms";
 import {
   RETENTION_DAY_OPTIONS,
 } from "@/features/privacy/validation";
-import { canManageOrganization } from "@/lib/auth/authorization";
+import {
+  canExportOrganizationData,
+  canManageOrganization,
+} from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
@@ -20,7 +25,8 @@ export default async function PrivacySettingsPage() {
   const context = await requireActorContext();
   const client = createAdminSupabaseClient();
   const repository = new PrivacyRepository(client);
-  const [settings, requests, organization] = await Promise.all([
+  const mayViewExports = canExportOrganizationData(context);
+  const [settings, requests, organization, exports] = await Promise.all([
     repository.getSettings(context.organizationId),
     repository.listRequests(
       context.authUserId,
@@ -28,6 +34,9 @@ export default async function PrivacySettingsPage() {
       context.organizationRole === "owner",
     ),
     client.from("organizations").select("name,legal_hold_enabled").eq("id", context.organizationId).single(),
+    mayViewExports
+      ? new DataExportRepository(client).list(context.organizationId, 5)
+      : Promise.resolve([]),
   ]);
   if (organization.error) throw new Error(organization.error.message);
   const pending = requests.filter((request) =>
@@ -35,6 +44,86 @@ export default async function PrivacySettingsPage() {
   );
   return (
     <div className="space-y-6">
+      <Card className="overflow-hidden bg-[linear-gradient(135deg,var(--color-deep-green),#173d35)] text-white">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/65">
+          Sightline Trust Center
+        </p>
+        <h2 className="mt-3 max-w-3xl text-2xl font-semibold tracking-[-0.03em]">
+          Your organization controls its data.
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-white/75">
+          This page explains how Sightline handles customer information and
+          gives authorized administrators direct access to retention, export,
+          and deletion controls.
+        </p>
+      </Card>
+
+      <section aria-labelledby="trust-commitments">
+        <h2 id="trust-commitments" className="sr-only">Data commitments</h2>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Commitment
+            eyebrow="AI processing"
+            statement="Customer data is never used to train foundation models without explicit permission."
+            detail="AI responses are generated only from information the customer has authorized Sightline to process."
+          />
+          <Commitment
+            eyebrow="Document ownership"
+            statement="Customers retain ownership of their uploaded documents."
+            detail="Documents remain private to the organization and downloads require server-side authorization."
+          />
+          <Commitment
+            eyebrow="Organization control"
+            statement={`${organization.data.name} controls member access, exports, retention, and deletion.`}
+            detail="Organization Owners administer destructive operations. Administrators may create portable data exports."
+          />
+        </div>
+      </section>
+
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-muted text-xs font-semibold uppercase">Current policies</p>
+            <h2 className="mt-2 text-xl font-semibold">How Sightline processes data</h2>
+          </div>
+          <div className="text-muted text-right text-xs">
+            <p>Last privacy policy update: <strong className="text-foreground">Not yet published</strong></p>
+            <p className="mt-1">Last terms update: <strong className="text-foreground">Not yet published</strong></p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          <PolicySummary
+            title="Customer data use and document handling"
+            items={[
+              "Used to provide the Sightline features the organization selects",
+              "Kept within organization and project access boundaries",
+              "Uploaded documents remain customer-owned",
+              "Private storage and server-authorized signed downloads",
+              "Document binaries are excluded from metadata-only organization exports",
+            ]}
+          />
+          <PolicySummary
+            title="Current data retention policy"
+            items={[
+              `Archived documents: ${settings.document_retention_days} days`,
+              `Activity history: ${settings.activity_retention_days} days`,
+              `AI conversations: ${settings.ai_retention_days} days`,
+              `Audit evidence: ${settings.audit_retention_days} days`,
+              `Deletion grace period: ${settings.soft_delete_grace_days} days`,
+            ]}
+          />
+          <PolicySummary
+            title="Current AI processing policy"
+            items={[
+              "Customer-authorized organization and project context only",
+              "No foundation-model training without explicit permission",
+              "Grounded answers preserve evidence references where available",
+              "Provider credentials and internal model telemetry are not included in customer exports",
+              `AI conversation retention: ${settings.ai_retention_days} days`,
+            ]}
+          />
+        </div>
+      </Card>
+
       {pending.length > 0 && (
         <Card className="border-danger/40 bg-danger/5">
           <h2 className="text-lg font-semibold">Deletion countdown active</h2>
@@ -62,6 +151,52 @@ export default async function PrivacySettingsPage() {
           </ul>
         </Card>
       )}
+
+      {pending.length === 0 && (
+        <Card>
+          <p className="text-muted text-xs font-semibold uppercase">Organization deletion status</p>
+          <h2 className="mt-2 text-lg font-semibold">No deletion scheduled</h2>
+          <p className="text-muted mt-2 text-sm">
+            {organization.data.name} is active and no organization or account
+            deletion visible to you is pending.
+          </p>
+        </Card>
+      )}
+
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">Organization export history</h2>
+            <p className="text-muted mt-2 text-sm">
+              Export packages contain customer-facing business data and a
+              machine-readable manifest. Signed downloads expire automatically.
+            </p>
+          </div>
+          {mayViewExports && (
+            <Link href="/settings/data-export" className="text-deep-green text-sm font-semibold underline">
+              Manage exports
+            </Link>
+          )}
+        </div>
+        {!mayViewExports ? (
+          <p className="text-muted mt-5 rounded-md border border-dashed p-4 text-sm">
+            Export history is available to organization Owners and Administrators.
+          </p>
+        ) : exports.length === 0 ? (
+          <p className="text-muted mt-5 rounded-md border border-dashed p-4 text-sm">
+            No organization exports have been requested.
+          </p>
+        ) : (
+          <ul className="divide-border mt-5 divide-y">
+            {exports.map((item) => (
+              <li key={item.id} className="flex flex-wrap justify-between gap-3 py-3 text-sm">
+                <span><strong>{item.export_format.toUpperCase()}</strong> requested by {item.requested_by_name}</span>
+                <span className="text-muted">{item.status} · {new Date(item.requested_at).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {canManageOrganization(context) && (
         <Card>
@@ -92,6 +227,57 @@ export default async function PrivacySettingsPage() {
             ? "A legal hold is active. Retention cleanup and permanent deletion are blocked."
             : "No legal hold is active. Legal hold activation and release will require a controlled support workflow."}
         </p>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h2 className="text-lg font-semibold">Security practices</h2>
+          <ul className="text-muted mt-4 space-y-3 text-sm">
+            <li><strong className="text-foreground">Access:</strong> verified sessions, organization membership, centralized authorization, and database RLS.</li>
+            <li><strong className="text-foreground">Files:</strong> private buckets, validated uploads, ownership checks, and short-lived signed downloads.</li>
+            <li><strong className="text-foreground">Account safety:</strong> use a unique password, review active sessions, and remove members who no longer require access.</li>
+            <li><strong className="text-foreground">Traceability:</strong> security-sensitive operations are recorded separately from the activity timeline.</li>
+          </ul>
+          <Link href="/settings/security" className="text-deep-green mt-5 inline-block text-sm font-semibold underline">
+            Review security settings
+          </Link>
+        </Card>
+        <Card>
+          <p className="text-muted text-xs font-semibold uppercase">Privacy questions</p>
+          <h2 className="mt-2 text-lg font-semibold">Contact Sightline</h2>
+          <p className="text-muted mt-3 text-sm">
+            Contact <a className="text-deep-green font-semibold underline" href="mailto:privacy@sightline.app">privacy@sightline.app</a> for
+            privacy, data-handling, export, or deletion questions.
+          </p>
+          <p className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-900">
+            Operational placeholder: confirm this monitored privacy inbox and
+            response process before public launch.
+          </p>
+        </Card>
+      </div>
+
+      <Card>
+        <p className="text-muted text-xs font-semibold uppercase">Legal and assurance resources</p>
+        <h2 className="mt-2 text-xl font-semibold">Documents under review</h2>
+        <p className="text-muted mt-2 text-sm">
+          The resources below are placeholders, not finalized legal commitments.
+          Publication dates and approved language must be supplied after review
+          by counsel and the appropriate security or accessibility owner.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Privacy Policy", "Counsel review required"],
+            ["Terms of Service", "Counsel review required"],
+            ["Security Documentation", "Security review required"],
+            ["Subprocessor List", "Counsel and vendor review required"],
+            ["Accessibility Statement", "Accessibility review required"],
+          ].map(([title, status]) => (
+            <div key={title} className="border-border rounded-md border p-4">
+              <p className="font-semibold">{title}</p>
+              <p className="text-muted mt-1 text-xs">Placeholder · {status}</p>
+            </div>
+          ))}
+        </div>
       </Card>
 
       {context.organizationRole === "owner" && pending.every((item) => item.organization_id !== context.organizationId) && (
@@ -160,4 +346,44 @@ function scopeLabel(scope: "user_only" | "organization_only" | "organization_all
   if (scope === "user_only") return "Account deletion";
   if (scope === "organization_only") return "Organization deletion";
   return "Organization and all related data deletion";
+}
+
+function Commitment({
+  eyebrow,
+  statement,
+  detail,
+}: {
+  eyebrow: string;
+  statement: string;
+  detail: string;
+}) {
+  return (
+    <Card>
+      <p className="text-muted text-xs font-semibold uppercase">{eyebrow}</p>
+      <p className="mt-3 font-semibold leading-6">{statement}</p>
+      <p className="text-muted mt-2 text-sm leading-6">{detail}</p>
+    </Card>
+  );
+}
+
+function PolicySummary({
+  title,
+  items,
+}: {
+  title: string;
+  items: readonly string[];
+}) {
+  return (
+    <section className="border-border rounded-lg border p-5">
+      <h3 className="font-semibold">{title}</h3>
+      <ul className="text-muted mt-4 space-y-2 text-sm">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span aria-hidden="true" className="text-deep-green">●</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
