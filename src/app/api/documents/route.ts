@@ -16,8 +16,11 @@ import {
 } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { assertAuthorized, canUploadDocument } from "@/lib/auth/authorization";
+import { rejectCrossSiteMutation } from "@/lib/security/request";
 
 export async function POST(request: Request) {
+  const rejected = rejectCrossSiteMutation(request);
+  if (rejected) return rejected;
   const context = await requireActorContext();
   assertAuthorized(canUploadDocument(context));
   const rateKey = `${context.organizationId}:${context.userId}`;

@@ -4,12 +4,17 @@ import { getDailyBriefView } from "@/features/daily-brief/data";
 import { renderMorningBriefEmail } from "@/features/email/render-morning-brief";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  assertAuthorized,
+  canAccessInternalAdmin,
+} from "@/lib/auth/authorization";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailPreviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
   const context = await requireActorContext();
+  assertAuthorized(canAccessInternalAdmin(context));
   const client = await createServerSupabaseClient();
   const [brief, organizationResult, userResult] = await Promise.all([
     getDailyBriefView(),

@@ -23,6 +23,7 @@ import {
   recordAuditEvent,
   recordAuditEvents,
 } from "@/features/audit/service";
+import { getServerEnv } from "@/lib/env";
 
 export type OrganizationActionState = Readonly<{
   error?: boolean;
@@ -83,7 +84,9 @@ async function setActiveOrganization(organizationId: string): Promise<void> {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure:
+      process.env.NODE_ENV === "production" &&
+      process.env.SIGHTLINE_E2E !== "true",
   });
 }
 
@@ -217,7 +220,7 @@ export async function createInvitationAction(
       resourceType: "invitation",
       metadata: { inviteeIdentifierHash: auditIdentifier(input.email) },
     });
-    const origin = process.env.APP_URL ?? "http://localhost:3000";
+    const origin = getServerEnv().APP_URL;
     revalidatePath("/organization/settings");
     return {
       message: "Invitation created. Share this single-use link securely.",

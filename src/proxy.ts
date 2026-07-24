@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { safeRedirectPath } from "@/lib/auth/redirects";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
+import {
+  applySecurityHeaders,
+  contentSecurityPolicy,
+} from "@/lib/security/headers";
 
 const AUTH_STORAGE_KEY = "sightline-auth";
 const COOKIE_CHUNK_SIZE = 3_500;
@@ -27,12 +31,18 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 export async function proxy(request: NextRequest) {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const production = process.env.NODE_ENV === "production";
+  const csp = contentSecurityPolicy(nonce, !production);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-sightline-pathname", request.nextUrl.pathname);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
+  applySecurityHeaders(response.headers, csp, production);
 
   const client = createClient<AppDatabase>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,7 +81,9 @@ export async function proxy(request: NextRequest) {
                 httpOnly: true,
                 path: "/",
                 sameSite: "lax",
-                secure: process.env.NODE_ENV === "production",
+                secure:
+                  process.env.NODE_ENV === "production" &&
+                  process.env.SIGHTLINE_E2E !== "true",
               });
             });
             for (
@@ -98,16 +110,41 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !isPublicRoute(request.nextUrl.pathname)) {
     if (request.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      const unauthorized = NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 },
+      );
+      applySecurityHeaders(unauthorized.headers, csp, production);
+      return unauthorized;
     }
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set(
       "next",
-      safeRedirectPath(
-        `${request.nextUrl.pathname}${request.nextUrl.search}`,
-      ),
+      safeRedirectPath(`${request.nextUrl.pathname}${request.nextUrl.search}`),
     );
-    return NextResponse.redirect(loginUrl);
+    const redirect = NextResponse.redirect(loginUrl);
+    applySecurityHeaders(redirect.headers, csp, production);
+    return redirect;
+  }
+
+  if (
+    user &&
+    !user.email_confirmed_at &&
+    !isPublicRoute(request.nextUrl.pathname)
+  ) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      const forbidden = NextResponse.json(
+        { error: "Email verification required." },
+        { status: 403 },
+      );
+      applySecurityHeaders(forbidden.headers, csp, production);
+      return forbidden;
+    }
+    const verification = NextResponse.redirect(
+      new URL("/verify-email", request.url),
+    );
+    applySecurityHeaders(verification.headers, csp, production);
+    return verification;
   }
 
   return response;

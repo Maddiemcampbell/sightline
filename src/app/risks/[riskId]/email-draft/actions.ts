@@ -10,6 +10,7 @@ import {
 import { EmailDraftService } from "@/features/email-drafts/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { assertAuthorized, canEditRisk } from "@/lib/auth/authorization";
 
 export async function generateEmailDraftAction(input: unknown) {
   const raw =
@@ -25,11 +26,13 @@ export async function generateEmailDraftAction(input: unknown) {
   const draft = await runServerMutation(
     generateEmailDraftSchema,
     parsed,
-    async (context, value) =>
-      new EmailDraftService(await createServerSupabaseClient()).generate(
+    async (context, value) => {
+      assertAuthorized(canEditRisk(context));
+      return new EmailDraftService(await createServerSupabaseClient()).generate(
         context,
         value,
-      ),
+      );
+    },
   );
   redirect(`/risks/${draft.risk_id}/email-draft?draftId=${draft.id}`);
 }
@@ -39,12 +42,14 @@ export async function saveEmailDraftAction(input: unknown) {
   const draft = await runServerMutation(
     saveEmailDraftSchema,
     parsed,
-    async (context, value) =>
-      new EmailDraftService(await createServerSupabaseClient()).save(
+    async (context, value) => {
+      assertAuthorized(canEditRisk(context));
+      return new EmailDraftService(await createServerSupabaseClient()).save(
         context,
         value.draftId,
         value,
-      ),
+      );
+    },
   );
   revalidatePath(`/risks/${draft.risk_id}/email-draft`);
   return { status: draft.status };
@@ -55,11 +60,13 @@ export async function markEmailDraftSentAction(draftId: string) {
   const draft = await runServerMutation(
     saveEmailDraftSchema.shape.draftId,
     value,
-    async (context, id) =>
-      new EmailDraftService(await createServerSupabaseClient()).markSent(
+    async (context, id) => {
+      assertAuthorized(canEditRisk(context));
+      return new EmailDraftService(await createServerSupabaseClient()).markSent(
         context,
         id,
-      ),
+      );
+    },
   );
   revalidatePath(`/risks/${draft.risk_id}/email-draft`);
   revalidatePath(`/risks/${draft.risk_id}`);

@@ -10,6 +10,7 @@ import {
   recordAuditEvent,
   recordPrincipalAuditEvent,
 } from "@/features/audit/service";
+import { getServerEnv } from "@/lib/env";
 
 export type AuthActionState = Readonly<{
   message?: string;
@@ -23,11 +24,11 @@ export type AuthActionState = Readonly<{
 const emailSchema = z.email("Enter a valid email address.").trim();
 const passwordSchema = z
   .string()
-  .min(8, "Password must be at least 8 characters.")
+  .min(12, "Password must be at least 12 characters.")
   .max(128, "Password must be 128 characters or fewer.");
 
 function siteUrl(): string {
-  return process.env.APP_URL ?? "http://localhost:3000";
+  return getServerEnv().APP_URL;
 }
 
 function validationState(error: z.ZodError): AuthActionState {
@@ -102,7 +103,7 @@ export async function signup(
       emailRedirectTo: `${siteUrl()}/auth/callback?next=/verify-email`,
     },
   });
-  if (error) return { message: error.message };
+  if (error) return { message: "The account could not be created." };
 
   if (data.session && data.user) {
     await recordPrincipalAuditEvent({

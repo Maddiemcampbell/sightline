@@ -9,10 +9,10 @@ export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
 const serverEnvSchema = publicEnvSchema.extend({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  CRON_SECRET: z.string().min(24).optional(),
+  CRON_SECRET: z.string().min(32),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(3).optional(),
-  APP_URL: z.url().optional(),
+  APP_URL: z.url(),
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
 });
@@ -28,7 +28,7 @@ export function getPublicEnv(): PublicEnv {
 }
 
 export function getServerEnv(): ServerEnv {
-  return serverEnvSchema.parse({
+  const parsed = serverEnvSchema.parse({
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -40,4 +40,12 @@ export function getServerEnv(): ServerEnv {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL,
   });
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.SIGHTLINE_E2E !== "true" &&
+    new URL(parsed.APP_URL).protocol !== "https:"
+  ) {
+    throw new Error("APP_URL must use HTTPS in production.");
+  }
+  return parsed;
 }

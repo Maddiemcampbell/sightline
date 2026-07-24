@@ -7,30 +7,34 @@ import {
 import { AskSightlineService } from "@/features/ask-sightline/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { assertAuthorized, canViewRisk } from "@/lib/auth/authorization";
 
 export async function askSightlineAction(input: unknown) {
   const parsed = askRiskQuestionSchema.parse(input);
   const answer = await runServerMutation(
     askRiskQuestionSchema,
     parsed,
-    async (context, value) =>
-      new AskSightlineService(await createServerSupabaseClient()).ask(
+    async (context, value) => {
+      assertAuthorized(canViewRisk(context));
+      return new AskSightlineService(await createServerSupabaseClient()).ask(
         context,
         value.riskId,
         value.question,
-      ),
+      );
+    },
   );
   return answer;
 }
 
 export async function rateSightlineAnswerAction(input: unknown) {
   const parsed = feedbackSchema.parse(input);
-  await runServerMutation(feedbackSchema, parsed, async (context, value) =>
-    new AskSightlineService(await createServerSupabaseClient()).feedback(
+  await runServerMutation(feedbackSchema, parsed, async (context, value) => {
+    assertAuthorized(canViewRisk(context));
+    return new AskSightlineService(await createServerSupabaseClient()).feedback(
       context,
       value.messageId,
       value.rating,
-    ),
-  );
+    );
+  });
   return { rating: parsed.rating };
 }

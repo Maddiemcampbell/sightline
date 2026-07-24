@@ -20,7 +20,9 @@ function cookieOptions(): CookieOptions {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure:
+      process.env.NODE_ENV === "production" &&
+      process.env.SIGHTLINE_E2E !== "true",
   };
 }
 
@@ -67,11 +69,7 @@ export async function createServerSupabaseClient(): Promise<
                   ),
               );
               chunks.forEach((chunk, index) => {
-                cookieStore.set(
-                  cookieName(key, index),
-                  chunk,
-                  cookieOptions(),
-                );
+                cookieStore.set(cookieName(key, index), chunk, cookieOptions());
               });
               for (
                 let index = chunks.length;

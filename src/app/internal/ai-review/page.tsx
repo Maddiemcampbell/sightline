@@ -10,10 +10,15 @@ import { riskAnalysisOutputSchema } from "@/domain/ai/risk-analysis";
 import { riskAnalysisFixtures } from "@/features/ai/evaluation-fixtures";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
+import {
+  assertAuthorized,
+  canAccessInternalAdmin,
+} from "@/lib/auth/authorization";
 
 export default async function AiReviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
   const context = await requireActorContext();
+  assertAuthorized(canAccessInternalAdmin(context));
   const client = await createServerSupabaseClient();
   const { data, error } = await client
     .from("ai_risk_suggestions")

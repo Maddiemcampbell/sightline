@@ -36,6 +36,9 @@ export default async function RootLayout({
     const next = encodeURIComponent(pathname);
     redirect(`/login?next=${next}`);
   }
+  if (!isPublic && user && !user.emailVerified) {
+    redirect("/verify-email");
+  }
   const permitsMembershipOnboarding =
     pathname === "/organizations/new" || pathname.startsWith("/invitations/");
   if (

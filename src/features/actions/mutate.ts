@@ -7,7 +7,11 @@ import {
 } from "@/features/actions/validation";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { assertAuthorized, canAssignAction } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  canAssignAction,
+  canEditAction,
+} from "@/lib/auth/authorization";
 
 export async function mutateAction(input: ActionMutationInput) {
   return runServerMutation(
@@ -17,6 +21,7 @@ export async function mutateAction(input: ActionMutationInput) {
       const service = new RecommendedActionService(
         await createServerSupabaseClient(),
       );
+      assertAuthorized(canEditAction(context));
       if (value.operation === "assign") {
         assertAuthorized(canAssignAction(context));
       }

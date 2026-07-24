@@ -3,7 +3,11 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { RiskActivityService } from "@/features/activity/service";
-import type { ActorContext } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  canEditRisk,
+  type ActorContext,
+} from "@/lib/auth/authorization";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 
 type RiskRow = AppDatabase["public"]["Tables"]["risks"]["Row"];
@@ -16,6 +20,7 @@ export class RiskManagementService {
   }
 
   async acknowledge(context: ActorContext, riskId: string): Promise<void> {
+    assertAuthorized(canEditRisk(context));
     await this.requireRisk(context, riskId);
     await this.activities.append(context, {
       riskId,
@@ -33,6 +38,7 @@ export class RiskManagementService {
       source: "daily_brief" | "risk_detail";
     },
   ): Promise<void> {
+    assertAuthorized(canEditRisk(context));
     const risk = await this.requireRisk(context, input.riskId);
     await this.updateRisk(context, input.riskId, {
       status: "dismissed",
@@ -61,6 +67,7 @@ export class RiskManagementService {
     riskId: string,
     userId: string | null,
   ): Promise<void> {
+    assertAuthorized(canEditRisk(context));
     const risk = await this.requireRisk(context, riskId);
     if (userId) await this.requireUser(context, userId);
     await this.updateRisk(context, riskId, { assigned_user_id: userId });
@@ -90,6 +97,7 @@ export class RiskManagementService {
     riskId: string,
     dueAt: string | null,
   ): Promise<void> {
+    assertAuthorized(canEditRisk(context));
     const risk = await this.requireRisk(context, riskId);
     await this.updateRisk(context, riskId, { due_at: dueAt });
     try {
@@ -117,6 +125,7 @@ export class RiskManagementService {
     comment: string,
     mentionedUserIds: readonly string[],
   ) {
+    assertAuthorized(canEditRisk(context));
     await this.requireRisk(context, riskId);
     await this.activities.append(context, {
       riskId,

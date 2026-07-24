@@ -179,7 +179,7 @@ async function sendBriefEmail(input: {
     return "skipped";
 
   const attempt = row.attempt_count + 1;
-  const { error: claimError } = await client
+  const { data: claimedDelivery, error: claimError } = await client
     .from("daily_brief_deliveries")
     .update({
       status: "sending",
@@ -188,8 +188,13 @@ async function sendBriefEmail(input: {
       error_message: null,
     })
     .eq("id", row.id)
-    .eq("organization_id", organizationId);
+    .eq("organization_id", organizationId)
+    .eq("attempt_count", row.attempt_count)
+    .in("status", ["pending", "failed"])
+    .select("id")
+    .maybeSingle();
   if (claimError) throw new Error(claimError.message);
+  if (!claimedDelivery) return "skipped";
 
   const email = renderMorningBriefEmail({
     organizationName: input.organizationName,

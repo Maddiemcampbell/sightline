@@ -45,25 +45,24 @@ export const getCurrentUser = cache(
   },
 );
 
-export const getCurrentSession = cache(
-  async (): Promise<Session | null> => {
-    const user = await readVerifiedUser();
-    if (!user) return null;
+export const getCurrentSession = cache(async (): Promise<Session | null> => {
+  const user = await readVerifiedUser();
+  if (!user) return null;
 
-    const client = await createServerSupabaseClient();
-    const {
-      data: { session },
-    } = await client.auth.getSession();
+  const client = await createServerSupabaseClient();
+  const {
+    data: { session },
+  } = await client.auth.getSession();
 
-    return session?.user.id === user.id ? session : null;
-  },
-);
+  return session?.user.id === user.id ? session : null;
+});
 
 export async function requireAuthenticatedUser(
   redirectTo = "/login",
 ): Promise<RequestPrincipal> {
   const user = await getCurrentUser();
   if (!user) redirect(redirectTo);
+  if (!user.emailVerified) redirect("/verify-email");
   return user;
 }
 
@@ -86,8 +85,7 @@ export const getCurrentMembership = cache(
     )?.value;
     return (
       memberships.find(
-        (membership) =>
-          membership.organizationId === preferredOrganizationId,
+        (membership) => membership.organizationId === preferredOrganizationId,
       ) ?? memberships[0]!
     );
   },

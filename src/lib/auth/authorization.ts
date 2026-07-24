@@ -5,7 +5,9 @@ export type Permission =
   | "project:view"
   | "project:edit"
   | "risk:view"
+  | "risk:edit"
   | "risk:resolve"
+  | "action:edit"
   | "action:assign"
   | "document:view"
   | "document:edit"
@@ -41,7 +43,9 @@ const OWNER_PERMISSIONS = {
   "project:view": true,
   "project:edit": true,
   "risk:view": true,
+  "risk:edit": true,
   "risk:resolve": true,
+  "action:edit": true,
   "action:assign": true,
   "document:view": true,
   "document:edit": true,
@@ -69,7 +73,9 @@ function denyAllPermissions(): Record<Permission, boolean> {
     "project:view": false,
     "project:edit": false,
     "risk:view": false,
+    "risk:edit": false,
     "risk:resolve": false,
+    "action:edit": false,
     "action:assign": false,
     "document:view": false,
     "document:edit": false,
@@ -131,6 +137,20 @@ export function canResolveRisk(
   resource?: OrganizationResource | null,
 ): boolean {
   return can(subject, "risk:resolve", resource);
+}
+
+export function canEditRisk(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "risk:edit", resource);
+}
+
+export function canEditAction(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "action:edit", resource);
 }
 
 export function canAssignAction(

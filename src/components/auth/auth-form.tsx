@@ -80,10 +80,11 @@ export function AuthForm(props: AuthFormProps) {
       {asksForPassword ? (
         <div>
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-ink text-sm font-semibold">
-              {props.mode === "reset-password"
-                ? "New password"
-                : "Password"}
+            <label
+              htmlFor="password"
+              className="text-ink text-sm font-semibold"
+            >
+              {props.mode === "reset-password" ? "New password" : "Password"}
             </label>
             {props.mode === "login" ? (
               <Link
@@ -101,7 +102,7 @@ export function AuthForm(props: AuthFormProps) {
             autoComplete={
               props.mode === "login" ? "current-password" : "new-password"
             }
-            minLength={props.mode === "login" ? undefined : 8}
+            minLength={props.mode === "login" ? undefined : 12}
             required
             aria-invalid={Boolean(state.fieldErrors?.password)}
             className="border-border bg-surface text-ink mt-2 min-h-11 w-full rounded-md border px-3 text-sm"
@@ -122,7 +123,7 @@ export function AuthForm(props: AuthFormProps) {
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            minLength={8}
+            minLength={12}
             required
             aria-invalid={Boolean(state.fieldErrors?.confirmPassword)}
             className="border-border bg-surface text-ink mt-2 min-h-11 w-full rounded-md border px-3 text-sm"

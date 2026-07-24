@@ -358,7 +358,7 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   await page.goto("/documents");
   await page.getByLabel("File").setInputFiles({
     name: "weekly-log.pdf",
-    mimeType: "text/plain",
+    mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\n%%EOF"),
   });
   await page.getByLabel("Display name").fill("Weekly field log");

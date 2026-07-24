@@ -9,7 +9,11 @@ import {
   approveRiskSuggestion,
   rejectRiskSuggestion,
 } from "@/features/ai/review-service";
-import { assertSameOrganization } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  assertSameOrganization,
+  canAccessInternalAdmin,
+} from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { recordAuditEvent } from "@/features/audit/service";
 
@@ -21,6 +25,7 @@ function requireDevelopment() {
 export async function analyzeFixtureAction(formData: FormData) {
   requireDevelopment();
   const context = await requireActorContext();
+  assertAuthorized(canAccessInternalAdmin(context));
   const fixture = getRiskAnalysisFixture(
     String(formData.get("fixtureId") ?? ""),
   );
@@ -44,6 +49,7 @@ export async function analyzeFixtureAction(formData: FormData) {
 export async function approveSuggestionAction(formData: FormData) {
   requireDevelopment();
   const context = await requireActorContext();
+  assertAuthorized(canAccessInternalAdmin(context));
   const suggestionId = z.uuid().parse(formData.get("suggestionId"));
   await approveRiskSuggestion({
     organizationId: context.organizationId,
@@ -67,6 +73,7 @@ export async function approveSuggestionAction(formData: FormData) {
 export async function rejectSuggestionAction(formData: FormData) {
   requireDevelopment();
   const context = await requireActorContext();
+  assertAuthorized(canAccessInternalAdmin(context));
   const suggestionId = z.uuid().parse(formData.get("suggestionId"));
   await rejectRiskSuggestion({
     organizationId: context.organizationId,
