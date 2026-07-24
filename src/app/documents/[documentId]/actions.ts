@@ -8,6 +8,7 @@ import {
 } from "@/features/documents/validation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { assertAuthorized, canEditDocument } from "@/lib/auth/authorization";
 
 export async function editDocumentAction(
   input: Parameters<typeof editDocumentSchema.parse>[0],
@@ -25,6 +26,7 @@ export async function editDocumentAction(
     .maybeSingle();
   if (error) throw new Error(error.message);
   assertOrganizationAccess(document, context);
+  assertAuthorized(canEditDocument(context, document));
   if (document.archived_at)
     throw new Error("Archived documents cannot be edited.");
   await validateDocumentAssociations(value.projectId, value.vendorId);
@@ -90,6 +92,7 @@ export async function archiveDocumentAction(input: { documentId: string }) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   assertOrganizationAccess(document, context);
+  assertAuthorized(canEditDocument(context, document));
   if (document.archived_at) return;
   const archivedAt = new Date().toISOString();
   const { error: updateError } = await client

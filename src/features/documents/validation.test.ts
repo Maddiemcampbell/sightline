@@ -5,7 +5,9 @@ import { allowDocumentUpload } from "@/features/documents/rate-limit";
 import {
   detectDocumentMime,
   documentMetadataSchema,
+  MAX_DOCUMENT_BYTES,
   sanitizeFilename,
+  validateUploadFile,
 } from "@/features/documents/validation";
 
 describe("document upload validation", () => {
@@ -22,6 +24,32 @@ describe("document upload validation", () => {
     expect(sanitizeFilename("../../Owner Dispute (final).PDF")).toBe(
       "Owner-Dispute-final-.PDF",
     );
+  });
+
+  it("rejects a declared MIME type that conflicts with file bytes", async () => {
+    const file = new File(
+      [new Uint8Array([0x25, 0x50, 0x44, 0x46])],
+      "report.pdf",
+      { type: "image/png" },
+    );
+    await expect(validateUploadFile(file)).rejects.toThrow(
+      "The file type does not match its contents.",
+    );
+  });
+
+  it("rejects empty and oversized files before storage access", async () => {
+    await expect(
+      validateUploadFile(
+        new File([], "empty.pdf", { type: "application/pdf" }),
+      ),
+    ).rejects.toThrow("Choose a non-empty file.");
+    await expect(
+      validateUploadFile(
+        new File([new Uint8Array(MAX_DOCUMENT_BYTES + 1)], "large.pdf", {
+          type: "application/pdf",
+        }),
+      ),
+    ).rejects.toThrow("Files must be 10 MB or smaller.");
   });
 
   it("validates and normalizes upload metadata", () => {

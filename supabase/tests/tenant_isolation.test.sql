@@ -123,8 +123,8 @@ begin
   if visible_projects <> 1 or visible_foreign_projects <> 0 then
     raise exception 'SELECT isolation failed';
   end if;
-  if visible_files <> 1 or visible_foreign_files <> 0 then
-    raise exception 'storage download isolation failed';
+  if visible_files <> 0 or visible_foreign_files <> 0 then
+    raise exception 'direct storage access was not denied';
   end if;
 end;
 $$;

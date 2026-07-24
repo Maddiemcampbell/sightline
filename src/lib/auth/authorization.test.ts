@@ -10,6 +10,8 @@ import {
   canManageOrganization,
   canResolveRisk,
   canUploadDocument,
+  canEditDocument,
+  canViewDocument,
   canViewFinancialExposure,
   canViewProject,
   canViewRisk,
@@ -29,6 +31,8 @@ const permissions: readonly Permission[] = [
   "risk:view",
   "risk:resolve",
   "action:assign",
+  "document:view",
+  "document:edit",
   "document:upload",
   "members:manage",
   "organization:manage",
@@ -42,6 +46,8 @@ describe("central authorization service", () => {
     expect(canViewRisk(owner)).toBe(true);
     expect(canResolveRisk(owner)).toBe(true);
     expect(canAssignAction(owner)).toBe(true);
+    expect(canViewDocument(owner)).toBe(true);
+    expect(canEditDocument(owner)).toBe(true);
     expect(canUploadDocument(owner)).toBe(true);
     expect(canManageMembers(owner)).toBe(true);
     expect(canManageOrganization(owner)).toBe(true);

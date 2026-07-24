@@ -112,17 +112,15 @@ The private `source-documents` bucket uses the path convention:
 <organization UUID>/<document UUID>/<sanitized filename>
 ```
 
-`storage.objects` has separate `SELECT`, `INSERT`, `UPDATE`, and `DELETE`
-policies. Each policy requires:
-
-- `bucket_id = 'source-documents'`; and
-- the authenticated user has a membership whose organization UUID exactly
-  equals the first storage path segment.
+Authenticated clients have no `storage.objects` policies for the private
+`source-documents` bucket. They cannot list or access objects directly. Verified
+server endpoints authorize the request and use a privileged Storage client only
+for the individual upload, cleanup, or signed-URL operation.
 
 The `documents_storage_path_organization_check` database constraint independently
 requires each non-null document path to begin with its row's
-`organization_id`. A partial unique index prevents two document records from
-claiming the same object.
+`organization_id` and document `id`. A partial unique index prevents two
+document records from claiming the same object.
 
 Server uploads construct paths through `organizationStoragePath()`. Downloads
 first query document metadata by the active organization, then verify the path

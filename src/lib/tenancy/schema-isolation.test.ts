@@ -17,6 +17,13 @@ const isolationMigration = readFileSync(
   ),
   "utf8",
 );
+const documentSecurityMigration = readFileSync(
+  join(
+    process.cwd(),
+    "supabase/migrations/20260724030000_v3_document_access_security.sql",
+  ),
+  "utf8",
+);
 
 const tenantTables = [
   "users",
@@ -58,12 +65,13 @@ describe("tenant RLS schema coverage", () => {
     },
   );
 
-  it("defines all four storage object policies", () => {
+  it("removes every direct authenticated storage object policy", () => {
     for (const operation of ["select", "insert", "update", "delete"]) {
-      expect(isolationMigration).toContain(
-        `source_documents_member_${operation}`,
+      expect(documentSecurityMigration).toContain(
+        `drop policy if exists source_documents_member_${operation}`,
       );
     }
+    expect(documentSecurityMigration).toContain("public = false");
   });
 
   it("keeps audit history append-only", () => {
@@ -74,11 +82,11 @@ describe("tenant RLS schema coverage", () => {
   });
 
   it("binds document object paths to the row organization", () => {
-    expect(isolationMigration).toContain(
-      "documents_storage_path_organization_check",
+    expect(documentSecurityMigration).toContain(
+      "documents_storage_path_document_check",
     );
-    expect(isolationMigration).toContain(
-      "storage_path like organization_id::text || '/%'",
+    expect(documentSecurityMigration).toContain(
+      "organization_id::text || '/' || id::text || '/%'",
     );
   });
 });

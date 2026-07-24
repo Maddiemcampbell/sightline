@@ -22,6 +22,8 @@ decision and named, discoverable functions:
 - `canViewRisk()`
 - `canResolveRisk()`
 - `canAssignAction()`
+- `canViewDocument()`
+- `canEditDocument()`
 - `canUploadDocument()`
 - `canManageMembers()`
 - `canManageOrganization()`

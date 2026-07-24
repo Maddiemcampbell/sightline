@@ -1,46 +1,65 @@
 import { NextResponse } from "next/server";
-
-import { assertOrganizationAccess } from "@/lib/auth/authorization";
-import { DOCUMENT_BUCKET } from "@/features/documents/validation";
-import { assertOrganizationStoragePath } from "@/features/documents/storage-isolation";
+import {
+  DOCUMENT_SIGNED_URL_TTL_SECONDS,
+  isDocumentDownloadAllowed,
+} from "@/features/documents/download-security";
+import {
+  DOCUMENT_BUCKET,
+  documentIdSchema,
+} from "@/features/documents/validation";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  createAdminSupabaseClient,
+  createServerSupabaseClient,
+} from "@/lib/supabase/server";
 
 type Context = { params: Promise<{ documentId: string }> };
 
+function fileNotFound() {
+  return NextResponse.json(
+    { error: "File not found." },
+    {
+      status: 404,
+      headers: {
+        "Cache-Control": "private, no-store",
+        "Referrer-Policy": "no-referrer",
+      },
+    },
+  );
+}
+
 export async function GET(_request: Request, { params }: Context) {
   const context = await requireActorContext();
-  const { documentId } = await params;
+  const parsedId = documentIdSchema.safeParse((await params).documentId);
+  if (!parsedId.success) return fileNotFound();
+
   const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
-    .select("organization_id,storage_path,archived_at")
+    .select("id,organization_id,storage_path,archived_at")
     .eq("organization_id", context.organizationId)
-    .eq("id", documentId)
+    .eq("id", parsedId.data)
     .maybeSingle();
-  if (error)
-    return NextResponse.json({ error: "File unavailable." }, { status: 500 });
-  try {
-    assertOrganizationAccess(document, context);
-  } catch {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
-  }
-  if (!document.storage_path || document.archived_at) {
-    return NextResponse.json({ error: "File not available." }, { status: 404 });
-  }
-  try {
-    assertOrganizationStoragePath(
-      context.organizationId,
-      document.storage_path,
+  if (error) {
+    return NextResponse.json(
+      { error: "File unavailable." },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
-    return NextResponse.json({ error: "File not found." }, { status: 404 });
   }
-  const { data, error: signedUrlError } = await client.storage
-    .from(DOCUMENT_BUCKET)
-    .createSignedUrl(document.storage_path, 60, { download: true });
-  if (signedUrlError) {
-    return NextResponse.json({ error: "File unavailable." }, { status: 500 });
-  }
-  return NextResponse.redirect(data.signedUrl);
+  if (!isDocumentDownloadAllowed(context, document)) return fileNotFound();
+
+  const { data, error: signedUrlError } = await createAdminSupabaseClient()
+    .storage.from(DOCUMENT_BUCKET)
+    .createSignedUrl(document.storage_path, DOCUMENT_SIGNED_URL_TTL_SECONDS, {
+      download: true,
+    });
+  // Missing objects and signing failures intentionally look the same as
+  // missing, archived, and cross-tenant document records.
+  if (signedUrlError || !data?.signedUrl) return fileNotFound();
+
+  const response = NextResponse.redirect(data.signedUrl);
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
 }

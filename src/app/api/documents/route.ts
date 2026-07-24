@@ -10,15 +10,17 @@ import {
   validateUploadFile,
 } from "@/features/documents/validation";
 import { organizationStoragePath } from "@/features/documents/storage-isolation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  createAdminSupabaseClient,
+  createServerSupabaseClient,
+} from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { assertAuthorized, canUploadDocument } from "@/lib/auth/authorization";
 
 export async function POST(request: Request) {
   const context = await requireActorContext();
   assertAuthorized(canUploadDocument(context));
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0];
-  const rateKey = forwardedFor?.trim() || "local";
+  const rateKey = `${context.organizationId}:${context.userId}`;
   if (!allowDocumentUpload(rateKey)) {
     return NextResponse.json(
       { error: "Too many uploads. Try again in one minute." },
@@ -51,13 +53,14 @@ export async function POST(request: Request) {
     await validateDocumentAssociations(metadata.projectId, metadata.vendorId);
 
     const client = await createServerSupabaseClient();
+    const storageClient = createAdminSupabaseClient();
     const documentId = crypto.randomUUID();
     const storagePath = organizationStoragePath(
       context.organizationId,
       documentId,
       validatedFile.safeFilename,
     );
-    const { error: storageError } = await client.storage
+    const { error: storageError } = await storageClient.storage
       .from(DOCUMENT_BUCKET)
       .upload(storagePath, validatedFile.bytes, {
         contentType: validatedFile.mimeType,
@@ -83,7 +86,7 @@ export async function POST(request: Request) {
       document_date: metadata.documentDate,
     });
     if (documentError) {
-      await client.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+      await storageClient.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
       throw new Error(documentError.message);
     }
 
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
         .delete()
         .eq("organization_id", context.organizationId)
         .eq("id", documentId);
-      await client.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+      await storageClient.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
       throw new Error(activityError.message);
     }
 
@@ -127,6 +130,7 @@ function publicUploadError(error: unknown): string {
       "Choose a non-empty file.",
       "Files must be 10 MB or smaller.",
       "Use a PDF, DOCX, CSV, JPG, or PNG file.",
+      "The file type does not match its contents.",
       "Resource not found",
     ];
     if (safeMessages.includes(error.message)) return error.message;

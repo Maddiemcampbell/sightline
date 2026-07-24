@@ -79,7 +79,15 @@ export default async function DocumentDetailPage({ params }: Props) {
         <Card>
           <h2 className="mb-5 text-lg font-semibold">Metadata</h2>
           <DocumentMetadataForm
-            document={detail.document}
+            document={{
+              id: detail.document.id,
+              name: detail.document.name,
+              document_type: detail.document.document_type,
+              document_date: detail.document.document_date,
+              project_id: detail.document.project_id,
+              vendor_id: detail.document.vendor_id,
+              archived_at: detail.document.archived_at,
+            }}
             projects={detail.projects}
             vendors={detail.vendors}
           />

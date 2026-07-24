@@ -13,6 +13,14 @@ export function isOrganizationStoragePath(
   return storagePath.startsWith(`${organizationId}/`);
 }
 
+export function isDocumentStoragePath(
+  organizationId: string,
+  documentId: string,
+  storagePath: string,
+): boolean {
+  return storagePath.startsWith(`${organizationId}/${documentId}/`);
+}
+
 export function assertOrganizationStoragePath(
   organizationId: string,
   storagePath: string,

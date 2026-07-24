@@ -42,6 +42,7 @@ export const editDocumentSchema = documentMetadataSchema.extend({
 });
 
 export const archiveDocumentSchema = z.object({ documentId: z.uuid() });
+export const documentIdSchema = z.uuid();
 
 export type AllowedDocumentMime =
   | "application/pdf"
@@ -128,6 +129,9 @@ export async function validateUploadFile(file: File): Promise<{
   const mimeType = detectDocumentMime(bytes, file.name);
   if (!mimeType) {
     throw new Error("Use a PDF, DOCX, CSV, JPG, or PNG file.");
+  }
+  if (file.type && file.type.toLowerCase() !== mimeType) {
+    throw new Error("The file type does not match its contents.");
   }
   return { bytes, mimeType, safeFilename: sanitizeFilename(file.name) };
 }

@@ -1,6 +1,11 @@
 import "server-only";
 
-import { assertOrganizationAccess } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  assertOrganizationAccess,
+  canViewDocument,
+} from "@/lib/auth/authorization";
+import { documentIdSchema } from "@/features/documents/validation";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -12,6 +17,7 @@ function requireRows<T>(data: T | null, error: { message: string } | null): T {
 
 export async function getDocumentWorkspace(search: string) {
   const context = await requireActorContext();
+  assertAuthorized(canViewDocument(context));
   const { organizationId } = context;
   const client = await createServerSupabaseClient();
   const [documentsResult, projectsResult, vendorsResult] = await Promise.all([
@@ -60,6 +66,8 @@ export async function getDocumentWorkspace(search: string) {
 }
 
 export async function getDocumentDetail(documentId: string) {
+  const parsedId = documentIdSchema.safeParse(documentId);
+  if (!parsedId.success) return null;
   const context = await requireActorContext();
   const { organizationId } = context;
   const client = await createServerSupabaseClient();
@@ -67,11 +75,12 @@ export async function getDocumentDetail(documentId: string) {
     .from("documents")
     .select("*")
     .eq("organization_id", organizationId)
-    .eq("id", documentId)
+    .eq("id", parsedId.data)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!document) return null;
   assertOrganizationAccess(document, context);
+  assertAuthorized(canViewDocument(context, document));
   const [projectsResult, vendorsResult, activitiesResult] = await Promise.all([
     client
       .from("projects")
@@ -87,7 +96,7 @@ export async function getDocumentDetail(documentId: string) {
       .from("document_activities")
       .select("*")
       .eq("organization_id", organizationId)
-      .eq("document_id", documentId)
+      .eq("document_id", parsedId.data)
       .order("occurred_at", { ascending: false }),
   ]);
   return {
