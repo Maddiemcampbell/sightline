@@ -1,4 +1,6 @@
-import { Bell, HelpCircle } from "lucide-react";
+import { Bell, HelpCircle, LogOut } from "lucide-react";
+
+import { logout } from "@/app/auth/actions";
 
 export function TopNavigation() {
   return (
@@ -21,6 +23,17 @@ export function TopNavigation() {
             >
               <HelpCircle aria-hidden="true" className="size-5" />
             </button>
+          </li>
+          <li>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
+                aria-label="Log out"
+              >
+                <LogOut aria-hidden="true" className="size-5" />
+              </button>
+            </form>
           </li>
           <li>
             <button

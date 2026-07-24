@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { getCurrentUser } from "@/lib/auth/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,11 +14,29 @@ export const metadata: Metadata = {
   description: "Profit intelligence for commercial construction companies.",
 };
 
-export default function RootLayout({
+const PUBLIC_ROUTES = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/auth/callback",
+]);
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = (await headers()).get("x-sightline-pathname") ?? "/";
+  const isPublic = PUBLIC_ROUTES.has(pathname);
+  const user = await getCurrentUser();
+
+  if (!isPublic && !user) {
+    const next = encodeURIComponent(pathname);
+    redirect(`/login?next=${next}`);
+  }
+
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full">
@@ -25,7 +46,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <AppShell>{children}</AppShell>
+        {isPublic ? children : <AppShell>{children}</AppShell>}
       </body>
     </html>
   );
