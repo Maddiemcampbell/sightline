@@ -124,24 +124,37 @@ type Timestamped = {
 };
 
 type OrganizationRow = Timestamped & {
+  brand_color: string;
+  company_size: "1-10" | "11-50" | "51-200" | "201-500" | "501-1000" | "1001+" | null;
   created_by_auth_user_id: string | null;
+  default_currency: string;
+  default_document_permissions: "project_members" | "managers" | "organization";
+  default_project_role: "manager" | "contributor" | "viewer";
+  default_project_visibility: "private" | "organization";
   id: string;
+  industry: string | null;
+  logo_url: string | null;
   name: string;
+  notification_defaults: Json;
   slug: string;
   timezone: string;
 };
 
 type UserRow = Timestamped & {
+  assignment_notifications_enabled: boolean;
   auth_user_id: string | null;
   delivery_timezone: string;
   email: string;
   email_delivery_enabled: boolean;
   full_name: string;
   id: string;
+  mention_notifications_enabled: boolean;
   organization_id: string;
   preferred_delivery_time: string;
   role: DatabaseEnums["user_role"];
   title: string | null;
+  weekly_summary_enabled: boolean;
+  digest_frequency: "off" | "daily" | "weekly";
 };
 
 type ProjectRow = Timestamped & {

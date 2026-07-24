@@ -1,98 +1,68 @@
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { EmailPreferencesForm } from "@/features/email/email-preferences-form";
-import { requireActorContext } from "@/lib/auth/request-context";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireCurrentMembership } from "@/lib/auth/session";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
-  const context = await requireActorContext();
-  const client = await createServerSupabaseClient();
-  const [userResult, deliveriesResult] = await Promise.all([
-    client
-      .from("users")
-      .select("*")
-      .eq("organization_id", context.organizationId)
-      .eq("id", context.userId)
-      .single(),
-    client
-      .from("daily_brief_deliveries")
-      .select("*")
-      .eq("organization_id", context.organizationId)
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false })
-      .limit(8),
+export default async function SettingsOverview() {
+  const membership = await requireCurrentMembership();
+  const client = createAdminSupabaseClient();
+  const [organization, members, projects, risks, documents] = await Promise.all([
+    client.from("organizations").select("*").eq("id", membership.organizationId).single(),
+    client.from("organization_memberships").select("id", { count: "exact", head: true }).eq("organization_id", membership.organizationId),
+    client.from("projects").select("id", { count: "exact", head: true }).eq("organization_id", membership.organizationId),
+    client.from("risks").select("id", { count: "exact", head: true }).eq("organization_id", membership.organizationId),
+    client.from("documents").select("size_bytes").eq("organization_id", membership.organizationId),
   ]);
-  if (userResult.error) throw new Error(userResult.error.message);
-  if (deliveriesResult.error) throw new Error(deliveriesResult.error.message);
-  const user = userResult.data;
+  if (organization.error) throw new Error(organization.error.message);
+  const storage = documents.data?.reduce((sum, item) => sum + (item.size_bytes ?? 0), 0) ?? 0;
+  const ownerResult = await client
+    .from("organization_memberships")
+    .select("application_user_id")
+    .eq("organization_id", membership.organizationId)
+    .eq("role", "owner")
+    .limit(1)
+    .maybeSingle();
+  const owner = ownerResult.data
+    ? await client.from("users").select("full_name").eq("id", ownerResult.data.application_user_id).maybeSingle()
+    : null;
   return (
-    <div className="mx-auto max-w-4xl px-[var(--page-gutter)] py-8 sm:py-10">
-      <header>
-        <p className="text-muted text-sm font-semibold">Administration</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-          Settings
-        </h1>
-        <p className="text-muted mt-2">
-          Control how Sightline delivers your executive Daily Brief.
-        </p>
-      </header>
-      <div className="mt-7 space-y-6">
-        <Card>
-          <h2 className="text-lg font-semibold">Morning email</h2>
-          <p className="text-muted mt-2 mb-6 text-sm">
-            Delivery is evaluated in your timezone and begins at your preferred
-            time.
-          </p>
-          <EmailPreferencesForm
-            enabled={user.email_delivery_enabled}
-            preferredTime={user.preferred_delivery_time}
-            timezone={user.delivery_timezone}
-          />
-        </Card>
-        <Card>
-          <h2 className="text-lg font-semibold">Recent delivery log</h2>
-          {deliveriesResult.data.length ? (
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[600px] text-left text-sm">
-                <thead className="text-muted border-b text-xs uppercase">
-                  <tr>
-                    <th className="py-3">Type</th>
-                    <th className="py-3">Recipient</th>
-                    <th className="py-3">Status</th>
-                    <th className="py-3">Attempts</th>
-                    <th className="py-3">Created</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {deliveriesResult.data.map((delivery) => (
-                    <tr key={delivery.id}>
-                      <td className="py-3 capitalize">
-                        {delivery.delivery_kind}
-                      </td>
-                      <td className="py-3">{delivery.recipient_email}</td>
-                      <td className="py-3 capitalize">{delivery.status}</td>
-                      <td className="py-3">{delivery.attempt_count}</td>
-                      <td className="py-3">
-                        {new Date(delivery.created_at).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-muted mt-4 text-sm">
-              No emails have been attempted yet.
-            </p>
-          )}
-        </Card>
+    <div className="space-y-6">
+      <Card>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="grid size-14 place-items-center rounded-lg text-xl font-bold text-white" style={{ backgroundColor: organization.data.brand_color }}>
+            {organization.data.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">{organization.data.name}</h2>
+            <p className="text-muted text-sm">{organization.data.industry ?? "Industry not set"} · {organization.data.timezone}</p>
+          </div>
+        </div>
+        <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Current owner" value={owner?.data?.full_name ?? "Not available"} />
+          <Metric label="Created" value={new Date(organization.data.created_at).toLocaleDateString()} />
+          <Metric label="Subscription" value="Sightline V3 · Preview" />
+          <Metric label="Storage usage" value={`${(storage / 1_048_576).toFixed(1)} MB`} />
+          <Metric label="Members" value={String(members.count ?? 0)} />
+          <Metric label="Projects" value={String(projects.count ?? 0)} />
+          <Metric label="Risks" value={String(risks.count ?? 0)} />
+          <Metric label="Currency" value={organization.data.default_currency} />
+        </dl>
+      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <QuickLink href="/settings/organization" title="Organization profile" copy="Branding, company details, timezone, and currency." />
+        <QuickLink href="/settings/team" title="Team and access" copy="Members, invitations, roles, and project assignment." />
+        <QuickLink href="/settings/security" title="Security" copy="Password, active session, MFA, and API-key readiness." />
+        <QuickLink href="/settings/audit-log" title="Audit log" copy="Review internal security and administration events." />
       </div>
     </div>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-muted text-xs font-semibold uppercase">{label}</dt><dd className="mt-1 font-semibold">{value}</dd></div>;
+}
+function QuickLink({ href, title, copy }: { href: string; title: string; copy: string }) {
+  return <Link href={href} className="border-border bg-surface hover:border-deep-green rounded-lg border p-5"><h2 className="font-semibold">{title}</h2><p className="text-muted mt-1 text-sm">{copy}</p></Link>;
 }

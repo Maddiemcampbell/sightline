@@ -4,7 +4,6 @@ import { AuditLogRepository } from "@/features/audit/repository";
 import { toAuditLogView } from "@/features/audit/view";
 import {
   assertAuthorized,
-  canAccessInternalAdmin,
   canViewAuditLogs,
 } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
@@ -12,9 +11,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function getAuditLogViewer(limit = 100) {
   const context = await requireActorContext();
-  assertAuthorized(
-    canAccessInternalAdmin(context) && canViewAuditLogs(context),
-  );
+  assertAuthorized(canViewAuditLogs(context));
   const client = await createServerSupabaseClient();
   const repository = new AuditLogRepository(client);
   const [logs, usersResult] = await Promise.all([

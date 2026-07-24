@@ -8,6 +8,8 @@ const authState = "test-results/e2e-auth.json";
 const authUserId = "12000000-0000-4000-8000-000000000001";
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const applicationUserId = "11000000-0000-4000-8000-000000000001";
+const alexAuthUserId = "12000000-0000-4000-8000-000000000002";
+const alexApplicationUserId = "11000000-0000-4000-8000-000000000002";
 const email = "e2e-owner@sightline.local";
 const password = "Sightline-E2E-2026!";
 
@@ -29,13 +31,7 @@ setup(
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: UnusedWebSocketTransport as never },
     });
-    const { error: authError } = await admin.auth.admin.createUser({
-      id: authUserId,
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (authError) throw new Error(authError.message);
+    await ensureAuthUser(admin, authUserId, email);
     const { error: userError } = await admin
       .from("users")
       .update({ auth_user_id: authUserId, email })
@@ -51,6 +47,29 @@ setup(
         role: "owner",
       });
     if (membershipError) throw new Error(membershipError.message);
+    await ensureAuthUser(
+      admin,
+      alexAuthUserId,
+      "alex-rivera@sightline.local",
+    );
+    const { error: alexUserError } = await admin
+      .from("users")
+      .update({
+        auth_user_id: alexAuthUserId,
+        email: "alex-rivera@sightline.local",
+      })
+      .eq("organization_id", organizationId)
+      .eq("id", alexApplicationUserId);
+    if (alexUserError) throw new Error(alexUserError.message);
+    const { error: alexMembershipError } = await admin
+      .from("organization_memberships")
+      .insert({
+        organization_id: organizationId,
+        auth_user_id: alexAuthUserId,
+        application_user_id: alexApplicationUserId,
+        role: "contributor",
+      });
+    if (alexMembershipError) throw new Error(alexMembershipError.message);
 
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
@@ -63,3 +82,26 @@ setup(
     await page.context().storageState({ path: authState });
   },
 );
+
+async function ensureAuthUser(
+  admin: ReturnType<typeof createClient>,
+  id: string,
+  userEmail: string,
+) {
+  await expect
+    .poll(
+      async () => {
+        const created = await admin.auth.admin.createUser({
+          id,
+          email: userEmail,
+          password,
+          email_confirm: true,
+        });
+        if (!created.error) return true;
+        const existing = await admin.auth.admin.getUserById(id);
+        return existing.data.user?.email === userEmail;
+      },
+      { timeout: 20_000, intervals: [250, 500, 1_000] },
+    )
+    .toBe(true);
+}

@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+
+class UnusedWebSocketTransport {
+  constructor() {
+    throw new Error("Realtime is not used by foundation tests.");
+  }
+}
 
 test("loads the application shell and morning brief", async ({ page }) => {
   await page.goto("/");
@@ -310,21 +317,62 @@ test("edits and saves a human-controlled email draft", async ({ page }) => {
 test("adds a risk comment with an organization-user mention", async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.goto("/risks/60000000-0000-4000-8000-000000000001");
+  const comment = page.getByLabel("Comment");
+  await comment.fill("@al");
   await page
-    .getByLabel("Comment")
-    .fill("Alex, please confirm the renewal certificate with Apex.");
-  await page
-    .getByLabel("Mention teammate")
-    .selectOption({ label: "Alex Rivera" });
-  await page.getByRole("button", { name: "Add comment" }).click();
-  await expect(page.getByRole("status")).toHaveText("Comment added.");
+    .getByRole("option", { name: /Alex Rivera.*@alex\.rivera/ })
+    .click();
+  await comment.pressSequentially(
+    "please confirm the renewal certificate with Apex.",
+  );
+  const submit = page.getByRole("button", { name: "Comment", exact: true });
+  await submit.click();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceRoleKey) throw new Error("Supabase E2E environment is not configured.");
+  const admin = createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { transport: UnusedWebSocketTransport as never },
+  });
+  let savedCommentId = "";
+  await expect
+    .poll(
+      async () => {
+        const { data } = await admin
+          .from("collaboration_comments")
+          .select("id")
+          .eq("subject_id", "60000000-0000-4000-8000-000000000001")
+          .ilike("body_markdown", "%confirm the renewal certificate%")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        savedCommentId = data?.id ?? "";
+        return savedCommentId;
+      },
+      { timeout: 20_000 },
+    )
+    .not.toBe("");
+  await expect
+    .poll(
+      async () => {
+        const { count } = await admin
+          .from("comment_mentions")
+          .select("*", { count: "exact", head: true })
+          .eq("comment_id", savedCommentId);
+        return count ?? 0;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(1);
   await page.reload();
-  await expect(
-    page
-      .getByText("Alex, please confirm the renewal certificate with Apex.")
-      .last(),
-  ).toBeVisible();
+  const savedComment = page
+    .getByRole("list", { name: "Comments" })
+    .getByRole("listitem")
+    .filter({ hasText: "please confirm the renewal certificate with Apex." });
+  await expect(savedComment).toBeVisible({ timeout: 20_000 });
+  await expect(savedComment.getByText("@alex.rivera")).toBeVisible();
 });
 
 test("shows the organization activity timeline", async ({ page }) => {
@@ -333,10 +381,9 @@ test("shows the organization activity timeline", async ({ page }) => {
     page.getByRole("heading", { name: "Activity", exact: true }),
   ).toBeVisible();
   await expect(
-    page
-      .getByText("Alex, please confirm the renewal certificate with Apex.")
-      .first(),
+    page.getByText("Seed email draft created for human review."),
   ).toBeVisible();
+  await expect(page.getByText("System", { exact: true }).last()).toBeVisible();
 });
 
 test("shows the secure document upload workflow", async ({ page }) => {
