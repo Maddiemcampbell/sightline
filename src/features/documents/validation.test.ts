@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assertOrganizationAccess } from "@/features/documents/authorization";
+import { assertOrganizationAccess } from "@/lib/auth/authorization";
 import { allowDocumentUpload } from "@/features/documents/rate-limit";
 import {
   detectDocumentMime,
@@ -46,10 +46,16 @@ describe("document upload validation", () => {
 describe("document authorization", () => {
   it("rejects resources outside the active organization", () => {
     expect(() =>
-      assertOrganizationAccess({ organization_id: "other" }, "buildco"),
+      assertOrganizationAccess(
+        { organization_id: "other" },
+        { organizationId: "buildco" },
+      ),
     ).toThrow("Resource not found");
     expect(() =>
-      assertOrganizationAccess({ organization_id: "buildco" }, "buildco"),
+      assertOrganizationAccess(
+        { organization_id: "buildco" },
+        { organizationId: "buildco" },
+      ),
     ).not.toThrow();
   });
 

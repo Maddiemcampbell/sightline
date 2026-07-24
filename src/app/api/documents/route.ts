@@ -12,9 +12,11 @@ import {
 import { organizationStoragePath } from "@/features/documents/storage-isolation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { assertAuthorized, canUploadDocument } from "@/lib/auth/authorization";
 
 export async function POST(request: Request) {
   const context = await requireActorContext();
+  assertAuthorized(canUploadDocument(context));
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0];
   const rateKey = forwardedFor?.trim() || "local";
   if (!allowDocumentUpload(rateKey)) {

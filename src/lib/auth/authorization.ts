@@ -1,8 +1,73 @@
-export type ActorContext = Readonly<{
-  organizationId: string;
-  userId: string;
-  role: "executive" | "operations" | "project_manager" | "admin";
+export type OrganizationRole =
+  "owner" | "administrator" | "manager" | "contributor";
+
+export type Permission =
+  | "project:view"
+  | "project:edit"
+  | "risk:view"
+  | "risk:resolve"
+  | "action:assign"
+  | "document:upload"
+  | "members:manage"
+  | "organization:manage"
+  | "financial_exposure:view";
+
+export type AuthorizationSubject =
+  | Readonly<{
+      organizationId: string;
+      organizationRole: OrganizationRole;
+    }>
+  | Readonly<{
+      organizationId: string;
+      role: OrganizationRole;
+    }>;
+
+export type OrganizationResource = Readonly<{
+  organization_id: string;
 }>;
+
+export type ActorContext = AuthorizationSubject &
+  Readonly<{
+    userId: string;
+    role: "executive" | "operations" | "project_manager" | "admin";
+  }>;
+
+const OWNER_PERMISSIONS = {
+  "project:view": true,
+  "project:edit": true,
+  "risk:view": true,
+  "risk:resolve": true,
+  "action:assign": true,
+  "document:upload": true,
+  "members:manage": true,
+  "organization:manage": true,
+  "financial_exposure:view": true,
+} as const satisfies Record<Permission, boolean>;
+
+// Future roles are deliberately deny-by-default. Enabling a role is one policy
+// table change; call sites do not need to change.
+const PERMISSIONS_BY_ROLE: Readonly<
+  Record<OrganizationRole, Readonly<Record<Permission, boolean>>>
+> = {
+  owner: OWNER_PERMISSIONS,
+  administrator: denyAllPermissions(),
+  manager: denyAllPermissions(),
+  contributor: denyAllPermissions(),
+};
+
+function denyAllPermissions(): Record<Permission, boolean> {
+  return {
+    "project:view": false,
+    "project:edit": false,
+    "risk:view": false,
+    "risk:resolve": false,
+    "action:assign": false,
+    "document:upload": false,
+    "members:manage": false,
+    "organization:manage": false,
+    "financial_exposure:view": false,
+  };
+}
 
 export class AuthorizationError extends Error {
   readonly code = "NOT_FOUND";
@@ -13,9 +78,96 @@ export class AuthorizationError extends Error {
   }
 }
 
-export function assertOrganizationAccess<T extends { organization_id: string }>(
+export function can(
+  subject: AuthorizationSubject | null,
+  permission: Permission,
+  resource?: OrganizationResource | null,
+): boolean {
+  if (!subject) return false;
+  if (resource && resource.organization_id !== subject.organizationId) {
+    return false;
+  }
+  const role =
+    "organizationRole" in subject ? subject.organizationRole : subject.role;
+  return PERMISSIONS_BY_ROLE[role][permission];
+}
+
+export function canViewProject(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "project:view", resource);
+}
+
+export function canEditProject(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "project:edit", resource);
+}
+
+export function canViewRisk(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "risk:view", resource);
+}
+
+export function canResolveRisk(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "risk:resolve", resource);
+}
+
+export function canAssignAction(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "action:assign", resource);
+}
+
+export function canUploadDocument(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "document:upload");
+}
+
+export function canManageMembers(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "members:manage");
+}
+
+export function canManageOrganization(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "organization:manage");
+}
+
+export function canViewFinancialExposure(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "financial_exposure:view", resource);
+}
+
+export function assertAuthorized(
+  allowed: boolean,
+  message = "Resource not found",
+): asserts allowed {
+  if (!allowed) throw new AuthorizationError(message);
+}
+
+export function assertOrganizationMember<T extends AuthorizationSubject>(
+  subject: T | null,
+): asserts subject is T {
+  if (!subject) throw new AuthorizationError("Organization access denied.");
+}
+
+export function assertOrganizationAccess<T extends OrganizationResource>(
   resource: T | null,
-  context: Pick<ActorContext, "organizationId">,
+  context: Pick<AuthorizationSubject, "organizationId">,
 ): asserts resource is T {
   if (!resource || resource.organization_id !== context.organizationId) {
     throw new AuthorizationError();
@@ -23,7 +175,7 @@ export function assertOrganizationAccess<T extends { organization_id: string }>(
 }
 
 export function assertSameOrganization(
-  context: Pick<ActorContext, "organizationId">,
+  context: Pick<AuthorizationSubject, "organizationId">,
   organizationId: string,
 ): void {
   if (context.organizationId !== organizationId) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { assertOrganizationAccess } from "@/features/documents/authorization";
+import { assertOrganizationAccess } from "@/lib/auth/authorization";
 import { DOCUMENT_BUCKET } from "@/features/documents/validation";
 import { assertOrganizationStoragePath } from "@/features/documents/storage-isolation";
 import { requireActorContext } from "@/lib/auth/request-context";
@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: Context) {
   if (error)
     return NextResponse.json({ error: "File unavailable." }, { status: 500 });
   try {
-    assertOrganizationAccess(document, context.organizationId);
+    assertOrganizationAccess(document, context);
   } catch {
     return NextResponse.json({ error: "File not found." }, { status: 404 });
   }

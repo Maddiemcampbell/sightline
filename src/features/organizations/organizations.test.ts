@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  assertCanManageOrganization,
+  assertAuthorized,
   canManageOrganization,
-  OrganizationAuthorizationError,
-} from "@/features/organizations/authorization";
+  AuthorizationError,
+} from "@/lib/auth/authorization";
 import type { OrganizationRepository } from "@/features/organizations/repository";
 import {
   hashInvitationToken,
@@ -55,13 +55,15 @@ describe("organization validation", () => {
 describe("organization authorization", () => {
   it("allows the initial owner membership", () => {
     expect(canManageOrganization(membership)).toBe(true);
-    expect(() => assertCanManageOrganization(membership)).not.toThrow();
+    expect(() =>
+      assertAuthorized(canManageOrganization(membership)),
+    ).not.toThrow();
   });
 
   it("denies a missing membership", () => {
     expect(canManageOrganization(null)).toBe(false);
-    expect(() => assertCanManageOrganization(null)).toThrow(
-      OrganizationAuthorizationError,
+    expect(() => assertAuthorized(canManageOrganization(null))).toThrow(
+      AuthorizationError,
     );
   });
 });
@@ -101,7 +103,7 @@ describe("OrganizationService", () => {
         name: "BuildCo",
         slug: "buildco",
       }),
-    ).rejects.toThrow(OrganizationAuthorizationError);
+    ).rejects.toThrow(AuthorizationError);
     expect(repository.updateOrganization).not.toHaveBeenCalled();
   });
 });

@@ -1,9 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import {
-  assertCanManageOrganization,
-  assertMembership,
-} from "@/features/organizations/authorization";
+  assertAuthorized,
+  assertOrganizationMember,
+  canManageMembers,
+  canManageOrganization,
+} from "@/lib/auth/authorization";
 import { OrganizationRepository } from "@/features/organizations/repository";
 import {
   createInvitationSchema,
@@ -45,7 +47,8 @@ export class OrganizationService {
     });
     const memberships = await this.repository.listMemberships(principal.id);
     const membership = memberships.find((item) => item.id === membershipId);
-    if (!membership) throw new Error("Created organization could not be loaded.");
+    if (!membership)
+      throw new Error("Created organization could not be loaded.");
     return membership.organizationId;
   }
 
@@ -58,7 +61,8 @@ export class OrganizationService {
       principal.id,
       organizationId,
     );
-    assertCanManageOrganization(membership);
+    assertOrganizationMember(membership);
+    assertAuthorized(canManageOrganization(membership));
     await this.repository.updateOrganization(
       organizationId,
       updateOrganizationSchema.parse(input),
@@ -74,7 +78,8 @@ export class OrganizationService {
       principal.id,
       organizationId,
     );
-    assertCanManageOrganization(membership);
+    assertOrganizationMember(membership);
+    assertAuthorized(canManageMembers(membership));
     const { email } = createInvitationSchema.parse(input);
     const token = randomBytes(32).toString("hex");
     await this.repository.createInvitation({
@@ -100,7 +105,8 @@ export class OrganizationService {
     });
     const memberships = await this.repository.listMemberships(principal.id);
     const membership = memberships.find((item) => item.id === membershipId);
-    if (!membership) throw new Error("Accepted organization could not be loaded.");
+    if (!membership)
+      throw new Error("Accepted organization could not be loaded.");
     return membership.organizationId;
   }
 
@@ -112,7 +118,7 @@ export class OrganizationService {
       principal.id,
       organizationId,
     );
-    assertMembership(membership);
+    assertOrganizationMember(membership);
     await this.repository.leaveOrganization(membership.id, principal.id);
   }
 }

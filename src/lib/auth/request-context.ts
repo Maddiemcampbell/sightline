@@ -21,6 +21,7 @@ export async function requireActorContext(): Promise<ActorContext> {
   }
   return {
     organizationId: data.organization_id,
+    organizationRole: membership.role,
     userId: data.id,
     role: data.role,
   };

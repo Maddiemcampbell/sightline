@@ -1,6 +1,6 @@
 "use server";
 
-import { assertOrganizationAccess } from "@/features/documents/authorization";
+import { assertOrganizationAccess } from "@/lib/auth/authorization";
 import { validateDocumentAssociations } from "@/features/documents/data";
 import {
   archiveDocumentSchema,
@@ -24,7 +24,7 @@ export async function editDocumentAction(
     .eq("id", value.documentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  assertOrganizationAccess(document, context.organizationId);
+  assertOrganizationAccess(document, context);
   if (document.archived_at)
     throw new Error("Archived documents cannot be edited.");
   await validateDocumentAssociations(value.projectId, value.vendorId);
@@ -89,7 +89,7 @@ export async function archiveDocumentAction(input: { documentId: string }) {
     .eq("id", value.documentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  assertOrganizationAccess(document, context.organizationId);
+  assertOrganizationAccess(document, context);
   if (document.archived_at) return;
   const archivedAt = new Date().toISOString();
   const { error: updateError } = await client

@@ -4,9 +4,18 @@ import { buildDashboardView } from "@/features/dashboard/aggregation";
 import { getActivityPage } from "@/features/activity/data";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  assertAuthorized,
+  canViewFinancialExposure,
+  canViewProject,
+  canViewRisk,
+} from "@/lib/auth/authorization";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
+  assertAuthorized(canViewProject(context));
+  assertAuthorized(canViewRisk(context));
+  assertAuthorized(canViewFinancialExposure(context));
   const client = await createServerSupabaseClient();
   const [
     organizationResult,

@@ -1,5 +1,8 @@
 begin;
 
+create extension if not exists pgtap with schema extensions;
+select plan(1);
+
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
@@ -169,6 +172,11 @@ begin
   get diagnostics affected = row_count;
   if affected <> 0 then raise exception 'DELETE isolation failed'; end if;
 
+  -- Supabase Storage permits deletes through its API by setting this
+  -- transaction-local guard before issuing SQL. Reproduce that API behavior
+  -- here so the storage RLS policy, rather than the protective trigger, is
+  -- what decides whether the foreign object can be deleted.
+  perform set_config('storage.allow_delete_query', 'true', true);
   delete from storage.objects
   where bucket_id = 'source-documents'
     and name = 'f2000000-0000-4000-8000-000000000002/document-b/b.pdf';
@@ -203,5 +211,8 @@ begin
   end;
 end;
 $$;
+
+select pass('tenant data, storage, and audit isolation policies hold');
+select * from finish();
 
 rollback;

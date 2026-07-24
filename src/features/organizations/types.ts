@@ -11,7 +11,7 @@ export type OrganizationMembership = Readonly<{
   organizationId: string;
   authUserId: string;
   applicationUserId: string;
-  role: "owner";
+  role: OrganizationRole;
   organization: Organization;
 }>;
 
@@ -28,5 +28,6 @@ export type OrganizationMemberProfile = Readonly<{
   membershipId: string;
   email: string;
   fullName: string;
-  role: "owner";
+  role: OrganizationRole;
 }>;
+import type { OrganizationRole } from "@/lib/auth/authorization";

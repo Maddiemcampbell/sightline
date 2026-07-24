@@ -9,6 +9,7 @@ import type { TimelineItem } from "@/features/activity/types";
 
 const context = {
   organizationId: "10000000-0000-4000-8000-000000000001",
+  organizationRole: "owner" as const,
   userId: "11000000-0000-4000-8000-000000000001",
   role: "operations" as const,
 };

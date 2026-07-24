@@ -8,6 +8,11 @@ import { ResolutionTrackingService } from "@/features/resolutions/service";
 import { RiskManagementService } from "@/features/risks/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  assertAuthorized,
+  canResolveRisk,
+  canViewRisk,
+} from "@/lib/auth/authorization";
 
 const mutationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -35,6 +40,7 @@ export async function addRiskCommentAction(
     commentSchema,
     input,
     async (context, parsed) => {
+      assertAuthorized(canViewRisk(context));
       const service = new RiskManagementService(
         await createServerSupabaseClient(),
       );
@@ -55,6 +61,7 @@ export async function updateRiskDetailAction(
   input: z.input<typeof mutationSchema>,
 ) {
   await runServerMutation(mutationSchema, input, async (context, value) => {
+    assertAuthorized(canViewRisk(context));
     const service = new RiskManagementService(
       await createServerSupabaseClient(),
     );
@@ -79,11 +86,12 @@ export async function resolveRiskAction(input: unknown) {
   const resolution = await runServerMutation(
     resolveRiskSchema,
     parsed,
-    async (context, value) =>
-      new ResolutionTrackingService(await createServerSupabaseClient()).resolve(
-        context,
-        value,
-      ),
+    async (context, value) => {
+      assertAuthorized(canResolveRisk(context));
+      return new ResolutionTrackingService(
+        await createServerSupabaseClient(),
+      ).resolve(context, value);
+    },
   );
   revalidateRiskViews(parsed.riskId);
   return resolution;
@@ -94,11 +102,12 @@ export async function reopenRiskAction(input: unknown) {
   const risk = await runServerMutation(
     reopenRiskSchema,
     parsed,
-    async (context, value) =>
-      new ResolutionTrackingService(await createServerSupabaseClient()).reopen(
-        context,
-        value,
-      ),
+    async (context, value) => {
+      assertAuthorized(canResolveRisk(context));
+      return new ResolutionTrackingService(
+        await createServerSupabaseClient(),
+      ).reopen(context, value);
+    },
   );
   revalidateRiskViews(parsed.riskId);
   return risk;

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { assertOrganizationAccess } from "@/features/documents/authorization";
+import { assertOrganizationAccess } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -11,7 +11,8 @@ function requireRows<T>(data: T | null, error: { message: string } | null): T {
 }
 
 export async function getDocumentWorkspace(search: string) {
-  const { organizationId } = await requireActorContext();
+  const context = await requireActorContext();
+  const { organizationId } = context;
   const client = await createServerSupabaseClient();
   const [documentsResult, projectsResult, vendorsResult] = await Promise.all([
     client
@@ -59,7 +60,8 @@ export async function getDocumentWorkspace(search: string) {
 }
 
 export async function getDocumentDetail(documentId: string) {
-  const { organizationId } = await requireActorContext();
+  const context = await requireActorContext();
+  const { organizationId } = context;
   const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
@@ -69,7 +71,7 @@ export async function getDocumentDetail(documentId: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!document) return null;
-  assertOrganizationAccess(document, organizationId);
+  assertOrganizationAccess(document, context);
   const [projectsResult, vendorsResult, activitiesResult] = await Promise.all([
     client
       .from("projects")
@@ -100,7 +102,8 @@ export async function validateDocumentAssociations(
   projectId: string | null,
   vendorId: string | null,
 ) {
-  const { organizationId } = await requireActorContext();
+  const context = await requireActorContext();
+  const { organizationId } = context;
   const client = await createServerSupabaseClient();
   const [projectResult, vendorResult] = await Promise.all([
     projectId
@@ -122,6 +125,6 @@ export async function validateDocumentAssociations(
   ]);
   if (projectResult.error) throw new Error(projectResult.error.message);
   if (vendorResult.error) throw new Error(vendorResult.error.message);
-  if (projectId) assertOrganizationAccess(projectResult.data, organizationId);
-  if (vendorId) assertOrganizationAccess(vendorResult.data, organizationId);
+  if (projectId) assertOrganizationAccess(projectResult.data, context);
+  if (vendorId) assertOrganizationAccess(vendorResult.data, context);
 }

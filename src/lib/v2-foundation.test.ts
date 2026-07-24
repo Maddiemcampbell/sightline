@@ -12,6 +12,7 @@ import { readV2FeatureFlags } from "@/lib/feature-flags";
 
 const context: ActorContext = {
   organizationId: "10000000-0000-4000-8000-000000000001",
+  organizationRole: "owner",
   userId: "11000000-0000-4000-8000-000000000001",
   role: "executive",
 };

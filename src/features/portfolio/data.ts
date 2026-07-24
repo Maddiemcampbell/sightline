@@ -7,6 +7,12 @@ import type {
 } from "@/features/portfolio/validation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { calculateResolutionValueSummary } from "@/domain/resolutions";
+import {
+  assertAuthorized,
+  canViewFinancialExposure,
+  canViewProject,
+  canViewRisk,
+} from "@/lib/auth/authorization";
 
 function rows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -27,7 +33,10 @@ async function portfolioRows(organizationId: string) {
 }
 
 export async function getProjects(filters: ProjectFilters) {
-  const { organizationId } = await requireActorContext();
+  const context = await requireActorContext();
+  assertAuthorized(canViewProject(context));
+  assertAuthorized(canViewFinancialExposure(context));
+  const { organizationId } = context;
   const { projects, risks } = await portfolioRows(organizationId);
   const search = filters.q.toLowerCase();
   const views = projects
@@ -76,7 +85,10 @@ export async function getProjects(filters: ProjectFilters) {
 }
 
 export async function getRisks(filters: RiskFilters) {
-  const { organizationId } = await requireActorContext();
+  const context = await requireActorContext();
+  assertAuthorized(canViewRisk(context));
+  assertAuthorized(canViewFinancialExposure(context));
+  const { organizationId } = context;
   const { projects, risks } = await portfolioRows(organizationId);
   const projectById = new Map(projects.map((project) => [project.id, project]));
   const now = Date.now();
