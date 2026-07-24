@@ -157,8 +157,12 @@ export class AskSightlineRepository {
   }
 
   async append(
+    context: ActorContext,
     values: AppDatabase["public"]["Tables"]["risk_conversation_messages"]["Insert"],
   ) {
+    if (values.organization_id !== context.organizationId) {
+      throw new Error("Organization access denied.");
+    }
     const { data, error } = await this.client
       .from("risk_conversation_messages")
       .insert(values)

@@ -5,7 +5,7 @@ import {
   riskAnalysisOutputSchema,
   validateEvidenceGrounding,
 } from "@/domain/ai/risk-analysis";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function approveRiskSuggestion(input: {
   organizationId: string;
@@ -13,7 +13,7 @@ export async function approveRiskSuggestion(input: {
   reviewerUserId: string;
   reviewNote?: string;
 }) {
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: reviewer } = await client
     .from("users")
     .select("id")
@@ -162,7 +162,7 @@ export async function rejectRiskSuggestion(input: {
 }) {
   const reason = input.reason.trim();
   if (reason.length < 3) throw new Error("A rejection reason is required.");
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: reviewer } = await client
     .from("users")
     .select("id")

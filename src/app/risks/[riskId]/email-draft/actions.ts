@@ -9,7 +9,7 @@ import {
 } from "@/domain/ai/email-draft";
 import { EmailDraftService } from "@/features/email-drafts/service";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function generateEmailDraftAction(input: unknown) {
   const raw =
@@ -25,8 +25,8 @@ export async function generateEmailDraftAction(input: unknown) {
   const draft = await runServerMutation(
     generateEmailDraftSchema,
     parsed,
-    (context, value) =>
-      new EmailDraftService(createAdminSupabaseClient()).generate(
+    async (context, value) =>
+      new EmailDraftService(await createServerSupabaseClient()).generate(
         context,
         value,
       ),
@@ -39,8 +39,8 @@ export async function saveEmailDraftAction(input: unknown) {
   const draft = await runServerMutation(
     saveEmailDraftSchema,
     parsed,
-    (context, value) =>
-      new EmailDraftService(createAdminSupabaseClient()).save(
+    async (context, value) =>
+      new EmailDraftService(await createServerSupabaseClient()).save(
         context,
         value.draftId,
         value,
@@ -55,8 +55,11 @@ export async function markEmailDraftSentAction(draftId: string) {
   const draft = await runServerMutation(
     saveEmailDraftSchema.shape.draftId,
     value,
-    (context, id) =>
-      new EmailDraftService(createAdminSupabaseClient()).markSent(context, id),
+    async (context, id) =>
+      new EmailDraftService(await createServerSupabaseClient()).markSent(
+        context,
+        id,
+      ),
   );
   revalidatePath(`/risks/${draft.risk_id}/email-draft`);
   revalidatePath(`/risks/${draft.risk_id}`);

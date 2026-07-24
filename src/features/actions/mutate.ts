@@ -6,14 +6,16 @@ import {
   type ActionMutationInput,
 } from "@/features/actions/validation";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function mutateAction(input: ActionMutationInput) {
   return runServerMutation(
     actionMutationSchema,
     input,
     async (context, value) => {
-      const service = new RecommendedActionService(createAdminSupabaseClient());
+      const service = new RecommendedActionService(
+        await createServerSupabaseClient(),
+      );
       return value.operation === "accept"
         ? service.accept(context, value.actionId)
         : value.operation === "start"

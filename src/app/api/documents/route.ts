@@ -9,7 +9,8 @@ import {
   MAX_DOCUMENT_BYTES,
   validateUploadFile,
 } from "@/features/documents/validation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { organizationStoragePath } from "@/features/documents/storage-isolation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function POST(request: Request) {
@@ -47,9 +48,13 @@ export async function POST(request: Request) {
     const validatedFile = await validateUploadFile(file);
     await validateDocumentAssociations(metadata.projectId, metadata.vendorId);
 
-    const client = createAdminSupabaseClient();
+    const client = await createServerSupabaseClient();
     const documentId = crypto.randomUUID();
-    const storagePath = `${context.organizationId}/${documentId}/${validatedFile.safeFilename}`;
+    const storagePath = organizationStoragePath(
+      context.organizationId,
+      documentId,
+      validatedFile.safeFilename,
+    );
     const { error: storageError } = await client.storage
       .from(DOCUMENT_BUCKET)
       .upload(storagePath, validatedFile.bytes, {

@@ -94,7 +94,7 @@ export class AskSightlineService {
       })),
       question: sanitizeUntrustedExcerpt(question),
     });
-    await this.repository.append({
+    await this.repository.append(context, {
       organization_id: context.organizationId,
       conversation_id: conversation.id,
       role: "user",
@@ -116,7 +116,7 @@ export class AskSightlineService {
         usage: { inputTokens: null, outputTokens: null, totalTokens: null },
       };
     }
-    const answer = await this.repository.append({
+    const answer = await this.repository.append(context, {
       organization_id: context.organizationId,
       conversation_id: conversation.id,
       role: "assistant",

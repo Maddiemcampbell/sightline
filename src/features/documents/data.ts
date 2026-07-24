@@ -2,7 +2,7 @@ import "server-only";
 
 import { assertOrganizationAccess } from "@/features/documents/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function requireRows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -12,7 +12,7 @@ function requireRows<T>(data: T | null, error: { message: string } | null): T {
 
 export async function getDocumentWorkspace(search: string) {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [documentsResult, projectsResult, vendorsResult] = await Promise.all([
     client
       .from("documents")
@@ -60,7 +60,7 @@ export async function getDocumentWorkspace(search: string) {
 
 export async function getDocumentDetail(documentId: string) {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
     .select("*")
@@ -101,7 +101,7 @@ export async function validateDocumentAssociations(
   vendorId: string | null,
 ) {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [projectResult, vendorResult] = await Promise.all([
     projectId
       ? client

@@ -80,7 +80,7 @@ export class EmailDraftService {
     const provider = this.provider ?? configuredProvider();
     const result = await generateEmailDraftWithFallback(provider, input);
     const generationSource = result.generationSource;
-    const draft = await this.repository.insert({
+    const draft = await this.repository.insert(context, {
       organization_id: context.organizationId,
       risk_id: source.risk.id,
       recommended_action_id: source.action?.id ?? null,

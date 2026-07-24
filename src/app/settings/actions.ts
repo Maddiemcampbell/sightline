@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { sendTestMorningBrief } from "@/features/email/delivery-service";
 import { emailPreferencesSchema } from "@/features/email/preferences";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function updateEmailPreferencesAction(input: {
@@ -14,7 +14,7 @@ export async function updateEmailPreferencesAction(input: {
 }) {
   const context = await requireActorContext();
   const value = emailPreferencesSchema.parse(input);
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: user, error } = await client
     .from("users")
     .select("id")
@@ -39,7 +39,7 @@ export async function updateEmailPreferencesAction(input: {
 export async function sendTestEmailAction() {
   try {
     const context = await requireActorContext();
-    await sendTestMorningBrief(context.userId);
+    await sendTestMorningBrief(context.organizationId, context.userId);
     revalidatePath("/settings");
     return { success: true as const };
   } catch (error) {

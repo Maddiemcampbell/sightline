@@ -6,15 +6,15 @@ import {
 } from "@/domain/ai/risk-question";
 import { AskSightlineService } from "@/features/ask-sightline/service";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function askSightlineAction(input: unknown) {
   const parsed = askRiskQuestionSchema.parse(input);
   const answer = await runServerMutation(
     askRiskQuestionSchema,
     parsed,
-    (context, value) =>
-      new AskSightlineService(createAdminSupabaseClient()).ask(
+    async (context, value) =>
+      new AskSightlineService(await createServerSupabaseClient()).ask(
         context,
         value.riskId,
         value.question,
@@ -25,8 +25,8 @@ export async function askSightlineAction(input: unknown) {
 
 export async function rateSightlineAnswerAction(input: unknown) {
   const parsed = feedbackSchema.parse(input);
-  await runServerMutation(feedbackSchema, parsed, (context, value) =>
-    new AskSightlineService(createAdminSupabaseClient()).feedback(
+  await runServerMutation(feedbackSchema, parsed, async (context, value) =>
+    new AskSightlineService(await createServerSupabaseClient()).feedback(
       context,
       value.messageId,
       value.rating,

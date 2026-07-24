@@ -3,21 +3,23 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { OrganizationRepository } from "@/features/organizations/repository";
 import { requireCurrentMembership } from "@/lib/auth/session";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function OrganizationPage() {
   const membership = await requireCurrentMembership();
   const members = await new OrganizationRepository(
-    createAdminSupabaseClient(),
+    await createServerSupabaseClient(),
   ).listMemberProfiles(membership.organizationId);
 
   return (
     <div className="mx-auto max-w-4xl px-[var(--page-gutter)] py-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-muted text-sm font-semibold">Organization profile</p>
+          <p className="text-muted text-sm font-semibold">
+            Organization profile
+          </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
             {membership.organization.name}
           </h1>
@@ -36,11 +38,15 @@ export default async function OrganizationPage() {
           <dl className="mt-5 space-y-4 text-sm">
             <div>
               <dt className="text-muted">Name</dt>
-              <dd className="mt-1 font-semibold">{membership.organization.name}</dd>
+              <dd className="mt-1 font-semibold">
+                {membership.organization.name}
+              </dd>
             </div>
             <div>
               <dt className="text-muted">Slug</dt>
-              <dd className="mt-1 font-semibold">{membership.organization.slug}</dd>
+              <dd className="mt-1 font-semibold">
+                {membership.organization.slug}
+              </dd>
             </div>
             <div>
               <dt className="text-muted">Timezone</dt>

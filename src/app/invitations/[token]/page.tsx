@@ -6,7 +6,7 @@ import { OrganizationRepository } from "@/features/organizations/repository";
 import { hashInvitationToken } from "@/features/organizations/service";
 import { invitationTokenSchema } from "@/features/organizations/validation";
 import { requireAuthenticatedUser } from "@/lib/auth/session";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type InvitationPageProps = Readonly<{
   params: Promise<{ token: string }>;
@@ -17,7 +17,7 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
   const parsedToken = invitationTokenSchema.safeParse((await params).token);
   if (!parsedToken.success) notFound();
   const preview = await new OrganizationRepository(
-    createAdminSupabaseClient(),
+    await createServerSupabaseClient(),
   ).findInvitationByHash(hashInvitationToken(parsedToken.data));
   if (!preview) notFound();
 
@@ -31,7 +31,9 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
   return (
     <div className="mx-auto max-w-2xl px-[var(--page-gutter)] py-10">
       <Card>
-        <p className="text-muted text-sm font-semibold">Organization invitation</p>
+        <p className="text-muted text-sm font-semibold">
+          Organization invitation
+        </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
           Join {preview.organization.name}
         </h1>

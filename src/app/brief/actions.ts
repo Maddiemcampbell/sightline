@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { RiskManagementService } from "@/features/risks/service";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const riskIdSchema = z.uuid();
 const dismissSchema = z.object({
@@ -15,7 +15,9 @@ const dismissSchema = z.object({
 
 export async function acknowledgeRiskAction(riskId: string): Promise<void> {
   await runServerMutation(riskIdSchema, riskId, async (context, id) => {
-    const service = new RiskManagementService(createAdminSupabaseClient());
+    const service = new RiskManagementService(
+      await createServerSupabaseClient(),
+    );
     await service.acknowledge(context, id);
   });
   revalidatePath("/brief");
@@ -26,7 +28,9 @@ export async function dismissRiskAction(input: {
   reason: string;
 }): Promise<void> {
   await runServerMutation(dismissSchema, input, async (context, value) => {
-    const service = new RiskManagementService(createAdminSupabaseClient());
+    const service = new RiskManagementService(
+      await createServerSupabaseClient(),
+    );
     await service.dismiss(context, { ...value, source: "daily_brief" });
   });
   revalidatePath("/brief");

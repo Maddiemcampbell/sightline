@@ -1,7 +1,9 @@
 import "server-only";
 
-import { BUILDCO_ORGANIZATION_ID } from "@/features/daily-brief/data";
-import { getDailyBriefView } from "@/features/daily-brief/data";
+import {
+  getDailyBriefView,
+  getDailyBriefViewForOrganization,
+} from "@/features/daily-brief/data";
 import {
   isBriefDeliveryDue,
   scheduledDeliveryKey,
@@ -12,6 +14,7 @@ import { renderMorningBriefEmail } from "@/features/email/render-morning-brief";
 import { ResendEmailProvider } from "@/features/email/resend-provider";
 import { getServerEnv } from "@/lib/env";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { runOrganizationJobsSequentially } from "@/lib/tenancy/organization-jobs";
 
 export type DeliverySummary = { sent: number; skipped: number; failed: number };
 
@@ -19,69 +22,76 @@ export async function deliverScheduledMorningBriefs(
   now = new Date(),
 ): Promise<DeliverySummary> {
   const client = createAdminSupabaseClient();
-  const brief = await getDailyBriefView();
-  if (!brief || brief.risks.length !== 3)
-    return { sent: 0, skipped: 0, failed: 0 };
-  const [organizationResult, usersResult] = await Promise.all([
-    client
-      .from("organizations")
-      .select("name")
-      .eq("id", BUILDCO_ORGANIZATION_ID)
-      .single(),
-    client
-      .from("users")
-      .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-      .eq("email_delivery_enabled", true),
-  ]);
-  if (organizationResult.error)
-    throw new Error(organizationResult.error.message);
-  if (usersResult.error) throw new Error(usersResult.error.message);
   const provider = configuredEmailProvider();
   const config = emailConfig();
   const summary: DeliverySummary = { sent: 0, skipped: 0, failed: 0 };
-  for (const user of usersResult.data ?? []) {
-    if (
-      !isBriefDeliveryDue({
-        now,
-        timezone: user.delivery_timezone,
-        preferredTime: user.preferred_delivery_time.slice(0, 5),
-        briefDate: brief.briefDate,
-      })
-    ) {
-      summary.skipped += 1;
-      continue;
-    }
-    const outcome = await sendBriefEmail({
-      provider,
-      organizationName: organizationResult.data.name,
-      user,
-      brief,
-      appUrl: config.appUrl,
-      from: config.from,
-      kind: "scheduled",
-      now,
-    });
-    summary[outcome] += 1;
-  }
+  const { data: organizations, error: organizationsError } = await client
+    .from("organizations")
+    .select("id,name");
+  if (organizationsError) throw new Error(organizationsError.message);
+  await runOrganizationJobsSequentially(
+    (organizations ?? []).map((organization) => ({
+      organizationId: organization.id,
+      name: organization.name,
+    })),
+    async (organization) => {
+      const organizationId = organization.organizationId;
+      const brief = await getDailyBriefViewForOrganization(organizationId);
+      if (!brief || brief.risks.length !== 3) return;
+      const { data: users, error: usersError } = await client
+        .from("users")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .eq("email_delivery_enabled", true);
+      if (usersError) throw new Error(usersError.message);
+      for (const user of users ?? []) {
+        if (
+          !isBriefDeliveryDue({
+            now,
+            timezone: user.delivery_timezone,
+            preferredTime: user.preferred_delivery_time.slice(0, 5),
+            briefDate: brief.briefDate,
+          })
+        ) {
+          summary.skipped += 1;
+          continue;
+        }
+        const outcome = await sendBriefEmail({
+          organizationId,
+          provider,
+          organizationName: organization.name,
+          user,
+          brief,
+          appUrl: config.appUrl,
+          from: config.from,
+          kind: "scheduled",
+          now,
+        });
+        summary[outcome] += 1;
+      }
+    },
+  );
   return summary;
 }
 
-export async function sendTestMorningBrief(userId: string) {
+export async function sendTestMorningBrief(
+  organizationId: string,
+  userId: string,
+) {
   const client = createAdminSupabaseClient();
-  const brief = await getDailyBriefView();
+  const brief = await getDailyBriefViewForOrganization(organizationId);
   if (!brief || brief.risks.length !== 3)
     throw new Error("A complete Daily Brief is required.");
   const [organizationResult, userResult] = await Promise.all([
     client
       .from("organizations")
       .select("name")
-      .eq("id", BUILDCO_ORGANIZATION_ID)
+      .eq("id", organizationId)
       .single(),
     client
       .from("users")
       .select("*")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .eq("id", userId)
       .single(),
   ]);
@@ -90,6 +100,7 @@ export async function sendTestMorningBrief(userId: string) {
   if (userResult.error) throw new Error(userResult.error.message);
   const config = emailConfig();
   const outcome = await sendBriefEmail({
+    organizationId,
     provider: configuredEmailProvider(),
     organizationName: organizationResult.data.name,
     user: userResult.data,
@@ -103,6 +114,7 @@ export async function sendTestMorningBrief(userId: string) {
 }
 
 async function sendBriefEmail(input: {
+  organizationId: string;
   provider: EmailProvider;
   organizationName: string;
   user: {
@@ -116,6 +128,7 @@ async function sendBriefEmail(input: {
   kind: "scheduled" | "test";
   now: Date;
 }): Promise<"sent" | "skipped" | "failed"> {
+  const { organizationId } = input;
   const client = createAdminSupabaseClient();
   const idempotencyKey =
     input.kind === "scheduled"
@@ -124,6 +137,7 @@ async function sendBriefEmail(input: {
   let delivery = await client
     .from("daily_brief_deliveries")
     .select("*")
+    .eq("organization_id", organizationId)
     .eq("idempotency_key", idempotencyKey)
     .maybeSingle();
   if (delivery.error) throw new Error(delivery.error.message);
@@ -131,7 +145,7 @@ async function sendBriefEmail(input: {
     const inserted = await client
       .from("daily_brief_deliveries")
       .insert({
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: organizationId,
         daily_brief_id: input.brief.briefId,
         user_id: input.user.id,
         delivery_kind: input.kind,
@@ -147,7 +161,7 @@ async function sendBriefEmail(input: {
       delivery = await client
         .from("daily_brief_deliveries")
         .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+        .eq("organization_id", organizationId)
         .eq("daily_brief_id", input.brief.briefId)
         .eq("user_id", input.user.id)
         .eq("delivery_kind", "scheduled")
@@ -157,6 +171,8 @@ async function sendBriefEmail(input: {
   }
   const row = delivery.data;
   if (!row) throw new Error("Delivery record missing.");
+  if (row.organization_id !== organizationId)
+    throw new Error("Delivery organization mismatch.");
   if (row.status === "sent") return "skipped";
   if (row.attempt_count >= 3) return "failed";
   if (row.next_retry_at && new Date(row.next_retry_at) > input.now)
@@ -172,7 +188,7 @@ async function sendBriefEmail(input: {
       error_message: null,
     })
     .eq("id", row.id)
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+    .eq("organization_id", organizationId);
   if (claimError) throw new Error(claimError.message);
 
   const email = renderMorningBriefEmail({
@@ -197,7 +213,7 @@ async function sendBriefEmail(input: {
         next_retry_at: null,
       })
       .eq("id", row.id)
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+      .eq("organization_id", organizationId);
     if (error) throw new Error(error.message);
     return "sent";
   } catch (error) {
@@ -218,7 +234,7 @@ async function sendBriefEmail(input: {
         next_retry_at: nextRetryAt,
       })
       .eq("id", row.id)
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+      .eq("organization_id", organizationId);
     if (input.kind === "test") {
       throw error;
     }

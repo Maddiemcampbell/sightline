@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { getRiskEvidenceExperience } from "@/features/evidence/data";
 import { formatSourceLocation } from "@/features/evidence/evidence-experience";
-
-const defaultRiskId = "60000000-0000-4000-8000-000000000001";
+import { requireActorContext } from "@/lib/auth/request-context";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function EvidenceDebugPage({
   searchParams,
@@ -12,7 +12,22 @@ export default async function EvidenceDebugPage({
   searchParams: Promise<{ riskId?: string }>;
 }) {
   if (process.env.NODE_ENV !== "development") notFound();
-  const { riskId = defaultRiskId } = await searchParams;
+  const context = await requireActorContext();
+  const requestedRiskId = (await searchParams).riskId;
+  const client = await createServerSupabaseClient();
+  const { data: defaultRisk, error } = requestedRiskId
+    ? { data: null, error: null }
+    : await client
+        .from("risks")
+        .select("id")
+        .eq("organization_id", context.organizationId)
+        .order("detected_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+  if (error) throw new Error(error.message);
+  const riskId = requestedRiskId ?? defaultRisk?.id;
+  if (!riskId)
+    return <p className="p-8">No risk is available in this organization.</p>;
   const experience = await getRiskEvidenceExperience(riskId);
 
   return (

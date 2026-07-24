@@ -3,7 +3,7 @@ import "server-only";
 import type { ActionFilters } from "@/features/actions/data-types";
 import type { ActionOwner, ActionView } from "@/features/actions/types";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { RecommendedActionRow } from "@/lib/supabase/database-row.types";
 
 export function toActionView(
@@ -30,7 +30,7 @@ export function toActionView(
 
 export async function getActionsWorkspace(filters: ActionFilters) {
   const context = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [actionsResult, risksResult, projectsResult, usersResult] =
     await Promise.all([
       client

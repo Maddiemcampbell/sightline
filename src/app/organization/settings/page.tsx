@@ -6,14 +6,14 @@ import {
 } from "@/components/organizations/organization-forms";
 import { OrganizationRepository } from "@/features/organizations/repository";
 import { requireCurrentMembership } from "@/lib/auth/session";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function OrganizationSettingsPage() {
   const membership = await requireCurrentMembership();
   const invitations = await new OrganizationRepository(
-    createAdminSupabaseClient(),
+    await createServerSupabaseClient(),
   ).listInvitations(membership.organizationId);
 
   return (

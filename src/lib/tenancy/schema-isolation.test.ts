@@ -1,0 +1,84 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const membershipMigration = readFileSync(
+  join(
+    process.cwd(),
+    "supabase/migrations/20260724010000_v3_organizations_memberships.sql",
+  ),
+  "utf8",
+);
+const isolationMigration = readFileSync(
+  join(
+    process.cwd(),
+    "supabase/migrations/20260724020000_v3_tenant_isolation.sql",
+  ),
+  "utf8",
+);
+
+const tenantTables = [
+  "users",
+  "projects",
+  "vendors",
+  "project_vendors",
+  "integration_sources",
+  "documents",
+  "document_extracted_fields",
+  "project_detection_settings",
+  "detection_runs",
+  "ai_analysis_runs",
+  "ai_risk_suggestions",
+  "daily_brief_deliveries",
+  "document_activities",
+  "risks",
+  "risk_evidence",
+  "risk_email_drafts",
+  "risk_conversations",
+  "risk_conversation_messages",
+  "risk_answer_feedback",
+  "recommended_actions",
+  "risk_resolutions",
+  "daily_briefs",
+  "brief_items",
+  "risk_activities",
+] as const;
+
+describe("tenant RLS schema coverage", () => {
+  it.each(tenantTables)(
+    "%s receives all four organization policies",
+    (table) => {
+      expect(membershipMigration).toContain(`'${table}'`);
+      for (const operation of ["select", "insert", "update", "delete"]) {
+        expect(membershipMigration).toContain(
+          `tenant_table || '_member_${operation}'`,
+        );
+      }
+    },
+  );
+
+  it("defines all four storage object policies", () => {
+    for (const operation of ["select", "insert", "update", "delete"]) {
+      expect(isolationMigration).toContain(
+        `source_documents_member_${operation}`,
+      );
+    }
+  });
+
+  it("keeps audit history append-only", () => {
+    expect(isolationMigration).toContain("audit_logs_member_select");
+    expect(isolationMigration).toContain("audit_logs_member_insert");
+    expect(isolationMigration).toContain("audit_logs_no_update");
+    expect(isolationMigration).toContain("audit_logs_no_delete");
+  });
+
+  it("binds document object paths to the row organization", () => {
+    expect(isolationMigration).toContain(
+      "documents_storage_path_organization_check",
+    );
+    expect(isolationMigration).toContain(
+      "storage_path like organization_id::text || '/%'",
+    );
+  });
+});

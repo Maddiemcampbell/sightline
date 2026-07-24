@@ -6,7 +6,7 @@ import type { LegacyRiskActivityType, RiskActivityType } from "@/domain/types";
 import type { TimelineItem } from "@/features/activity/types";
 import { orderTimelineItems } from "@/features/activity/ordering";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const cursorSchema = z
   .string()
@@ -33,7 +33,7 @@ export async function getActivityPage({
     })
     .parse({ cursor, riskId, projectId, limit });
   const context = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const parsedCursor = scope.cursor;
   let allowedRiskIds: string[] | null = null;
   if (scope.projectId) {

@@ -3,11 +3,11 @@ import "server-only";
 import { buildDashboardView } from "@/features/dashboard/aggregation";
 import { getActivityPage } from "@/features/activity/data";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [
     organizationResult,
     currentUserResult,

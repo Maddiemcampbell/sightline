@@ -5,7 +5,7 @@ import type {
   ProjectFilters,
   RiskFilters,
 } from "@/features/portfolio/validation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { calculateResolutionValueSummary } from "@/domain/resolutions";
 
 function rows<T>(data: T | null, error: { message: string } | null): T {
@@ -15,7 +15,7 @@ function rows<T>(data: T | null, error: { message: string } | null): T {
 }
 
 async function portfolioRows(organizationId: string) {
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [projectsResult, risksResult] = await Promise.all([
     client.from("projects").select("*").eq("organization_id", organizationId),
     client.from("risks").select("*").eq("organization_id", organizationId),
@@ -140,7 +140,7 @@ export async function getRisks(filters: RiskFilters) {
 
 export async function getResolutionValueSummary() {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [risksResult, resolutionsResult] = await Promise.all([
     client
       .from("risks")
@@ -178,7 +178,7 @@ export async function getResolutionValueSummary() {
 
 export async function getProjectDetail(projectId: string) {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [
     projectResult,
     risksResult,
@@ -238,7 +238,7 @@ export async function getProjectDetail(projectId: string) {
 
 export async function getRiskDetail(riskId: string) {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: risk, error } = await client
     .from("risks")
     .select("*")

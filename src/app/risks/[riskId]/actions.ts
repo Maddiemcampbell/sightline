@@ -7,7 +7,7 @@ import { reopenRiskSchema, resolveRiskSchema } from "@/domain/resolutions";
 import { ResolutionTrackingService } from "@/features/resolutions/service";
 import { RiskManagementService } from "@/features/risks/service";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const mutationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -35,7 +35,9 @@ export async function addRiskCommentAction(
     commentSchema,
     input,
     async (context, parsed) => {
-      const service = new RiskManagementService(createAdminSupabaseClient());
+      const service = new RiskManagementService(
+        await createServerSupabaseClient(),
+      );
       await service.addComment(
         context,
         parsed.riskId,
@@ -53,7 +55,9 @@ export async function updateRiskDetailAction(
   input: z.input<typeof mutationSchema>,
 ) {
   await runServerMutation(mutationSchema, input, async (context, value) => {
-    const service = new RiskManagementService(createAdminSupabaseClient());
+    const service = new RiskManagementService(
+      await createServerSupabaseClient(),
+    );
     if (value.kind === "assign") {
       await service.assignOwner(context, value.riskId, value.userId);
     } else {
@@ -75,8 +79,8 @@ export async function resolveRiskAction(input: unknown) {
   const resolution = await runServerMutation(
     resolveRiskSchema,
     parsed,
-    (context, value) =>
-      new ResolutionTrackingService(createAdminSupabaseClient()).resolve(
+    async (context, value) =>
+      new ResolutionTrackingService(await createServerSupabaseClient()).resolve(
         context,
         value,
       ),
@@ -90,8 +94,8 @@ export async function reopenRiskAction(input: unknown) {
   const risk = await runServerMutation(
     reopenRiskSchema,
     parsed,
-    (context, value) =>
-      new ResolutionTrackingService(createAdminSupabaseClient()).reopen(
+    async (context, value) =>
+      new ResolutionTrackingService(await createServerSupabaseClient()).reopen(
         context,
         value,
       ),

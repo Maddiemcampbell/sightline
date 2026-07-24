@@ -1,13 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { EmailPreferencesForm } from "@/features/email/email-preferences-form";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const context = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const [userResult, deliveriesResult] = await Promise.all([
     client
       .from("users")

@@ -6,7 +6,7 @@ import {
   archiveDocumentSchema,
   editDocumentSchema,
 } from "@/features/documents/validation";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 
 export async function editDocumentAction(
@@ -14,7 +14,7 @@ export async function editDocumentAction(
 ) {
   const context = await requireActorContext();
   const value = editDocumentSchema.parse(input);
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
     .select(
@@ -81,7 +81,7 @@ export async function editDocumentAction(
 export async function archiveDocumentAction(input: { documentId: string }) {
   const context = await requireActorContext();
   const value = archiveDocumentSchema.parse(input);
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
     .select("organization_id,archived_at")

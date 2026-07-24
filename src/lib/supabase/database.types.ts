@@ -90,6 +90,20 @@ export type InvitationRow = {
   token_hash: string;
 };
 
+export type AuditLogRow = {
+  actor_auth_user_id: string | null;
+  actor_user_id: string | null;
+  created_at: string;
+  event_type: string;
+  id: string;
+  metadata: Json;
+  occurred_at: string;
+  organization_id: string;
+  outcome: "success" | "denied" | "failed";
+  resource_id: string | null;
+  resource_type: string;
+};
+
 type Table<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -175,6 +189,7 @@ export type Database = {
       organizations: Table<OrganizationRow>;
       organization_memberships: Table<OrganizationMembershipRow>;
       invitations: Table<InvitationRow>;
+      audit_logs: Table<AuditLogRow>;
       users: Table<UserRow>;
       projects: Table<ProjectRow>;
       vendors: Table<VendorRow>;

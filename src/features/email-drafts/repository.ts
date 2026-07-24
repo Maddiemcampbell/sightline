@@ -86,8 +86,12 @@ export class EmailDraftRepository {
   }
 
   async insert(
+    context: ActorContext,
     values: AppDatabase["public"]["Tables"]["risk_email_drafts"]["Insert"],
   ) {
+    if (values.organization_id !== context.organizationId) {
+      throw new Error("Organization access denied.");
+    }
     const { data, error } = await this.client
       .from("risk_email_drafts")
       .insert(values)

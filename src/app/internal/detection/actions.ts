@@ -9,8 +9,12 @@ export async function runDetectionManuallyAction() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Manual detection is disabled in production.");
   }
-  await requireActorContext();
-  const result = await runDetection({ source: "manual" });
+  const context = await requireActorContext();
+  const result = await runDetection({
+    organizationId: context.organizationId,
+    actorUserId: context.userId,
+    source: "manual",
+  });
   revalidatePath("/brief");
   revalidatePath("/risks");
   revalidatePath("/projects");

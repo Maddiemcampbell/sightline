@@ -3,12 +3,8 @@ import "server-only";
 import type { DailyBriefView } from "@/features/daily-brief/types";
 import { toActionView } from "@/features/actions/data";
 import { requireActorContext } from "@/lib/auth/request-context";
-export {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/lib/auth/v1-identities";
 import type { Json } from "@/lib/supabase/database.types";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function requireRows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -24,7 +20,13 @@ function isJsonObject(
 
 export async function getDailyBriefView(): Promise<DailyBriefView | null> {
   const { organizationId } = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  return getDailyBriefViewForOrganization(organizationId);
+}
+
+export async function getDailyBriefViewForOrganization(
+  organizationId: string,
+): Promise<DailyBriefView | null> {
+  const client = await createServerSupabaseClient();
   const { data: brief, error: briefError } = await client
     .from("daily_briefs")
     .select("*")
@@ -49,6 +51,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
     client
       .from("brief_items")
       .select("*")
+      .eq("organization_id", organizationId)
       .eq("daily_brief_id", brief.id)
       .order("priority"),
     client.from("risks").select("*").eq("organization_id", organizationId),

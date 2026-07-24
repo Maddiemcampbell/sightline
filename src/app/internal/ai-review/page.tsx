@@ -8,13 +8,13 @@ import {
 import { Card } from "@/components/ui/card";
 import { riskAnalysisOutputSchema } from "@/domain/ai/risk-analysis";
 import { riskAnalysisFixtures } from "@/features/ai/evaluation-fixtures";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 
 export default async function AiReviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
   const context = await requireActorContext();
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data, error } = await client
     .from("ai_risk_suggestions")
     .select(

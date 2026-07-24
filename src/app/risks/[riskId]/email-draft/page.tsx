@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { DraftEditor } from "@/features/email-drafts/draft-editor";
 import { EmailDraftService } from "@/features/email-drafts/service";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function EmailDraftPage({
   params,
@@ -20,7 +20,7 @@ export default async function EmailDraftPage({
     searchParams,
     requireActorContext(),
   ]);
-  const service = new EmailDraftService(createAdminSupabaseClient());
+  const service = new EmailDraftService(await createServerSupabaseClient());
   if (query.draftId) {
     const workspace = await service
       .workspace(context, query.draftId)

@@ -1,30 +1,28 @@
 import { notFound } from "next/navigation";
 
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import { getDailyBriefView } from "@/features/daily-brief/data";
 import { renderMorningBriefEmail } from "@/features/email/render-morning-brief";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { requireActorContext } from "@/lib/auth/request-context";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function EmailPreviewPage() {
   if (process.env.NODE_ENV === "production") notFound();
-  const client = createAdminSupabaseClient();
+  const context = await requireActorContext();
+  const client = await createServerSupabaseClient();
   const [brief, organizationResult, userResult] = await Promise.all([
     getDailyBriefView(),
     client
       .from("organizations")
       .select("name")
-      .eq("id", BUILDCO_ORGANIZATION_ID)
+      .eq("id", context.organizationId)
       .single(),
     client
       .from("users")
       .select("full_name")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
-      .eq("id", MATT_USER_ID)
+      .eq("organization_id", context.organizationId)
+      .eq("id", context.userId)
       .single(),
   ]);
   if (!brief)

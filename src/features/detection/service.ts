@@ -11,10 +11,6 @@ import type {
   DetectionRule,
 } from "@/domain/detection/types";
 import type { Risk } from "@/domain/types";
-import {
-  BUILDCO_ORGANIZATION_ID,
-  MATT_USER_ID,
-} from "@/features/daily-brief/data";
 import type { RiskRow } from "@/lib/supabase/database-row.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
@@ -37,15 +33,18 @@ export type DetectionRunResult = {
 };
 
 export async function runDetection(input: {
+  organizationId: string;
+  actorUserId: string;
   source: "manual" | "scheduled";
   now?: Date;
 }): Promise<DetectionRunResult> {
   const now = input.now ?? new Date();
+  const { organizationId, actorUserId } = input;
   const client = createAdminSupabaseClient();
   const { data: run, error: runError } = await client
     .from("detection_runs")
     .insert({
-      organization_id: BUILDCO_ORGANIZATION_ID,
+      organization_id: organizationId,
       trigger_source: input.source,
       status: "running",
       started_at: now.toISOString(),
@@ -56,7 +55,7 @@ export async function runDetection(input: {
     throw new Error(runError?.message ?? "Could not start detection run");
 
   try {
-    const context = await loadDetectionContext(now);
+    const context = await loadDetectionContext(organizationId, now);
     const ruleResults = rules.map((rule) => {
       const detections = rule.detect(context);
       console.info("Sightline detection rule completed", {
@@ -75,7 +74,7 @@ export async function runDetection(input: {
     const existingResult = await client
       .from("risks")
       .select("id,detection_key")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .not("detection_key", "is", null);
     if (existingResult.error) throw new Error(existingResult.error.message);
     const existingKeys = new Set(
@@ -90,14 +89,14 @@ export async function runDetection(input: {
     );
     for (const detection of detections) {
       const existed = existingKeys.has(detection.detectionKey);
-      await persistDetection(detection, now);
+      await persistDetection(organizationId, actorUserId, detection, now);
       if (existed) updated += 1;
       else {
         created += 1;
         existingKeys.add(detection.detectionKey);
       }
     }
-    const briefItemCount = await regenerateDailyBrief(now);
+    const briefItemCount = await regenerateDailyBrief(organizationId, now);
     const serializedResults = ruleResults.map(
       ({ ruleId, found, detectionKeys }) => ({
         ruleId,
@@ -115,7 +114,7 @@ export async function runDetection(input: {
         rule_results: serializedResults,
       })
       .eq("id", run.id)
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+      .eq("organization_id", organizationId);
     if (completeError) throw new Error(completeError.message);
     return {
       runId: run.id,
@@ -136,40 +135,37 @@ export async function runDetection(input: {
             : "Unknown error",
       })
       .eq("id", run.id)
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+      .eq("organization_id", organizationId);
     throw error;
   }
 }
 
-async function loadDetectionContext(now: Date): Promise<DetectionContext> {
+async function loadDetectionContext(
+  organizationId: string,
+  now: Date,
+): Promise<DetectionContext> {
   const client = createAdminSupabaseClient();
   const [documents, fields, projects, vendors, links, settings] =
     await Promise.all([
       client
         .from("documents")
         .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+        .eq("organization_id", organizationId)
         .is("archived_at", null),
       client
         .from("document_extracted_fields")
         .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID),
-      client
-        .from("projects")
-        .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID),
-      client
-        .from("vendors")
-        .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+        .eq("organization_id", organizationId),
+      client.from("projects").select("*").eq("organization_id", organizationId),
+      client.from("vendors").select("*").eq("organization_id", organizationId),
       client
         .from("project_vendors")
         .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+        .eq("organization_id", organizationId),
       client
         .from("project_detection_settings")
         .select("*")
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID),
+        .eq("organization_id", organizationId),
     ]);
   for (const result of [
     documents,
@@ -227,21 +223,26 @@ async function loadDetectionContext(now: Date): Promise<DetectionContext> {
   };
 }
 
-async function persistDetection(detection: DetectedRisk, now: Date) {
+async function persistDetection(
+  organizationId: string,
+  actorUserId: string,
+  detection: DetectedRisk,
+  now: Date,
+) {
   const client = createAdminSupabaseClient();
   const ruleId = detection.detectionKey.split(":")[0] ?? "deterministic";
   const existingResult = await client
     .from("risks")
     .select("id,status,resolved_at")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", organizationId)
     .eq("detection_key", detection.detectionKey)
     .maybeSingle();
   if (existingResult.error) throw new Error(existingResult.error.message);
   const commonValues = {
-    organization_id: BUILDCO_ORGANIZATION_ID,
+    organization_id: organizationId,
     project_id: detection.projectId,
     vendor_id: detection.vendorId,
-    assigned_user_id: MATT_USER_ID,
+    assigned_user_id: actorUserId,
     detection_key: detection.detectionKey,
     title: detection.title,
     summary: detection.summary,
@@ -262,7 +263,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
           status: existingResult.data.status,
           resolved_at: existingResult.data.resolved_at,
         })
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+        .eq("organization_id", organizationId)
         .eq("id", existingResult.data.id)
         .select("id")
         .single()
@@ -281,7 +282,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
   for (const evidence of detection.evidence) {
     const { error: evidenceError } = await client.from("risk_evidence").upsert(
       {
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: organizationId,
         risk_id: risk.id,
         document_id: evidence.documentId,
         integration_source_id: null,
@@ -309,7 +310,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
   const existingAction = await client
     .from("recommended_actions")
     .select("id")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+    .eq("organization_id", organizationId)
     .eq("risk_id", risk.id)
     .eq("detection_key", actionKey)
     .maybeSingle();
@@ -322,12 +323,12 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
           description: detection.recommendedAction,
           due_at: detection.dueAt,
         })
-        .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+        .eq("organization_id", organizationId)
         .eq("id", existingAction.data.id)
     : await client.from("recommended_actions").insert({
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: organizationId,
         risk_id: risk.id,
-        owner_user_id: MATT_USER_ID,
+        owner_user_id: actorUserId,
         detection_key: actionKey,
         title: "Address detected risk",
         description: detection.recommendedAction,
@@ -336,7 +337,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
         priority: "high",
         due_at: detection.dueAt,
         completed_at: null,
-        created_by_user_id: MATT_USER_ID,
+        created_by_user_id: actorUserId,
         source: "deterministic_rule",
       });
   if (actionResult.error) throw new Error(actionResult.error.message);
@@ -344,7 +345,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
     ...(!existingResult.data
       ? [
           {
-            organization_id: BUILDCO_ORGANIZATION_ID,
+            organization_id: organizationId,
             risk_id: risk.id,
             actor_type: "system" as const,
             actor_user_id: null,
@@ -355,7 +356,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
             occurred_at: now.toISOString(),
           },
           {
-            organization_id: BUILDCO_ORGANIZATION_ID,
+            organization_id: organizationId,
             risk_id: risk.id,
             actor_type: "system" as const,
             actor_user_id: null,
@@ -368,7 +369,7 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
         ]
       : []),
     {
-      organization_id: BUILDCO_ORGANIZATION_ID,
+      organization_id: organizationId,
       risk_id: risk.id,
       actor_type: "system" as const,
       actor_user_id: null,
@@ -385,12 +386,15 @@ async function persistDetection(detection: DetectedRisk, now: Date) {
   if (activityError) throw new Error(activityError.message);
 }
 
-async function regenerateDailyBrief(now: Date): Promise<number> {
+async function regenerateDailyBrief(
+  organizationId: string,
+  now: Date,
+): Promise<number> {
   const client = createAdminSupabaseClient();
   const { data: rows, error } = await client
     .from("risks")
     .select("*")
-    .eq("organization_id", BUILDCO_ORGANIZATION_ID);
+    .eq("organization_id", organizationId);
   if (error) throw new Error(error.message);
   const risks = (rows ?? []).map(mapRisk);
   const selected = selectDailyBriefRisks(risks);
@@ -399,7 +403,7 @@ async function regenerateDailyBrief(now: Date): Promise<number> {
     .from("daily_briefs")
     .upsert(
       {
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: organizationId,
         brief_date: briefDate,
         status: "draft",
         headline: "Three issues need executive attention this week",
@@ -416,13 +420,14 @@ async function regenerateDailyBrief(now: Date): Promise<number> {
   const { error: deleteError } = await client
     .from("brief_items")
     .delete()
+    .eq("organization_id", organizationId)
     .eq("daily_brief_id", brief.id);
   if (deleteError) throw new Error(deleteError.message);
   if (selected.length > 0) {
     const actionResult = await client
       .from("recommended_actions")
       .select("risk_id,description")
-      .eq("organization_id", BUILDCO_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .in(
         "risk_id",
         selected.map((risk) => risk.id),
@@ -436,7 +441,7 @@ async function regenerateDailyBrief(now: Date): Promise<number> {
     );
     const { error: itemError } = await client.from("brief_items").insert(
       selected.map((risk, index) => ({
-        organization_id: BUILDCO_ORGANIZATION_ID,
+        organization_id: organizationId,
         daily_brief_id: brief.id,
         risk_id: risk.id,
         priority: index + 1,
@@ -453,6 +458,7 @@ async function regenerateDailyBrief(now: Date): Promise<number> {
     const { error: publishError } = await client
       .from("daily_briefs")
       .update({ status: "published", published_at: new Date().toISOString() })
+      .eq("organization_id", organizationId)
       .eq("id", brief.id);
     if (publishError) throw new Error(publishError.message);
   }
@@ -484,9 +490,12 @@ function mapRisk(row: RiskRow): Risk {
   };
 }
 
-export function formatOrganizationDate(date: Date): string {
+export function formatOrganizationDate(
+  date: Date,
+  timezone = "America/Los_Angeles",
+): string {
   const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
+    timeZone: timezone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

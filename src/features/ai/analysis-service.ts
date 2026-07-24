@@ -17,7 +17,7 @@ import {
 } from "@/lib/auth/authorization";
 import { getServerEnv } from "@/lib/env";
 import type { Json } from "@/lib/supabase/database.types";
-import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type AnalysisRequest = {
   context: ActorContext;
@@ -67,7 +67,7 @@ export async function createRiskAnalysisSuggestion(request: AnalysisRequest) {
     model = "deterministic-rules-v1";
   }
 
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { data: run, error: runError } = await client
     .from("ai_analysis_runs")
     .insert({
@@ -110,7 +110,7 @@ async function recordFailedRun(
   provider: RiskAnalysisProvider,
   errorMessage: string,
 ) {
-  const client = createAdminSupabaseClient();
+  const client = await createServerSupabaseClient();
   const { error } = await client.from("ai_analysis_runs").insert({
     organization_id: input.organizationId,
     project_id: input.project.id,
