@@ -40,18 +40,17 @@ setup(
     if (userError) throw new Error(userError.message);
     const { error: membershipError } = await admin
       .from("organization_memberships")
-      .insert({
-        organization_id: organizationId,
-        auth_user_id: authUserId,
-        application_user_id: applicationUserId,
-        role: "owner",
-      });
+      .upsert(
+        {
+          organization_id: organizationId,
+          auth_user_id: authUserId,
+          application_user_id: applicationUserId,
+          role: "owner",
+        },
+        { onConflict: "organization_id,auth_user_id" },
+      );
     if (membershipError) throw new Error(membershipError.message);
-    await ensureAuthUser(
-      admin,
-      alexAuthUserId,
-      "alex-rivera@sightline.local",
-    );
+    await ensureAuthUser(admin, alexAuthUserId, "alex-rivera@sightline.local");
     const { error: alexUserError } = await admin
       .from("users")
       .update({
@@ -61,15 +60,37 @@ setup(
       .eq("organization_id", organizationId)
       .eq("id", alexApplicationUserId);
     if (alexUserError) throw new Error(alexUserError.message);
-    const { error: alexMembershipError } = await admin
+    const { data: alexMembership, error: alexMembershipError } = await admin
       .from("organization_memberships")
-      .insert({
-        organization_id: organizationId,
-        auth_user_id: alexAuthUserId,
-        application_user_id: alexApplicationUserId,
-        role: "contributor",
-      });
+      .upsert(
+        {
+          organization_id: organizationId,
+          auth_user_id: alexAuthUserId,
+          application_user_id: alexApplicationUserId,
+          role: "contributor",
+        },
+        { onConflict: "organization_id,application_user_id" },
+      )
+      .select("id")
+      .single();
     if (alexMembershipError) throw new Error(alexMembershipError.message);
+    const { data: projects, error: projectsError } = await admin
+      .from("projects")
+      .select("id")
+      .eq("organization_id", organizationId);
+    if (projectsError) throw new Error(projectsError.message);
+    const { error: projectMembershipError } = await admin
+      .from("project_memberships")
+      .upsert(
+        (projects ?? []).map((project) => ({
+          organization_id: organizationId,
+          project_id: project.id,
+          organization_membership_id: alexMembership.id,
+          role: "contributor",
+        })),
+        { onConflict: "project_id,organization_membership_id" },
+      );
+    if (projectMembershipError) throw new Error(projectMembershipError.message);
 
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
@@ -99,7 +120,13 @@ async function ensureAuthUser(
         });
         if (!created.error) return true;
         const existing = await admin.auth.admin.getUserById(id);
-        return existing.data.user?.email === userEmail;
+        if (existing.data.user?.email !== userEmail) return false;
+        const updated = await admin.auth.admin.updateUserById(id, {
+          email: userEmail,
+          password,
+          email_confirm: true,
+        });
+        return !updated.error;
       },
       { timeout: 20_000, intervals: [250, 500, 1_000] },
     )

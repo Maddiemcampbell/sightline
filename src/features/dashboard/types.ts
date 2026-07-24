@@ -74,6 +74,7 @@ export type DashboardView = Readonly<{
   generatedAt: string;
   timezone: string;
   currentUserName: string;
+  canViewFinancials: boolean;
   isEmptyOrganization: boolean;
   hasActiveRisks: boolean;
   overnight: {

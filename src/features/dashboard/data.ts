@@ -19,7 +19,7 @@ export async function getDashboardView() {
   const context = await requireActorContext();
   assertAuthorized(canViewProject(context));
   assertAuthorized(canViewRisk(context));
-  assertAuthorized(canViewFinancialExposure(context));
+  const canViewFinancials = canViewFinancialExposure(context);
   const client = await createServerSupabaseClient();
   const [
     organizationResult,
@@ -99,16 +99,44 @@ export async function getDashboardView() {
     throw new Error("Authenticated application user not found.");
 
   const timezone = organizationResult.data?.timezone ?? "America/Los_Angeles";
+  const projects = (projectsResult.data ?? []).map((project) =>
+    canViewFinancials
+      ? project
+      : {
+          ...project,
+          contract_value_cents: null,
+          projected_margin_cents: 0,
+        },
+  );
+  const risks = (risksResult.data ?? []).map((risk) =>
+    canViewFinancials
+      ? risk
+      : {
+          ...risk,
+          potential_exposure_cents: 0,
+          estimated_margin_impact_cents: 0,
+        },
+  );
+  const resolutions = (resolutionsResult.data ?? []).map((resolution) =>
+    canViewFinancials
+      ? resolution
+      : {
+          ...resolution,
+          exposure_before_cents: 0,
+          remaining_exposure_cents: 0,
+          estimated_loss_avoided_cents: 0,
+        },
+  );
   const view = buildDashboardView(
     {
       now: new Date(),
       currentUserId: context.userId,
       currentUser: currentUserResult.data,
-      projects: projectsResult.data ?? [],
-      risks: risksResult.data ?? [],
+      projects,
+      risks,
       actions: actionsResult.data ?? [],
       activities: activitiesResult.data ?? [],
-      resolutions: resolutionsResult.data ?? [],
+      resolutions,
       users: usersResult.data ?? [],
     },
     timezone,
@@ -133,21 +161,31 @@ export async function getDashboardView() {
     "system_analysis_completed",
   ]);
   const observations = derivePortfolioObservations({
-    projects: projectsResult.data ?? [],
-    risks: risksResult.data ?? [],
+    projects,
+    risks,
     actions: actionsResult.data ?? [],
     documents: documentsResult.data ?? [],
     vendors: vendorsResult.data ?? [],
     now: new Date(),
-  });
+  }).map((observation) =>
+    canViewFinancials
+      ? observation
+      : {
+          ...observation,
+          businessImpactEstimateCents: null,
+          businessImpactExplanation:
+            "Financial impact is hidden because this role does not have permission to view financial exposure.",
+        },
+  );
   return {
     ...view,
+    canViewFinancials,
     observations,
     intelligence: deriveHomepageIntelligence({
       observations,
-      projects: projectsResult.data ?? [],
-      risks: risksResult.data ?? [],
-      resolutions: resolutionsResult.data ?? [],
+      projects,
+      risks,
+      resolutions,
       now: new Date(),
     }),
     activity: activityPage.items

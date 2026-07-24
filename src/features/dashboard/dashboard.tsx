@@ -88,6 +88,7 @@ export function Dashboard({ view }: { view: DashboardView }) {
                 key={observation.key}
                 observation={observation}
                 rank={index + 1}
+                canViewFinancials={view.canViewFinancials}
               />
             ))}
           </div>
@@ -215,9 +216,11 @@ export function Dashboard({ view }: { view: DashboardView }) {
 function ObservationCard({
   observation,
   rank,
+  canViewFinancials,
 }: {
   observation: PortfolioObservation;
   rank: number;
+  canViewFinancials: boolean;
 }) {
   return (
     <Card>
@@ -237,9 +240,11 @@ function ObservationCard({
         <Fact
           label="Current exposure represented"
           value={
-            observation.businessImpactEstimateCents === null
-              ? "Not estimated"
-              : formatMoney(observation.businessImpactEstimateCents)
+            !canViewFinancials
+              ? "Restricted for your role"
+              : observation.businessImpactEstimateCents === null
+                ? "Not estimated"
+                : formatMoney(observation.businessImpactEstimateCents)
           }
         />
         <Fact

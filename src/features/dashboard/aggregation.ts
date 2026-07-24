@@ -394,6 +394,7 @@ export function buildDashboardView(
     generatedAt: source.now.toISOString(),
     timezone,
     currentUserName: source.currentUser.full_name,
+    canViewFinancials: true,
     isEmptyOrganization:
       source.projects.length === 0 && source.risks.length === 0,
     hasActiveRisks: openRisks.length > 0,

@@ -469,11 +469,22 @@ test("follows an executive priority and updates an overdue action", async ({
     exact: true,
   });
   await overdueDueDate.fill("2026-07-26");
-  await expect(
-    page.getByLabel(`Due date for ${actionTitle}`, { exact: true }),
-  ).toHaveCount(0, {
-    timeout: 20_000,
-  });
+  await expect
+    .poll(
+      async () => {
+        const current = page.getByLabel(`Due date for ${actionTitle}`, {
+          exact: true,
+        });
+        if ((await current.count()) === 0) return "settled";
+        const action = current.locator("xpath=ancestor::*[@data-action-id]");
+        return (await action.getAttribute("data-pending")) === "false" &&
+          (await current.inputValue()) === "2026-07-26"
+          ? "settled"
+          : "pending";
+      },
+      { timeout: 20_000 },
+    )
+    .toBe("settled");
 
   await page.reload();
   await expect(

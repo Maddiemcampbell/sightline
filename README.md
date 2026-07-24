@@ -62,32 +62,39 @@ The placeholder routes and production build do not require live credentials.
 
 ## Scripts
 
-| Script                      | Purpose                                             |
-| --------------------------- | --------------------------------------------------- |
-| `npm run dev`               | Start the local Next.js development server          |
-| `npm run build`             | Create a production build                           |
-| `npm run start`             | Serve a production build                            |
-| `npm run lint`              | Run ESLint with zero warnings allowed               |
-| `npm run lint:fix`          | Apply safe ESLint fixes                             |
-| `npm run typecheck`         | Run strict TypeScript checks without emitting files |
-| `npm run format`            | Format supported files with Prettier                |
-| `npm run format:check`      | Check formatting without changing files             |
-| `npm run test`              | Run Vitest unit tests once                          |
-| `npm run test:watch`        | Run Vitest in watch mode                            |
-| `npm run test:e2e`          | Reset data, run pgTAP, then run Playwright tests     |
-| `npm run test:e2e:no-reset` | Run Playwright without resetting local data         |
-| `npm run check`             | Run formatting, lint, types, and unit tests         |
-| `npm run db:start`          | Start the local Supabase stack                      |
-| `npm run db:stop`           | Stop the local Supabase stack                       |
-| `npm run db:reset`          | Reapply migrations and deterministic seed data      |
-| `npm run db:status`         | Show local Supabase endpoints and status            |
-| `npm run db:types`          | Regenerate types from the local PostgreSQL schema   |
+| Script                        | Purpose                                             |
+| ----------------------------- | --------------------------------------------------- |
+| `npm run dev`                 | Start the local Next.js development server          |
+| `npm run build`               | Create a production build                           |
+| `npm run start`               | Serve a production build                            |
+| `npm run lint`                | Run ESLint with zero warnings allowed               |
+| `npm run lint:fix`            | Apply safe ESLint fixes                             |
+| `npm run typecheck`           | Run strict TypeScript checks without emitting files |
+| `npm run format`              | Format supported files with Prettier                |
+| `npm run format:check`        | Check formatting without changing files             |
+| `npm run test`                | Run Vitest unit tests once                          |
+| `npm run test:watch`          | Run Vitest in watch mode                            |
+| `npm run test:e2e`            | Reset data, run pgTAP, then run Playwright tests    |
+| `npm run test:e2e:no-reset`   | Run Playwright without resetting local data         |
+| `npm run dev:bootstrap-users` | Repair local Owner and Contributor test identities  |
+| `npm run check`               | Run formatting, lint, types, and unit tests         |
+| `npm run db:start`            | Start the local Supabase stack                      |
+| `npm run db:stop`             | Stop the local Supabase stack                       |
+| `npm run db:reset`            | Reapply migrations and deterministic seed data      |
+| `npm run db:status`           | Show local Supabase endpoints and status            |
+| `npm run db:types`            | Regenerate types from the local PostgreSQL schema   |
 
 Before the first E2E run, install Playwright's Chromium binary with
 `npx playwright install chromium`. The default E2E command intentionally resets
 the local Supabase development database so stateful mutation tests always start
 from deterministic seed data. It creates a production build and serves it on
 port `3100`, separate from the normal development server on port `3000`.
+
+After a database reset, `npm run dev:bootstrap-users` creates or repairs the
+verified local Owner and Contributor Auth identities, links their organization
+memberships, and assigns the Contributor to the demo projects. The command
+refuses to run against a non-local Supabase URL. Both accounts use the password
+printed by the command.
 
 ## Architecture
 

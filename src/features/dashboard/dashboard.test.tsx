@@ -12,6 +12,7 @@ const view: DashboardView = {
   generatedAt: "2026-07-23T16:00:00.000Z",
   timezone: "America/Los_Angeles",
   currentUserName: "Matt Anderson",
+  canViewFinancials: true,
   isEmptyOrganization: false,
   hasActiveRisks: true,
   observations: [],
@@ -141,6 +142,40 @@ describe("company dashboard", () => {
     expect(markup).toContain(
       "Confirm whether records exist outside Sightline.",
     );
+  });
+
+  it("does not render portfolio exposure for a restricted role", () => {
+    const observation = {
+      key: "restricted",
+      type: "overdue_actions" as const,
+      title: "Three actions are overdue",
+      summary: "Follow-through is overdue.",
+      supportingEvidence: [],
+      confidence: 100,
+      affectedProjectIds: ["project-1"],
+      affectedProjects: [{ id: "project-1", name: "Riverfront" }],
+      businessImpactEstimateCents: null,
+      businessImpactExplanation:
+        "Financial impact is hidden because this role does not have permission.",
+      recommendedNextStep: "Review action owners.",
+      algorithmVersion: "test",
+    };
+    const markup = renderToStaticMarkup(
+      <Dashboard
+        view={{
+          ...view,
+          canViewFinancials: false,
+          observations: [observation],
+          intelligence: {
+            ...view.intelligence,
+            portfolioWatch: [observation],
+          },
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Restricted for your role");
+    expect(markup).not.toContain("$");
   });
 
   it("renders the empty organization state with a next step", () => {

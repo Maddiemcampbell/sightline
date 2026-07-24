@@ -1,4 +1,4 @@
-import { HelpCircle, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 import { logout } from "@/app/auth/actions";
 import {
@@ -8,6 +8,7 @@ import {
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NotificationRepository } from "@/features/notifications/repository";
 import { NotificationMenu } from "@/features/notifications/notification-menu";
+import { HelpSupportMenu } from "@/components/help-support-menu";
 
 export async function TopNavigation() {
   const [organization, membership] = await Promise.all([
@@ -48,13 +49,7 @@ export async function TopNavigation() {
       <nav aria-label="Utility navigation">
         <ul className="flex items-center gap-1">
           <li>
-            <button
-              type="button"
-              className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
-              aria-label="Help and support"
-            >
-              <HelpCircle aria-hidden="true" className="size-5" />
-            </button>
+            <HelpSupportMenu />
           </li>
           <li>
             <NotificationMenu initialItems={notifications} />
