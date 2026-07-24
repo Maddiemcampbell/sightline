@@ -133,6 +133,10 @@ type OrganizationRow = Timestamped & {
   default_project_visibility: "private" | "organization";
   id: string;
   industry: string | null;
+  deletion_requested_at: string | null;
+  scheduled_deletion_at: string | null;
+  privacy_status: "active" | "pending_deletion" | "archived";
+  legal_hold_enabled: boolean;
   logo_url: string | null;
   name: string;
   notification_defaults: Json;
@@ -155,6 +159,8 @@ type UserRow = Timestamped & {
   title: string | null;
   weekly_summary_enabled: boolean;
   digest_frequency: "off" | "daily" | "weekly";
+  deletion_requested_at: string | null;
+  scheduled_deletion_at: string | null;
 };
 
 type ProjectRow = Timestamped & {
@@ -275,6 +281,39 @@ export type Database = {
         read_at: string | null;
         recipient_membership_id: string | null;
         title: string;
+        updated_at: string;
+      }>;
+      organization_privacy_settings: Table<{
+        activity_retention_days: number;
+        ai_retention_days: number;
+        audit_retention_days: number;
+        created_at: string;
+        deleted_record_retention_days: number;
+        document_retention_days: number;
+        organization_id: string;
+        soft_delete_grace_days: number;
+        updated_at: string;
+      }>;
+      privacy_deletion_requests: Table<{
+        attempt_count: number;
+        cancelled_at: string | null;
+        completed_at: string | null;
+        created_at: string;
+        failure_code: string | null;
+        id: string;
+        last_attempt_at: string | null;
+        metadata: Json;
+        organization_id: string | null;
+        organization_identifier_hash: string | null;
+        processing_started_at: string | null;
+        requested_at: string;
+        requested_by_auth_user_id: string | null;
+        requested_by_user_id: string | null;
+        scheduled_for: string;
+        scope: "user_only" | "organization_only" | "organization_all_data";
+        status: "scheduled" | "processing" | "completed" | "cancelled" | "failed";
+        target_auth_user_id: string | null;
+        target_user_id: string | null;
         updated_at: string;
       }>;
       collaboration_comments: Table<{
@@ -701,6 +740,14 @@ export type Database = {
           target_membership_id: string;
         };
         Returns: undefined;
+      };
+      claim_due_privacy_requests: {
+        Args: { batch_size?: number };
+        Returns: Database["public"]["Tables"]["privacy_deletion_requests"]["Row"][];
+      };
+      purge_expired_organization_data: {
+        Args: { target_organization_id: string };
+        Returns: Json;
       };
     };
     Enums: DatabaseEnums;

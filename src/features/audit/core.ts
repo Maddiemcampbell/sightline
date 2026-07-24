@@ -20,7 +20,10 @@ export type AuditAction =
   | "document.downloaded"
   | "ai.configuration_changed"
   | "ai.review_updated"
-  | "settings.updated";
+  | "settings.updated"
+  | "privacy.deletion_requested"
+  | "privacy.deletion_cancelled"
+  | "privacy.retention_updated";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;
