@@ -34,6 +34,7 @@ function risk(overrides: Partial<RiskRow> = {}): RiskRow {
     summary: "Summary",
     title: "Base risk",
     updated_at: "2026-07-20T12:00:00.000Z",
+    updated_by_user_id: null,
     vendor_id: null,
     why_it_matters: "Margin may be affected.",
     ...overrides,
@@ -57,6 +58,7 @@ function project(overrides: Partial<ProjectRow> = {}): ProjectRow {
     status: "active",
     target_completion_date: null,
     updated_at: "2026-07-20T00:00:00.000Z",
+    updated_by_user_id: null,
     ...overrides,
   };
 }
@@ -83,6 +85,7 @@ function action(
     status: "accepted",
     title: "Confirm recovery plan",
     updated_at: "2026-07-20T00:00:00.000Z",
+    updated_by_user_id: null,
     ...overrides,
   };
 }

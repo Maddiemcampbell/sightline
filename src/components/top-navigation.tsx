@@ -1,10 +1,40 @@
-import { Bell, HelpCircle, LogOut } from "lucide-react";
+import { HelpCircle, LogOut } from "lucide-react";
 
 import { logout } from "@/app/auth/actions";
-import { getCurrentOrganization } from "@/lib/auth/session";
+import {
+  getCurrentMembership,
+  getCurrentOrganization,
+} from "@/lib/auth/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { NotificationRepository } from "@/features/notifications/repository";
+import { NotificationMenu } from "@/features/notifications/notification-menu";
 
 export async function TopNavigation() {
-  const organization = await getCurrentOrganization();
+  const [organization, membership] = await Promise.all([
+    getCurrentOrganization(),
+    getCurrentMembership(),
+  ]);
+  const client = await createServerSupabaseClient();
+  const notifications = membership
+    ? await new NotificationRepository(client).list(
+        membership.organizationId,
+        membership.id,
+      )
+    : [];
+  const profile = membership
+    ? await client
+        .from("users")
+        .select("full_name")
+        .eq("organization_id", membership.organizationId)
+        .eq("id", membership.applicationUserId)
+        .maybeSingle()
+    : null;
+  const initials = (profile?.data?.full_name ?? "User")
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
   return (
     <header className="border-border bg-surface flex h-16 items-center justify-between border-b px-[var(--page-gutter)] lg:h-20">
       <div>
@@ -27,6 +57,9 @@ export async function TopNavigation() {
             </button>
           </li>
           <li>
+            <NotificationMenu initialItems={notifications} />
+          </li>
+          <li>
             <form action={logout}>
               <button
                 type="submit"
@@ -37,25 +70,12 @@ export async function TopNavigation() {
               </button>
             </form>
           </li>
-          <li>
-            <button
-              type="button"
-              className="text-muted hover:bg-background hover:text-ink relative grid size-10 place-items-center rounded-md transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell aria-hidden="true" className="size-5" />
-              <span
-                aria-hidden="true"
-                className="bg-accent-strong ring-surface absolute top-2 right-2 size-2 rounded-full ring-2"
-              />
-            </button>
-          </li>
-          <li className="ml-2 lg:hidden">
+          <li className="ml-2">
             <span
-              aria-label="Matt Anderson, Operations Director"
+              aria-label={profile?.data?.full_name ?? "Current user"}
               className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-full text-xs font-semibold"
             >
-              MA
+              {initials}
             </span>
           </li>
         </ul>

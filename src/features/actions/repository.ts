@@ -44,7 +44,7 @@ export class RecommendedActionRepository {
   ): Promise<RecommendedActionRow> {
     const { data, error } = await this.client
       .from("recommended_actions")
-      .update(patch)
+      .update({ ...patch, updated_by_user_id: context.userId })
       .eq("organization_id", context.organizationId)
       .eq("id", actionId)
       .select("*")

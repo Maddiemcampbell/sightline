@@ -16,6 +16,9 @@ import { EvidenceExperience } from "@/features/evidence/evidence-experience";
 import { getAskSightlineHistory } from "@/features/ask-sightline/data";
 import { AskSightlinePanel } from "@/features/ask-sightline/ask-panel";
 import type { RiskResolutionRow } from "@/lib/supabase/database-row.types";
+import { getRiskCollaboration } from "@/features/collaboration/data";
+import { CommentThread } from "@/features/collaboration/comment-thread";
+import { Avatar } from "@/features/activity/comment-form";
 
 type Props = {
   params: Promise<{ riskId: string }>;
@@ -27,10 +30,18 @@ export default async function RiskPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
   const detail = await getRiskDetail(riskId);
   if (!detail) notFound();
-  const [activityPage, evidenceExperience, askMessages] = await Promise.all([
+  const [activityPage, evidenceExperience, askMessages, collaboration] = await Promise.all([
     getActivityPage({ riskId, limit: 30 }),
     getRiskEvidenceExperience(riskId),
     tab === "ask" ? getAskSightlineHistory(riskId) : Promise.resolve([]),
+    detail.project
+      ? getRiskCollaboration(riskId, detail.project.id)
+      : Promise.resolve({
+          comments: [],
+          collaborators: [],
+          viewers: [],
+          assignmentHistory: [],
+        }),
   ]);
   const tabs = [
     "overview",
@@ -86,6 +97,13 @@ export default async function RiskPage({ params, searchParams }: Props) {
           {detail.risk.title}
         </h1>
         <p className="text-muted mt-3 leading-7">{detail.risk.summary}</p>
+        <p className="text-muted mt-2 text-xs">
+          Last updated by{" "}
+          {detail.risk.updated_by_user_id
+            ? (ownerNameById.get(detail.risk.updated_by_user_id) ?? "a teammate")
+            : "Sightline"}{" "}
+          · {new Date(detail.risk.updated_at).toLocaleString()}
+        </p>
         {detail.project && (
           <Link
             href={`/projects/${detail.project.id}`}
@@ -197,7 +215,9 @@ export default async function RiskPage({ params, searchParams }: Props) {
       ) : activeTab === "activity" ? (
         <div className="mt-6 max-w-3xl">
           <Panel title="Activity">
-            <RiskCommentForm riskId={riskId} users={detail.users} />
+            <RiskCommentForm riskId={riskId} users={collaboration.collaborators} />
+            <CommentThread riskId={riskId} comments={collaboration.comments} />
+            <h3 className="mt-8 font-semibold">Change history</h3>
             <ActivityTimeline items={activityPage.items} />
           </Panel>
         </div>
@@ -323,8 +343,8 @@ export default async function RiskPage({ params, searchParams }: Props) {
               )}
             </Panel>
             <Panel title="Activity timeline">
-              <RiskCommentForm riskId={riskId} users={detail.users} />
-              <ActivityTimeline items={activityPage.items} condensed />
+              <RiskCommentForm riskId={riskId} users={collaboration.collaborators} />
+              <CommentThread riskId={riskId} comments={collaboration.comments} />
               {activityPage.nextCursor && (
                 <Link
                   href={`/activity?riskId=${riskId}`}
@@ -337,6 +357,39 @@ export default async function RiskPage({ params, searchParams }: Props) {
           </aside>
         </div>
       )}
+      <section className="border-border mt-8 border-t pt-6" aria-label="Presence">
+        <h2 className="text-sm font-semibold">Currently viewing and recently active</h2>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {collaboration.viewers.map((viewer) => (
+            <div key={viewer.membershipId} className="flex items-center gap-2">
+              <Avatar person={viewer} />
+              <span className="text-xs">
+                {viewer.name}
+                <span className="text-muted block">
+                  {viewer.viewingNow
+                    ? "Viewing now"
+                    : `Last viewed ${new Date(viewer.lastViewedAt).toLocaleString()}`}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+        {collaboration.assignmentHistory.length > 0 && (
+          <details className="mt-5">
+            <summary className="cursor-pointer text-sm font-semibold">
+              Assignment history
+            </summary>
+            <ol className="text-muted mt-2 space-y-1 text-xs">
+              {collaboration.assignmentHistory.map((entry) => (
+                <li key={entry.id}>
+                  {entry.assignedBy} changed {entry.previousAssignee} to{" "}
+                  {entry.assignee} · {new Date(entry.assignedAt).toLocaleString()}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+      </section>
     </div>
   );
 }

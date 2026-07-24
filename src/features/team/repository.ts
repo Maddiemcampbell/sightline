@@ -156,11 +156,13 @@ export class TeamRepository {
     payload: Json;
   }): Promise<void> {
     const { error } = await this.client
-      .from("notification_placeholders")
+      .from("notifications")
       .insert({
         organization_id: input.organizationId,
         recipient_membership_id: input.recipientMembershipId,
-        event_type: input.eventType,
+        notification_type: normalizeNotificationType(input.eventType),
+        title: notificationTitle(input.eventType),
+        body: "",
         payload: input.payload,
       });
     if (error) throw new Error(error.message);
@@ -201,4 +203,27 @@ export class TeamRepository {
       );
     if (insertError) throw new Error(insertError.message);
   }
+}
+
+function normalizeNotificationType(
+  eventType: string,
+):
+  | "mention"
+  | "assignment"
+  | "role_change"
+  | "invitation"
+  | "project_added"
+  | "risk_assigned"
+  | "action_completed" {
+  if (eventType.includes("role")) return "role_change";
+  if (eventType.includes("invitation")) return "invitation";
+  if (eventType.includes("project")) return "project_added";
+  return "assignment";
+}
+
+function notificationTitle(eventType: string) {
+  return eventType
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

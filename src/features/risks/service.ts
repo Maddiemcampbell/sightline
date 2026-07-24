@@ -173,7 +173,7 @@ export class RiskManagementService {
   ): Promise<void> {
     const { data, error } = await this.client
       .from("risks")
-      .update(patch)
+      .update({ ...patch, updated_by_user_id: context.userId })
       .eq("organization_id", context.organizationId)
       .eq("id", riskId)
       .select("id")

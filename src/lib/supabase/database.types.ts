@@ -157,6 +157,7 @@ type ProjectRow = Timestamped & {
   start_date: string | null;
   state_code: string | null;
   status: DatabaseEnums["project_status"];
+  updated_by_user_id: string | null;
   target_completion_date: string | null;
 };
 
@@ -188,6 +189,7 @@ type RiskRow = Timestamped & {
   title: string;
   vendor_id: string | null;
   why_it_matters: string;
+  updated_by_user_id: string | null;
 };
 
 export type Database = {
@@ -241,14 +243,83 @@ export type Database = {
         summary: string;
         target_membership_id: string | null;
       }>;
-      notification_placeholders: Table<{
+      notifications: Table<{
+        actor_membership_id: string | null;
+        body: string;
         created_at: string;
-        delivered_at: string | null;
-        event_type: string;
+        href: string | null;
         id: string;
+        notification_type:
+          | "mention"
+          | "assignment"
+          | "role_change"
+          | "invitation"
+          | "project_added"
+          | "risk_assigned"
+          | "action_completed";
         organization_id: string;
         payload: Json;
+        read_at: string | null;
         recipient_membership_id: string | null;
+        title: string;
+        updated_at: string;
+      }>;
+      collaboration_comments: Table<{
+        author_membership_id: string;
+        body_markdown: string;
+        created_at: string;
+        deleted_at: string | null;
+        deleted_by_membership_id: string | null;
+        edited_at: string | null;
+        id: string;
+        organization_id: string;
+        project_id: string;
+        subject_id: string;
+        subject_type: "project" | "risk" | "action" | "document";
+        updated_at: string;
+      }>;
+      comment_revisions: Table<{
+        body_markdown: string;
+        comment_id: string;
+        created_at: string;
+        edited_by_membership_id: string;
+        id: string;
+        organization_id: string;
+      }>;
+      comment_mentions: Table<{
+        comment_id: string;
+        created_at: string;
+        mentioned_membership_id: string;
+        organization_id: string;
+      }>;
+      comment_reactions: Table<{
+        comment_id: string;
+        created_at: string;
+        membership_id: string;
+        organization_id: string;
+        reaction: "like" | "celebrate" | "eyes" | "resolved";
+      }>;
+      assignment_history: Table<{
+        assignee_user_id: string | null;
+        assigned_by_membership_id: string;
+        created_at: string;
+        id: string;
+        organization_id: string;
+        previous_assignee_user_id: string | null;
+        project_id: string;
+        subject_id: string;
+        subject_type: "risk" | "action";
+      }>;
+      resource_presence: Table<{
+        created_at: string;
+        id: string;
+        last_viewed_at: string;
+        membership_id: string;
+        organization_id: string;
+        project_id: string | null;
+        resource_id: string;
+        resource_type: "project" | "risk" | "action" | "document";
+        updated_at: string;
       }>;
       users: Table<UserRow>;
       projects: Table<ProjectRow>;
@@ -288,6 +359,7 @@ export type Database = {
           size_bytes: number | null;
           storage_path: string | null;
           vendor_id: string | null;
+          updated_by_user_id: string | null;
         }
       >;
       document_extracted_fields: Table<
@@ -508,6 +580,7 @@ export type Database = {
           created_by_user_id: string;
           source: "human" | "deterministic_rule" | "ai_suggestion";
           title: string;
+          updated_by_user_id: string | null;
         }
       >;
       risk_resolutions: Table<{

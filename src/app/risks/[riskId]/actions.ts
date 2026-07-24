@@ -15,6 +15,16 @@ import {
   canResolveProjectRisks,
 } from "@/lib/auth/authorization";
 import { requireRiskProjectAccess } from "@/lib/auth/project-access";
+import { requireCurrentMembership } from "@/lib/auth/session";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { CollaborationService } from "@/features/collaboration/service";
+import {
+  commentIdSchema,
+  commentInputSchema,
+  editCommentSchema,
+  reactionSchema,
+} from "@/features/collaboration/validation";
+import { recordAssignment } from "@/features/collaboration/assignments";
 
 const mutationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -29,37 +39,101 @@ const mutationSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
-const commentSchema = z.object({
-  riskId: z.uuid(),
-  comment: z.string().trim().min(2).max(3_000),
-  mentionedUserId: z.uuid().nullable(),
-});
-
 export async function addRiskCommentAction(
-  input: z.input<typeof commentSchema>,
+  input: z.input<typeof commentInputSchema>,
 ) {
+  const membership = await requireCurrentMembership();
   const value = await runServerMutation(
-    commentSchema,
+    commentInputSchema,
     input,
     async (context, parsed) => {
       const access = await requireRiskProjectAccess(context, parsed.riskId);
       assertAuthorized(
         canComment(context) && access.resource.projectRole !== "viewer",
       );
-      const service = new RiskManagementService(
+      const result = await new CollaborationService(
+        createAdminSupabaseClient(),
+      ).createRiskComment({
+        context,
+        actorMembershipId: membership.id,
+        riskId: parsed.riskId,
+        projectId: access.projectId,
+        bodyMarkdown: parsed.bodyMarkdown,
+      });
+      await new RiskManagementService(
         await createServerSupabaseClient(),
-      );
-      await service.addComment(
+      ).addComment(
         context,
         parsed.riskId,
-        parsed.comment,
-        parsed.mentionedUserId ? [parsed.mentionedUserId] : [],
+        parsed.bodyMarkdown,
+        result.mentionedUserIds,
       );
       return parsed;
     },
   );
   revalidatePath(`/risks/${value.riskId}`);
   revalidatePath("/activity");
+}
+
+export async function editRiskCommentAction(input: unknown) {
+  const parsedInput = editCommentSchema.parse(input);
+  const membership = await requireCurrentMembership();
+  const value = await runServerMutation(
+    editCommentSchema,
+    parsedInput,
+    async (context, parsed) => {
+      await requireRiskProjectAccess(context, parsed.riskId);
+      await new CollaborationService(createAdminSupabaseClient()).editComment({
+        context,
+        actorMembershipId: membership.id,
+        commentId: parsed.commentId,
+        bodyMarkdown: parsed.bodyMarkdown,
+      });
+      return parsed;
+    },
+  );
+  revalidatePath(`/risks/${value.riskId}`);
+}
+
+export async function deleteRiskCommentAction(input: unknown) {
+  const parsedInput = commentIdSchema.parse(input);
+  const membership = await requireCurrentMembership();
+  const value = await runServerMutation(
+    commentIdSchema,
+    parsedInput,
+    async (context, parsed) => {
+      await requireRiskProjectAccess(context, parsed.riskId);
+      await new CollaborationService(createAdminSupabaseClient()).deleteComment(
+        context,
+        membership.id,
+        parsed.commentId,
+      );
+      return parsed;
+    },
+  );
+  revalidatePath(`/risks/${value.riskId}`);
+}
+
+export async function toggleRiskCommentReactionAction(input: unknown) {
+  const parsedInput = reactionSchema.parse(input);
+  const membership = await requireCurrentMembership();
+  const value = await runServerMutation(
+    reactionSchema,
+    parsedInput,
+    async (context, parsed) => {
+      await requireRiskProjectAccess(context, parsed.riskId);
+      await new CollaborationService(
+        createAdminSupabaseClient(),
+      ).toggleReaction({
+        context,
+        membershipId: membership.id,
+        commentId: parsed.commentId,
+        reaction: parsed.reaction,
+      });
+      return parsed;
+    },
+  );
+  revalidatePath(`/risks/${value.riskId}`);
 }
 
 export async function updateRiskDetailAction(
@@ -72,7 +146,26 @@ export async function updateRiskDetailAction(
       await createServerSupabaseClient(),
     );
     if (value.kind === "assign") {
+      const admin = createAdminSupabaseClient();
+      const { data: before } = await admin
+        .from("risks")
+        .select("assigned_user_id")
+        .eq("organization_id", context.organizationId)
+        .eq("id", value.riskId)
+        .single();
       await service.assignOwner(context, value.riskId, value.userId);
+      await recordAssignment({
+        client: admin,
+        context,
+        actorMembershipId: (await requireCurrentMembership()).id,
+        projectId: access.projectId,
+        subjectType: "risk",
+        subjectId: value.riskId,
+        previousAssigneeUserId: before?.assigned_user_id ?? null,
+        assigneeUserId: value.userId,
+        href: `/risks/${value.riskId}`,
+        title: "Risk assigned to you",
+      });
     } else {
       await service.setDueDate(
         context,

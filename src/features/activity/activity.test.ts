@@ -26,6 +26,7 @@ describe("risk activity", () => {
       activityType: "risk_updated",
       actorType: "system",
       actorName: null,
+      actorAvatarUrl: null,
       summary: "Updated",
       mentionedNames: [],
       occurredAt,

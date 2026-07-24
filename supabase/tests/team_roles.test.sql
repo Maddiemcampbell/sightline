@@ -37,9 +37,16 @@ select ok(
 select ok(
   exists (
     select 1 from pg_policies
-    where tablename = 'risks' and policyname = 'risks_manager_update'
+    where schemaname = 'public'
+      and tablename = 'risks'
+      and policyname = 'risks_project_manage_update'
+      and cmd = 'UPDATE'
+      and qual like '%current_organization_role%'
+      and qual like '%current_project_role%'
+      and with_check like '%current_organization_role%'
+      and with_check like '%current_project_role%'
   ),
-  'risk mutation policy is role-aware'
+  'risk mutation policy is organization-role and project-role aware'
 );
 
 select ok(

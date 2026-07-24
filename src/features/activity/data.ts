@@ -75,7 +75,7 @@ export async function getActivityPage({
   const mentionedIds = [
     ...new Set(rows.flatMap((row) => row.mentioned_user_ids)),
   ];
-  const [risksResult, usersResult] = await Promise.all([
+  const [risksResult, usersResult, membershipsResult] = await Promise.all([
     riskIds.length
       ? client
           .from("risks")
@@ -90,9 +90,17 @@ export async function getActivityPage({
           .eq("organization_id", context.organizationId)
           .in("id", [...new Set([...actorIds, ...mentionedIds])])
       : Promise.resolve({ data: [], error: null }),
+    actorIds.length
+      ? client
+          .from("organization_memberships")
+          .select("application_user_id,avatar_url")
+          .eq("organization_id", context.organizationId)
+          .in("application_user_id", actorIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
   if (risksResult.error) throw new Error(risksResult.error.message);
   if (usersResult.error) throw new Error(usersResult.error.message);
+  if (membershipsResult.error) throw new Error(membershipsResult.error.message);
   const risks = risksResult.data ?? [];
   const projectIds = [
     ...new Set(
@@ -111,6 +119,12 @@ export async function getActivityPage({
   const userById = new Map(
     (usersResult.data ?? []).map((user) => [user.id, user.full_name]),
   );
+  const avatarByUserId = new Map(
+    (membershipsResult.data ?? []).map((membership) => [
+      membership.application_user_id,
+      membership.avatar_url,
+    ]),
+  );
   const projectById = new Map(
     (projectsResult.data ?? []).map((project) => [project.id, project.name]),
   );
@@ -128,6 +142,9 @@ export async function getActivityPage({
         actorType: row.actor_type,
         actorName: row.actor_user_id
           ? (userById.get(row.actor_user_id) ?? null)
+          : null,
+        actorAvatarUrl: row.actor_user_id
+          ? (avatarByUserId.get(row.actor_user_id) ?? null)
           : null,
         summary: row.summary,
         mentionedNames: row.mentioned_user_ids.flatMap(

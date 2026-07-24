@@ -1,18 +1,24 @@
-export type NotificationMessage = Readonly<{
-  organizationId: string;
-  recipientUserId: string;
-  kind: "action_assigned" | "action_due" | "risk_resolved";
-  subject: string;
-  body: string;
-  idempotencyKey: string;
-}>;
+import "server-only";
 
-export interface NotificationService {
-  send(message: NotificationMessage): Promise<{ messageId: string }>;
-}
+import { NotificationRepository } from "@/features/notifications/repository";
+import { notificationInputSchema } from "@/features/notifications/validation";
 
-export class DisabledNotificationService implements NotificationService {
-  async send(): Promise<{ messageId: string }> {
-    throw new Error("V2 notifications are disabled.");
+export class NotificationService {
+  constructor(private readonly repository: NotificationRepository) {}
+
+  async notify(input: unknown) {
+    const value = notificationInputSchema.parse(input);
+    if (value.recipientMembershipId === value.actorMembershipId) return;
+    await this.repository.create({
+      organizationId: value.organizationId,
+      recipientMembershipId: value.recipientMembershipId,
+      type: value.type,
+      title: value.title,
+      body: value.body,
+      ...(value.actorMembershipId !== undefined
+        ? { actorMembershipId: value.actorMembershipId }
+        : {}),
+      ...(value.href !== undefined ? { href: value.href } : {}),
+    });
   }
 }

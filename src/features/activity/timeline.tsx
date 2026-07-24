@@ -44,6 +44,16 @@ export function ActivityTimeline({
               <Icon className="size-3.5" aria-hidden="true" />
             </span>
             <div className="flex flex-wrap items-center gap-2">
+              {item.actorType === "user" && (
+                item.actorAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.actorAvatarUrl} alt="" className="size-6 rounded-full object-cover" />
+                ) : (
+                  <span aria-hidden="true" className="bg-soft-green text-deep-green grid size-6 place-items-center rounded-full text-[9px] font-bold">
+                    {(item.actorName ?? "?").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}
+                  </span>
+                )
+              )}
               <span className="text-xs font-semibold">
                 {presentation.label}
               </span>
