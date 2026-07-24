@@ -10,6 +10,7 @@ const items = [
   ["/settings/audit-log", "Audit log"],
   ["/settings/projects", "Projects"],
   ["/settings/privacy", "Privacy & retention"],
+  ["/settings/data-export", "Data export"],
 ] as const;
 
 export default function SettingsLayout({

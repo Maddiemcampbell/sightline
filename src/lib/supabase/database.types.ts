@@ -218,6 +218,30 @@ export type Database = {
       organization_memberships: Table<OrganizationMembershipRow>;
       invitations: Table<InvitationRow>;
       audit_logs: Table<AuditLogRow>;
+      organization_data_exports: Table<{
+        artifact_mime_type: string | null;
+        artifact_name: string | null;
+        artifact_size_bytes: number | null;
+        attempt_count: number;
+        checksum_sha256: string | null;
+        completed_at: string | null;
+        expired_at: string | null;
+        expires_at: string | null;
+        export_format: "csv" | "json" | "zip";
+        failure_code: string | null;
+        id: string;
+        manifest: Json;
+        organization_id: string;
+        processing_started_at: string | null;
+        requested_at: string;
+        requested_by_auth_user_id: string | null;
+        requested_by_email: string;
+        requested_by_membership_id: string | null;
+        requested_by_name: string;
+        status: "queued" | "processing" | "ready" | "failed" | "expired";
+        storage_path: string | null;
+        updated_at: string;
+      }>;
       project_memberships: Table<{
         created_at: string;
         created_by_membership_id: string | null;
@@ -275,7 +299,8 @@ export type Database = {
           | "invitation"
           | "project_added"
           | "risk_assigned"
-          | "action_completed";
+          | "action_completed"
+          | "data_export_ready";
         organization_id: string;
         payload: Json;
         read_at: string | null;
@@ -748,6 +773,10 @@ export type Database = {
       purge_expired_organization_data: {
         Args: { target_organization_id: string };
         Returns: Json;
+      };
+      claim_organization_data_exports: {
+        Args: { batch_size?: number };
+        Returns: Database["public"]["Tables"]["organization_data_exports"]["Row"][];
       };
     };
     Enums: DatabaseEnums;

@@ -23,7 +23,11 @@ export type AuditAction =
   | "settings.updated"
   | "privacy.deletion_requested"
   | "privacy.deletion_cancelled"
-  | "privacy.retention_updated";
+  | "privacy.retention_updated"
+  | "data_export.requested"
+  | "data_export.completed"
+  | "data_export.failed"
+  | "data_export.downloaded";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;

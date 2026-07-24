@@ -22,6 +22,7 @@ export type Permission =
   | "organization:manage"
   | "financial_exposure:view"
   | "audit:view"
+  | "data_export:create"
   | "internal_admin:access";
 
 export type AuthorizationSubject =
@@ -70,6 +71,7 @@ const OWNER_PERMISSIONS = {
   "organization:manage": true,
   "financial_exposure:view": true,
   "audit:view": true,
+  "data_export:create": true,
   "internal_admin:access": true,
 } as const satisfies Record<Permission, boolean>;
 
@@ -131,8 +133,16 @@ function denyAllPermissions(): Record<Permission, boolean> {
     "organization:manage": false,
     "financial_exposure:view": false,
     "audit:view": false,
+    "data_export:create": false,
     "internal_admin:access": false,
   };
+}
+
+export function canExportOrganizationData(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "data_export:create", resource);
 }
 
 export class AuthorizationError extends Error {
