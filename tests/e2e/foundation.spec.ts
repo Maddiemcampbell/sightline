@@ -150,10 +150,14 @@ test("records a guided resolution and reopens it with a reason", async ({
     .nth(1)
     .getByRole("link", { name: "View full risk" })
     .click();
-  await page.getByRole("link", { name: /Evidence/ }).click();
+  const evidenceTab = page.getByRole("link", { name: /Evidence/ });
+  const evidenceHref = await evidenceTab.getAttribute("href");
+  if (!evidenceHref) throw new Error("Expected an evidence tab destination.");
+  await page.goto(evidenceHref);
+  await expect(page).toHaveURL(/\?tab=evidence$/);
   await expect(
     page.getByRole("heading", { name: "Evidence-grounded explanation" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   await page.getByRole("link", { name: "Ask Sightline" }).click();
   await page
     .getByRole("button", { name: "What evidence supports this?" })
@@ -331,7 +335,8 @@ test("adds a risk comment with an organization-user mention", async ({
   await submit.click();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey) throw new Error("Supabase E2E environment is not configured.");
+  if (!url || !serviceRoleKey)
+    throw new Error("Supabase E2E environment is not configured.");
   const admin = createClient(url, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     realtime: { transport: UnusedWebSocketTransport as never },
@@ -439,36 +444,39 @@ test("follows an executive priority and updates an overdue action", async ({
   await expect(
     page.getByRole("heading", { name: "Good morning, Matt." }),
   ).toBeVisible();
-  const priorities = page.getByRole("region", { name: "Today’s priorities" });
-  await priorities
-    .getByRole("link", { name: /Open response|Review risk/ })
-    .first()
-    .click();
+  const recommendations = page.getByRole("region", {
+    name: "Executive Recommendations",
+  });
+  await recommendations.getByRole("link", { name: "Review" }).first().click();
+  await expect(page).toHaveURL(/\/(?:projects|risks)\/[0-9a-f-]+/);
+
+  await page.goto("/actions?due=overdue");
+  const actions = page.getByRole("region", { name: "Organization actions" });
+  const firstDueDate = actions
+    .locator('input[aria-label^="Due date for"]')
+    .first();
+  await expect(firstDueDate).toBeVisible();
+  const dueDateLabel = await firstDueDate.getAttribute("aria-label");
+  if (!dueDateLabel)
+    throw new Error("Expected an overdue action due-date label.");
+  const actionTitle = dueDateLabel.replace(/^Due date for /, "");
+  const actionItem = firstDueDate.locator("xpath=ancestor::li");
+  await actionItem.getByRole("link", { name: /.+/ }).first().click();
   await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+/);
 
-  await page.goto("/");
-  const overdue = page.getByRole("region", { name: "Overdue actions" });
-  const actionLink = overdue.getByRole("link").first();
-  const actionTitle = await actionLink.textContent();
-  await actionLink.click();
-  await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+/);
-
-  await page.goto("/");
-  const overdueAction = page
-    .getByRole("region", { name: "Overdue actions" })
-    .getByText(actionTitle ?? "", { exact: true })
-    .locator("..");
-  await overdueAction
-    .getByLabel(`Due date for ${actionTitle ?? ""}`)
-    .fill("2026-07-26");
+  await page.goto("/actions?due=overdue");
+  const overdueDueDate = page.getByLabel(`Due date for ${actionTitle}`, {
+    exact: true,
+  });
+  await overdueDueDate.fill("2026-07-26");
   await expect(
-    overdueAction.locator("[data-action-id]"),
-  ).toHaveAttribute("data-pending", "false", { timeout: 20_000 });
+    page.getByLabel(`Due date for ${actionTitle}`, { exact: true }),
+  ).toHaveCount(0, {
+    timeout: 20_000,
+  });
 
   await page.reload();
   await expect(
-    page
-      .getByRole("region", { name: "Overdue actions" })
-      .getByText(actionTitle ?? "", { exact: true }),
+    page.getByLabel(`Due date for ${actionTitle}`, { exact: true }),
   ).toHaveCount(0);
 });

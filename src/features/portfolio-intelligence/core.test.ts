@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  deriveHomepageIntelligence,
   derivePortfolioObservations,
   deriveRiskRelationships,
   findHistoricalRiskMatches,
@@ -157,5 +158,59 @@ describe("deterministic portfolio intelligence", () => {
     expect(matches[0]?.matchReasons).toContain(
       "same deterministic detection pattern",
     );
+  });
+
+  it("creates a root-cause hypothesis only when two strong observations overlap", () => {
+    const risks = [
+      risk("r1"),
+      risk("r2", { project_id: "p2" }),
+      risk("r3", { project_id: "p2" }),
+    ];
+    const observations = derivePortfolioObservations({
+      projects,
+      risks,
+      actions: [],
+      documents: [],
+      vendors: [],
+      now: new Date("2026-04-01T00:00:00.000Z"),
+    });
+    const intelligence = deriveHomepageIntelligence({
+      observations,
+      risks,
+      resolutions: [],
+      projects,
+      now: new Date("2026-04-01T00:00:00.000Z"),
+    });
+
+    expect(intelligence.rootCauseSuggestions[0]).toMatchObject({
+      title: "Possible root cause: incomplete document coverage",
+      confidence: 80,
+    });
+    expect(
+      intelligence.rootCauseSuggestions[0]?.supportingObservations,
+    ).toHaveLength(2);
+    expect(
+      intelligence.rootCauseSuggestions[0]?.recommendedInvestigationSteps[0],
+    ).toContain("Confirm");
+  });
+
+  it("does not speculate from a single observation", () => {
+    const observations = derivePortfolioObservations({
+      projects,
+      risks: [],
+      actions: [],
+      documents: [],
+      vendors: [],
+      now: new Date("2026-04-01T00:00:00.000Z"),
+    });
+    const intelligence = deriveHomepageIntelligence({
+      observations,
+      risks: [],
+      resolutions: [],
+      projects,
+      now: new Date("2026-04-01T00:00:00.000Z"),
+    });
+
+    expect(intelligence.rootCauseSuggestions).toEqual([]);
   });
 });

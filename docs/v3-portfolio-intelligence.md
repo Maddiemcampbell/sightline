@@ -72,6 +72,33 @@ project, recorded resolution, elapsed time, feedback-based outcome, exposure
 (only when the viewer has financial permission), score, and match reasons.
 Reopened resolutions are excluded.
 
+## Root-cause hypotheses and homepage intelligence
+
+The homepage organizes intelligence into Portfolio Watch, Emerging Patterns,
+Similar to Last Quarter, and Executive Recommendations. Portfolio Watch ranks
+observations by represented exposure and affected-project count. Emerging
+signals outside that cutoff appear only when at least one related risk was
+detected in the previous 30 days. Historical comparisons are limited to
+resolutions recorded during the previous calendar quarter.
+
+Root-cause suggestions are hypotheses, not conclusions. Version
+`portfolio-deterministic-v1` requires:
+
+- two independently derived supporting observations;
+- overlap across at least two projects;
+- at least two evidence items;
+- an explicit confidence threshold of 70%;
+- documented assumptions and investigation steps.
+
+Current hypothesis rules cover overlapping document-coverage and recurring-risk
+signals, vendor-concentration and recurring-risk signals, and overdue-action and
+recurring-risk signals. The UI labels every result “Hypothesis — not a
+conclusion,” displays its assumptions, and explains that timing correlation is
+not a forecast. If these thresholds are not met, Sightline displays no
+suggestion. Executive recommendations prioritize investigation of qualified
+hypotheses, followed by the next steps attached to the highest-impact
+observations.
+
 ## Isolation and limitations
 
 All reads begin with authenticated organization context and remain subject to

@@ -464,5 +464,12 @@ export function buildDashboardView(
     },
     owners: source.users.map((user) => ({ id: user.id, name: user.full_name })),
     observations: [],
+    intelligence: {
+      portfolioWatch: [],
+      emergingPatterns: [],
+      historicalComparisons: [],
+      rootCauseSuggestions: [],
+      executiveRecommendations: [],
+    },
   };
 }

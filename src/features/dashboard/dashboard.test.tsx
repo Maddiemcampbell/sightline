@@ -15,6 +15,13 @@ const view: DashboardView = {
   isEmptyOrganization: false,
   hasActiveRisks: true,
   observations: [],
+  intelligence: {
+    portfolioWatch: [],
+    emergingPatterns: [],
+    historicalComparisons: [],
+    rootCauseSuggestions: [],
+    executiveRecommendations: [],
+  },
   overnight: {
     newRisks: { value: 2, previousValue: 1 },
     resolvedRisks: { value: 1, previousValue: 0 },
@@ -75,12 +82,65 @@ describe("company dashboard", () => {
     const markup = renderToStaticMarkup(<Dashboard view={view} />);
 
     expect(markup).toContain("Good morning, Matt.");
-    expect(markup).toContain("Overnight summary");
-    expect(markup).toContain("Today’s priorities");
-    expect(markup).toContain("Portfolio health");
-    expect(markup).toContain("Work in motion");
-    expect(markup).toContain("Value delivered");
-    expect(markup).toContain("No prior-day history");
+    expect(markup).toContain("Portfolio Watch");
+    expect(markup).toContain("Emerging Patterns");
+    expect(markup).toContain("Similar to Last Quarter");
+    expect(markup).toContain("Executive Recommendations");
+    expect(markup).toContain("will not speculate from weak signals");
+    expect(markup).toContain("hypotheses for investigation");
+  });
+
+  it("labels root-cause suggestions as hypotheses with assumptions", () => {
+    const markup = renderToStaticMarkup(
+      <Dashboard
+        view={{
+          ...view,
+          intelligence: {
+            ...view.intelligence,
+            rootCauseSuggestions: [
+              {
+                key: "document-pattern",
+                title: "Possible root cause: incomplete document coverage",
+                hypothesis:
+                  "Incomplete document coverage may be contributing to recurring risks.",
+                confidence: 80,
+                evidence: [
+                  {
+                    label: "Atlas",
+                    value: "0 active documents",
+                    entityType: "project",
+                    entityId: "project-1",
+                  },
+                  {
+                    label: "Beacon",
+                    value: "2 unresolved risks",
+                    entityType: "project",
+                    entityId: "project-2",
+                  },
+                ],
+                assumptions: ["Document metadata is current."],
+                supportingObservations: [
+                  { key: "one", title: "Document coverage gap" },
+                  { key: "two", title: "Recurring documentation risks" },
+                ],
+                similarHistoricalCases: [],
+                recommendedInvestigationSteps: [
+                  "Confirm whether records exist outside Sightline.",
+                ],
+              },
+            ],
+            executiveRecommendations: [],
+          },
+        }}
+      />,
+    );
+
+    expect(markup).toContain("Hypothesis — not a conclusion");
+    expect(markup).toContain("80% hypothesis confidence");
+    expect(markup).toContain("Assumptions to validate");
+    expect(markup).toContain(
+      "Confirm whether records exist outside Sightline.",
+    );
   });
 
   it("renders the empty organization state with a next step", () => {

@@ -64,3 +64,44 @@ export type HistoricalRiskMatch = Readonly<{
   similarityScore: number;
   matchReasons: readonly string[];
 }>;
+
+export type RootCauseSuggestion = Readonly<{
+  key: string;
+  title: string;
+  hypothesis: string;
+  confidence: number;
+  evidence: readonly ObservationEvidence[];
+  assumptions: readonly string[];
+  supportingObservations: readonly Readonly<{ key: string; title: string }>[];
+  similarHistoricalCases: readonly HistoricalRiskMatch[];
+  recommendedInvestigationSteps: readonly string[];
+}>;
+
+export type HistoricalComparison = Readonly<{
+  currentRiskId: string;
+  currentRiskTitle: string;
+  match: HistoricalRiskMatch;
+}>;
+
+export type EmergingPattern = Readonly<{
+  observation: PortfolioObservation;
+  recentRiskCount: number;
+}>;
+
+export type ExecutiveRecommendation = Readonly<{
+  key: string;
+  priority: number;
+  title: string;
+  rationale: string;
+  nextStep: string;
+  href: string;
+  source: "observation" | "hypothesis";
+}>;
+
+export type HomepageIntelligence = Readonly<{
+  portfolioWatch: readonly PortfolioObservation[];
+  emergingPatterns: readonly EmergingPattern[];
+  historicalComparisons: readonly HistoricalComparison[];
+  rootCauseSuggestions: readonly RootCauseSuggestion[];
+  executiveRecommendations: readonly ExecutiveRecommendation[];
+}>;

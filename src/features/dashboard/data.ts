@@ -10,7 +10,10 @@ import {
   canViewProject,
   canViewRisk,
 } from "@/lib/auth/authorization";
-import { derivePortfolioObservations } from "@/features/portfolio-intelligence/core";
+import {
+  deriveHomepageIntelligence,
+  derivePortfolioObservations,
+} from "@/features/portfolio-intelligence/core";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -129,14 +132,22 @@ export async function getDashboardView() {
     "risk_reopened",
     "system_analysis_completed",
   ]);
+  const observations = derivePortfolioObservations({
+    projects: projectsResult.data ?? [],
+    risks: risksResult.data ?? [],
+    actions: actionsResult.data ?? [],
+    documents: documentsResult.data ?? [],
+    vendors: vendorsResult.data ?? [],
+    now: new Date(),
+  });
   return {
     ...view,
-    observations: derivePortfolioObservations({
+    observations,
+    intelligence: deriveHomepageIntelligence({
+      observations,
       projects: projectsResult.data ?? [],
       risks: risksResult.data ?? [],
-      actions: actionsResult.data ?? [],
-      documents: documentsResult.data ?? [],
-      vendors: vendorsResult.data ?? [],
+      resolutions: resolutionsResult.data ?? [],
       now: new Date(),
     }),
     activity: activityPage.items

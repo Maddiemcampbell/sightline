@@ -1,7 +1,10 @@
 import type {
+  ExecutiveRecommendation,
   HistoricalRiskMatch,
+  HomepageIntelligence,
   ObservationEvidence,
   PortfolioObservation,
+  RootCauseSuggestion,
   RiskRelationship,
 } from "@/features/portfolio-intelligence/types";
 
@@ -387,6 +390,254 @@ export function findHistoricalRiskMatches(input: {
     })
     .toSorted((a, b) => b.similarityScore - a.similarityScore)
     .slice(0, 3);
+}
+
+export function deriveHomepageIntelligence(input: {
+  observations: readonly PortfolioObservation[];
+  risks: readonly RiskInput[];
+  resolutions: readonly ResolutionInput[];
+  projects: readonly ProjectInput[];
+  now: Date;
+}): HomepageIntelligence {
+  const ranked = [...input.observations].toSorted(
+    (left, right) =>
+      (right.businessImpactEstimateCents ?? 0) -
+        (left.businessImpactEstimateCents ?? 0) ||
+      right.affectedProjectIds.length - left.affectedProjectIds.length,
+  );
+  const portfolioWatch = ranked.slice(0, 3);
+  const watchKeys = new Set(portfolioWatch.map((item) => item.key));
+  const recentCutoff = input.now.getTime() - 30 * 86_400_000;
+  const activeRisks = input.risks.filter(
+    (risk) => !["resolved", "dismissed"].includes(risk.status),
+  );
+  const recentRiskProjectCounts = groupCount(
+    activeRisks.flatMap((risk) =>
+      risk.project_id && Date.parse(risk.detected_at) >= recentCutoff
+        ? [risk.project_id]
+        : [],
+    ),
+  );
+  const emergingPatterns = ranked
+    .filter((observation) => !watchKeys.has(observation.key))
+    .map((observation) => ({
+      observation,
+      recentRiskCount: observation.affectedProjectIds.reduce(
+        (sum, projectId) => sum + (recentRiskProjectCounts.get(projectId) ?? 0),
+        0,
+      ),
+    }))
+    .filter((pattern) => pattern.recentRiskCount > 0)
+    .toSorted((left, right) => right.recentRiskCount - left.recentRiskCount)
+    .slice(0, 3);
+
+  const resolvedRisks = input.risks.filter(
+    (risk) => risk.status === "resolved",
+  );
+  const previousQuarter = previousQuarterBounds(input.now);
+  const historicalComparisons = activeRisks
+    .flatMap((current) =>
+      findHistoricalRiskMatches({
+        current,
+        resolvedRisks,
+        resolutions: input.resolutions,
+        projects: input.projects,
+      }).map((match) => ({
+        currentRiskId: current.id,
+        currentRiskTitle: current.title,
+        match,
+      })),
+    )
+    .toSorted(
+      (left, right) => right.match.similarityScore - left.match.similarityScore,
+    )
+    .filter(
+      (comparison) =>
+        Date.parse(comparison.match.resolvedAt) >= previousQuarter.start &&
+        Date.parse(comparison.match.resolvedAt) < previousQuarter.end,
+    )
+    .filter(
+      (comparison, index, all) =>
+        all.findIndex(
+          (candidate) =>
+            candidate.currentRiskId === comparison.currentRiskId &&
+            candidate.match.riskId === comparison.match.riskId,
+        ) === index,
+    )
+    .slice(0, 3);
+
+  const rootCauseSuggestions = deriveRootCauseSuggestions(
+    ranked,
+    historicalComparisons.map((comparison) => comparison.match),
+  );
+  return {
+    portfolioWatch,
+    emergingPatterns,
+    historicalComparisons,
+    rootCauseSuggestions,
+    executiveRecommendations: deriveExecutiveRecommendations(
+      portfolioWatch,
+      rootCauseSuggestions,
+    ),
+  };
+}
+
+function previousQuarterBounds(now: Date) {
+  const currentQuarterStartMonth = Math.floor(now.getUTCMonth() / 3) * 3;
+  const currentQuarterStart = Date.UTC(
+    now.getUTCFullYear(),
+    currentQuarterStartMonth,
+    1,
+  );
+  const previousQuarterStart = Date.UTC(
+    now.getUTCFullYear(),
+    currentQuarterStartMonth - 3,
+    1,
+  );
+  return { start: previousQuarterStart, end: currentQuarterStart };
+}
+
+function deriveRootCauseSuggestions(
+  observations: readonly PortfolioObservation[],
+  historicalCases: readonly HistoricalRiskMatch[],
+): RootCauseSuggestion[] {
+  const byType = new Map(
+    observations.map((observation) => [observation.type, observation]),
+  );
+  const candidates = [
+    hypothesisCandidate({
+      left: byType.get("documentation_gap"),
+      right: byType.get("recurring_risk"),
+      key: "documentation-coverage-recurring-risk",
+      title: "Possible root cause: incomplete document coverage",
+      hypothesis:
+        "Incomplete document coverage may be contributing to recurring risks on the same projects.",
+      confidence: 80,
+      assumptions: [
+        "Document metadata accurately reflects the current records available to Sightline.",
+        "The recurring risk category depends on timely project documentation.",
+      ],
+      steps: [
+        "Confirm whether the expected records exist outside Sightline.",
+        "Compare missing record types with the evidence cited by each recurring risk.",
+        "Interview affected project leads before changing controls or escalating.",
+      ],
+    }),
+    hypothesisCandidate({
+      left: byType.get("vendor_concentration"),
+      right: byType.get("recurring_risk"),
+      key: "vendor-concentration-recurring-risk",
+      title: "Possible contributing factor: concentrated vendor exposure",
+      hypothesis:
+        "Concentration among the same vendors may be contributing to a recurring risk pattern across the affected projects.",
+      confidence: 75,
+      assumptions: [
+        "Vendor assignments are complete and current.",
+        "The vendor has meaningful control over the repeated risk condition.",
+      ],
+      steps: [
+        "Validate the vendor assignment on each underlying risk.",
+        "Compare contract scope, project controls, and issue chronology.",
+        "Ask project leads for counterexamples before escalating to the vendor.",
+      ],
+    }),
+    hypothesisCandidate({
+      left: byType.get("overdue_actions"),
+      right: byType.get("recurring_risk"),
+      key: "overdue-follow-through-recurring-risk",
+      title: "Possible contributing factor: delayed follow-through",
+      hypothesis:
+        "Overdue risk actions may be allowing a recurring issue to remain unresolved across multiple projects.",
+      confidence: 70,
+      assumptions: [
+        "Action due dates remain credible.",
+        "Completing the actions would materially mitigate the recurring risks.",
+      ],
+      steps: [
+        "Confirm each overdue action is still relevant and correctly assigned.",
+        "Review whether delays preceded worsening risk status.",
+        "Escalate only actions with a validated mitigation dependency.",
+      ],
+    }),
+  ].flatMap((candidate) => (candidate ? [candidate] : []));
+
+  return candidates
+    .filter(
+      (candidate) =>
+        candidate.confidence >= 70 &&
+        candidate.evidence.length >= 2 &&
+        candidate.supportingObservations.length >= 2,
+    )
+    .map((candidate) => ({
+      ...candidate,
+      similarHistoricalCases: historicalCases.slice(0, 2),
+    }))
+    .slice(0, 3);
+}
+
+function hypothesisCandidate(input: {
+  left: PortfolioObservation | undefined;
+  right: PortfolioObservation | undefined;
+  key: string;
+  title: string;
+  hypothesis: string;
+  confidence: number;
+  assumptions: readonly string[];
+  steps: readonly string[];
+}): Omit<RootCauseSuggestion, "similarHistoricalCases"> | null {
+  if (!input.left || !input.right) return null;
+  const overlap = input.left.affectedProjectIds.filter((projectId) =>
+    input.right?.affectedProjectIds.includes(projectId),
+  );
+  if (overlap.length < 2) return null;
+  return {
+    key: input.key,
+    title: input.title,
+    hypothesis: input.hypothesis,
+    confidence: input.confidence,
+    evidence: [
+      ...input.left.supportingEvidence.slice(0, 2),
+      ...input.right.supportingEvidence.slice(0, 2),
+    ],
+    assumptions: input.assumptions,
+    supportingObservations: [input.left, input.right].map((observation) => ({
+      key: observation.key,
+      title: observation.title,
+    })),
+    recommendedInvestigationSteps: input.steps,
+  };
+}
+
+function deriveExecutiveRecommendations(
+  observations: readonly PortfolioObservation[],
+  hypotheses: readonly RootCauseSuggestion[],
+): ExecutiveRecommendation[] {
+  const hypothesisRecommendations = hypotheses.map((hypothesis, index) => ({
+    key: `hypothesis:${hypothesis.key}`,
+    priority: index + 1,
+    title: `Investigate: ${hypothesis.title.replace(/^Possible (root cause|contributing factor): /, "")}`,
+    rationale: `${hypothesis.confidence}% hypothesis confidence based on ${hypothesis.supportingObservations.length} supporting observations.`,
+    nextStep: hypothesis.recommendedInvestigationSteps[0]!,
+    href: `#hypothesis-${hypothesis.key}`,
+    source: "hypothesis" as const,
+  }));
+  const observationRecommendations = observations.map((observation, index) => ({
+    key: `observation:${observation.key}`,
+    priority: hypothesisRecommendations.length + index + 1,
+    title: observation.title,
+    rationale: observation.businessImpactExplanation,
+    nextStep: observation.recommendedNextStep,
+    href: observation.affectedProjectIds[0]
+      ? `/projects/${observation.affectedProjectIds[0]}`
+      : "/risks",
+    source: "observation" as const,
+  }));
+  return [...hypothesisRecommendations, ...observationRecommendations]
+    .slice(0, 5)
+    .map((recommendation, index) => ({
+      ...recommendation,
+      priority: index + 1,
+    }));
 }
 
 function relationship(
