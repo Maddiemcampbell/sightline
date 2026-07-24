@@ -10,6 +10,7 @@ import {
   canViewProject,
   canViewRisk,
 } from "@/lib/auth/authorization";
+import { derivePortfolioObservations } from "@/features/portfolio-intelligence/core";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -26,6 +27,8 @@ export async function getDashboardView() {
     activitiesResult,
     resolutionsResult,
     usersResult,
+    documentsResult,
+    vendorsResult,
     activityPage,
   ] = await Promise.all([
     client
@@ -65,6 +68,14 @@ export async function getDashboardView() {
       .select("id,full_name")
       .eq("organization_id", context.organizationId)
       .order("full_name"),
+    client
+      .from("documents")
+      .select("id,project_id,archived_at")
+      .eq("organization_id", context.organizationId),
+    client
+      .from("vendors")
+      .select("id,name")
+      .eq("organization_id", context.organizationId),
     getActivityPage({ limit: 20 }),
   ]);
   const results = [
@@ -76,6 +87,8 @@ export async function getDashboardView() {
     activitiesResult,
     resolutionsResult,
     usersResult,
+    documentsResult,
+    vendorsResult,
   ];
   for (const result of results)
     if (result.error) throw new Error(result.error.message);
@@ -118,6 +131,14 @@ export async function getDashboardView() {
   ]);
   return {
     ...view,
+    observations: derivePortfolioObservations({
+      projects: projectsResult.data ?? [],
+      risks: risksResult.data ?? [],
+      actions: actionsResult.data ?? [],
+      documents: documentsResult.data ?? [],
+      vendors: vendorsResult.data ?? [],
+      now: new Date(),
+    }),
     activity: activityPage.items
       .filter((item) => meaningfulActivityTypes.has(item.activityType))
       .slice(0, 8),

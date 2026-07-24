@@ -242,6 +242,53 @@ export type Database = {
         storage_path: string | null;
         updated_at: string;
       }>;
+      portfolio_observations: Table<{
+        affected_project_ids: string[];
+        algorithm_version: string;
+        business_impact_estimate_cents: number | null;
+        business_impact_explanation: string;
+        confidence_score: number;
+        created_at: string;
+        first_observed_at: string;
+        id: string;
+        last_observed_at: string;
+        observation_key: string;
+        observation_type:
+          | "documentation_gap"
+          | "vendor_concentration"
+          | "recurring_risk"
+          | "overdue_actions";
+        organization_id: string;
+        recommended_next_step: string;
+        status: "active" | "superseded";
+        summary: string;
+        supporting_evidence: Json;
+        title: string;
+        updated_at: string;
+      }>;
+      risk_relationships: Table<{
+        algorithm_version: string;
+        confidence_score: number;
+        created_at: string;
+        created_by_user_id: string | null;
+        id: string;
+        organization_id: string;
+        relationship_type:
+          | "duplicate"
+          | "caused_by"
+          | "contributes_to"
+          | "blocks"
+          | "same_vendor"
+          | "same_subcontractor"
+          | "same_document"
+          | "same_project_phase"
+          | "same_root_cause";
+        source: "deterministic" | "human";
+        source_risk_id: string;
+        supporting_evidence: Json;
+        target_risk_id: string;
+        updated_at: string;
+      }>;
       project_memberships: Table<{
         created_at: string;
         created_by_membership_id: string | null;

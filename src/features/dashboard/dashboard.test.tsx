@@ -14,6 +14,7 @@ const view: DashboardView = {
   currentUserName: "Matt Anderson",
   isEmptyOrganization: false,
   hasActiveRisks: true,
+  observations: [],
   overnight: {
     newRisks: { value: 2, previousValue: 1 },
     resolvedRisks: { value: 1, previousValue: 0 },

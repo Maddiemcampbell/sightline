@@ -463,5 +463,6 @@ export function buildDashboardView(
         : null,
     },
     owners: source.users.map((user) => ({ id: user.id, name: user.full_name })),
+    observations: [],
   };
 }

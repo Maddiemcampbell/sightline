@@ -8,6 +8,7 @@ import type {
   RiskRow,
   UserRow,
 } from "@/lib/supabase/database-row.types";
+import type { PortfolioObservation } from "@/features/portfolio-intelligence/types";
 
 export type DashboardSource = Readonly<{
   now: Date;
@@ -91,4 +92,5 @@ export type DashboardView = Readonly<{
     actionCompletionRate: number | null;
   };
   owners: readonly ActionOwner[];
+  observations: readonly PortfolioObservation[];
 }>;

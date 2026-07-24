@@ -19,6 +19,11 @@ import type { RiskResolutionRow } from "@/lib/supabase/database-row.types";
 import { getRiskCollaboration } from "@/features/collaboration/data";
 import { CommentThread } from "@/features/collaboration/comment-thread";
 import { Avatar } from "@/features/activity/comment-form";
+import { getRiskMemory } from "@/features/portfolio-intelligence/data";
+import type {
+  HistoricalRiskMatch,
+  RiskRelationshipType,
+} from "@/features/portfolio-intelligence/types";
 
 type Props = {
   params: Promise<{ riskId: string }>;
@@ -30,19 +35,21 @@ export default async function RiskPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
   const detail = await getRiskDetail(riskId);
   if (!detail) notFound();
-  const [activityPage, evidenceExperience, askMessages, collaboration] = await Promise.all([
-    getActivityPage({ riskId, limit: 30 }),
-    getRiskEvidenceExperience(riskId),
-    tab === "ask" ? getAskSightlineHistory(riskId) : Promise.resolve([]),
-    detail.project
-      ? getRiskCollaboration(riskId, detail.project.id)
-      : Promise.resolve({
-          comments: [],
-          collaborators: [],
-          viewers: [],
-          assignmentHistory: [],
-        }),
-  ]);
+  const [activityPage, evidenceExperience, askMessages, collaboration, memory] =
+    await Promise.all([
+      getActivityPage({ riskId, limit: 30 }),
+      getRiskEvidenceExperience(riskId),
+      tab === "ask" ? getAskSightlineHistory(riskId) : Promise.resolve([]),
+      detail.project
+        ? getRiskCollaboration(riskId, detail.project.id)
+        : Promise.resolve({
+            comments: [],
+            collaborators: [],
+            viewers: [],
+            assignmentHistory: [],
+          }),
+      getRiskMemory(riskId),
+    ]);
   const tabs = [
     "overview",
     "evidence",
@@ -100,7 +107,8 @@ export default async function RiskPage({ params, searchParams }: Props) {
         <p className="text-muted mt-2 text-xs">
           Last updated by{" "}
           {detail.risk.updated_by_user_id
-            ? (ownerNameById.get(detail.risk.updated_by_user_id) ?? "a teammate")
+            ? (ownerNameById.get(detail.risk.updated_by_user_id) ??
+              "a teammate")
             : "Sightline"}{" "}
           · {new Date(detail.risk.updated_at).toLocaleString()}
         </p>
@@ -215,7 +223,10 @@ export default async function RiskPage({ params, searchParams }: Props) {
       ) : activeTab === "activity" ? (
         <div className="mt-6 max-w-3xl">
           <Panel title="Activity">
-            <RiskCommentForm riskId={riskId} users={collaboration.collaborators} />
+            <RiskCommentForm
+              riskId={riskId}
+              users={collaboration.collaborators}
+            />
             <CommentThread riskId={riskId} comments={collaboration.comments} />
             <h3 className="mt-8 font-semibold">Change history</h3>
             <ActivityTimeline items={activityPage.items} />
@@ -238,7 +249,12 @@ export default async function RiskPage({ params, searchParams }: Props) {
           </Panel>
         </div>
       ) : activeTab === "related" ? (
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-6 xl:grid-cols-2">
+          <RiskChain relationships={memory.relationships} />
+          <HistoricalMemory
+            matches={memory.historicalMatches}
+            canViewFinancials={memory.canViewFinancials}
+          />
           <Panel title="Related project">
             {detail.project ? (
               <Link
@@ -310,6 +326,13 @@ export default async function RiskPage({ params, searchParams }: Props) {
                 Review why Sightline believes this →
               </Link>
             </Panel>
+            {!closed && (
+              <HistoricalMemory
+                matches={memory.historicalMatches.slice(0, 1)}
+                canViewFinancials={memory.canViewFinancials}
+                compact
+              />
+            )}
           </div>
           <aside className="space-y-6">
             <Panel title="Related project">
@@ -343,8 +366,14 @@ export default async function RiskPage({ params, searchParams }: Props) {
               )}
             </Panel>
             <Panel title="Activity timeline">
-              <RiskCommentForm riskId={riskId} users={collaboration.collaborators} />
-              <CommentThread riskId={riskId} comments={collaboration.comments} />
+              <RiskCommentForm
+                riskId={riskId}
+                users={collaboration.collaborators}
+              />
+              <CommentThread
+                riskId={riskId}
+                comments={collaboration.comments}
+              />
               {activityPage.nextCursor && (
                 <Link
                   href={`/activity?riskId=${riskId}`}
@@ -357,8 +386,13 @@ export default async function RiskPage({ params, searchParams }: Props) {
           </aside>
         </div>
       )}
-      <section className="border-border mt-8 border-t pt-6" aria-label="Presence">
-        <h2 className="text-sm font-semibold">Currently viewing and recently active</h2>
+      <section
+        className="border-border mt-8 border-t pt-6"
+        aria-label="Presence"
+      >
+        <h2 className="text-sm font-semibold">
+          Currently viewing and recently active
+        </h2>
         <div className="mt-3 flex flex-wrap gap-3">
           {collaboration.viewers.map((viewer) => (
             <div key={viewer.membershipId} className="flex items-center gap-2">
@@ -383,7 +417,8 @@ export default async function RiskPage({ params, searchParams }: Props) {
               {collaboration.assignmentHistory.map((entry) => (
                 <li key={entry.id}>
                   {entry.assignedBy} changed {entry.previousAssignee} to{" "}
-                  {entry.assignee} · {new Date(entry.assignedAt).toLocaleString()}
+                  {entry.assignee} ·{" "}
+                  {new Date(entry.assignedAt).toLocaleString()}
                 </li>
               ))}
             </ol>
@@ -495,6 +530,161 @@ function ResolutionFact({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+type RelatedRisk = Readonly<{
+  relatedRiskId: string;
+  relatedRiskTitle: string;
+  relatedRiskStatus: string;
+  relatedProjectName: string;
+  relatedVendorName: string | null;
+  type: RiskRelationshipType;
+  confidence: number;
+  supportingEvidence: readonly Readonly<{ label: string; value: string }>[];
+}>;
+
+function RiskChain({
+  relationships,
+}: {
+  relationships: readonly RelatedRisk[];
+}) {
+  return (
+    <Panel title="Connected risk chain">
+      <p className="text-muted mb-4 text-sm leading-6">
+        Exact shared attributes connect risks. Causal relationships are never
+        inferred without an explicit team decision.
+      </p>
+      {relationships.length ? (
+        <ol className="space-y-4">
+          {relationships.map((relationship) => (
+            <li
+              key={`${relationship.type}:${relationship.relatedRiskId}`}
+              className="border-border rounded-lg border p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <Link
+                    href={`/risks/${relationship.relatedRiskId}`}
+                    className="hover:text-deep-green font-semibold"
+                  >
+                    {relationship.relatedRiskTitle}
+                  </Link>
+                  <p className="text-muted mt-1 text-xs">
+                    {relationship.relatedProjectName}
+                    {relationship.relatedVendorName
+                      ? ` · ${relationship.relatedVendorName}`
+                      : ""}
+                  </p>
+                </div>
+                <span className="bg-soft-green text-deep-green rounded-full px-2.5 py-1 text-xs font-semibold">
+                  {relationship.type.replaceAll("_", " ")}
+                </span>
+              </div>
+              <p className="text-muted mt-3 text-xs">
+                {relationship.confidence}% confidence ·{" "}
+                {relationship.supportingEvidence
+                  .map((evidence) => evidence.value)
+                  .join(" · ")}
+              </p>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-muted text-sm">
+          No exact shared vendor, document, or detection key was found.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
+function HistoricalMemory({
+  matches,
+  canViewFinancials,
+  compact = false,
+}: {
+  matches: readonly HistoricalRiskMatch[];
+  canViewFinancials: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <Panel title="Historical memory">
+      <p className="text-muted mb-4 text-sm leading-6">
+        Resolved issues are ranked by matching detection key, vendor, category,
+        and title terms.
+      </p>
+      {matches.length ? (
+        <ol className="space-y-4">
+          {matches.map((match) => (
+            <li
+              key={match.riskId}
+              className="border-border rounded-lg border p-4"
+            >
+              <p className="text-deep-green text-xs font-semibold uppercase">
+                Similar issue detected on {match.projectName} in{" "}
+                {new Date(match.detectedAt).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+              <Link
+                href={`/risks/${match.riskId}`}
+                className="hover:text-deep-green mt-2 block font-semibold"
+              >
+                {match.title}
+              </Link>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <MemoryFact label="What happened" value={match.summary} />
+                <MemoryFact
+                  label="How it was resolved"
+                  value={match.resolutionSummary}
+                />
+                <MemoryFact
+                  label="Time to resolution"
+                  value={formatDuration(match.timeToResolutionHours)}
+                />
+                {canViewFinancials && (
+                  <MemoryFact
+                    label="Estimated exposure"
+                    value={formatMoney(match.estimatedExposureCents)}
+                  />
+                )}
+                <MemoryFact label="Outcome" value={match.outcome} />
+                <MemoryFact
+                  label="Why it matched"
+                  value={`${match.similarityScore}% · ${match.matchReasons.join(", ")}`}
+                />
+              </dl>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-muted text-sm">
+          No resolved issue meets the deterministic similarity threshold yet.
+        </p>
+      )}
+      {!compact && (
+        <p className="text-muted mt-4 text-xs">
+          Results come only from this organization’s accessible project history.
+        </p>
+      )}
+    </Panel>
+  );
+}
+
+function MemoryFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-muted text-xs">{label}</dt>
+      <dd className="mt-1 leading-5">{value}</dd>
+    </div>
+  );
+}
+
+function formatDuration(hours: number) {
+  if (hours < 48) return `${Math.max(1, Math.round(hours))} hours`;
+  return `${Math.round(hours / 24)} days`;
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-4">

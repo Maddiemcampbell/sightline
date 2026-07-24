@@ -7,6 +7,7 @@ import {
   CircleUserRound,
   Clock3,
   ShieldAlert,
+  Lightbulb,
 } from "lucide-react";
 
 import { ActionControls } from "@/features/actions/action-controls";
@@ -19,6 +20,7 @@ import type {
 } from "@/features/dashboard/types";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import { Card } from "@/components/ui/card";
+import type { PortfolioObservation } from "@/features/portfolio-intelligence/types";
 
 export function Dashboard({ view }: { view: DashboardView }) {
   const date = new Intl.DateTimeFormat("en-US", {
@@ -74,6 +76,30 @@ export function Dashboard({ view }: { view: DashboardView }) {
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </header>
+
+      <Section
+        title="Portfolio observations"
+        description="Deterministic patterns across projects, risks, documents, vendors, and actions. No model-generated guesses."
+        className="mt-9"
+      >
+        {view.observations.length ? (
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            {view.observations.slice(0, 4).map((observation) => (
+              <ObservationCard
+                key={observation.key}
+                observation={observation}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="mt-4">
+            <p className="text-muted text-sm">
+              No cross-project pattern currently meets Sightline’s deterministic
+              observation thresholds.
+            </p>
+          </Card>
+        )}
+      </Section>
 
       <Section
         title="Overnight summary"
@@ -182,6 +208,85 @@ export function Dashboard({ view }: { view: DashboardView }) {
         <ValueDelivered value={view.value} />
       </Section>
     </div>
+  );
+}
+
+function ObservationCard({
+  observation,
+}: {
+  observation: PortfolioObservation;
+}) {
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-3">
+          <span className="bg-soft-green text-deep-green grid size-9 shrink-0 place-items-center rounded-full">
+            <Lightbulb className="size-4" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-muted text-xs font-semibold uppercase">
+              Deterministic observation
+            </p>
+            <h3 className="mt-1 leading-6 font-semibold">
+              {observation.title}
+            </h3>
+          </div>
+        </div>
+        <span className="bg-background shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold">
+          {observation.confidence}% confidence
+        </span>
+      </div>
+      <p className="text-muted mt-4 text-sm leading-6">{observation.summary}</p>
+      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-muted text-xs font-semibold uppercase">
+            Affected projects
+          </dt>
+          <dd className="mt-1">
+            {observation.affectedProjects.map((project, index) => (
+              <span key={project.id}>
+                {index > 0 ? ", " : ""}
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="text-deep-green font-semibold"
+                >
+                  {project.name}
+                </Link>
+              </span>
+            ))}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted text-xs font-semibold uppercase">
+            Business impact
+          </dt>
+          <dd className="mt-1 font-semibold">
+            {observation.businessImpactEstimateCents === null
+              ? "Not estimated"
+              : `${formatMoney(observation.businessImpactEstimateCents)} current exposure`}
+          </dd>
+        </div>
+      </dl>
+      <details className="border-border mt-4 border-t pt-4">
+        <summary className="text-deep-green cursor-pointer text-sm font-semibold">
+          Review supporting evidence
+        </summary>
+        <ul className="text-muted mt-3 space-y-2 text-sm">
+          {observation.supportingEvidence.map((item) => (
+            <li key={`${item.entityType}:${item.entityId}`}>
+              <strong className="text-ink">{item.label}:</strong> {item.value}
+            </li>
+          ))}
+        </ul>
+        <p className="text-muted mt-3 text-xs">
+          {observation.businessImpactExplanation}
+        </p>
+      </details>
+      <div className="bg-background mt-4 rounded-md p-3 text-sm">
+        <strong>Recommended next step:</strong>{" "}
+        {observation.recommendedNextStep}
+      </div>
+    </Card>
   );
 }
 
