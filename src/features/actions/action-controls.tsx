@@ -12,10 +12,12 @@ export function ActionControls({
   initialAction,
   owners,
   compact = false,
+  transport = "server",
 }: {
   initialAction: ActionView;
   owners: readonly ActionOwner[];
   compact?: boolean;
+  transport?: "server" | "api";
 }) {
   const [action, setAction] = useState(initialAction);
   const [persistedPriority, setPersistedPriority] = useState(
@@ -37,7 +39,10 @@ export function ActionControls({
     setError(null);
     startTransition(async () => {
       try {
-        const row = await mutateRecommendedAction(input);
+        const row =
+          transport === "api"
+            ? await mutateRecommendedActionOverApi(input)
+            : await mutateRecommendedAction(input);
         setAction((current) => ({
           ...current,
           status: row.status,
@@ -273,4 +278,19 @@ export function ActionControls({
       )}
     </div>
   );
+}
+
+async function mutateRecommendedActionOverApi(
+  input: Parameters<typeof mutateRecommendedAction>[0],
+) {
+  const response = await fetch("/api/actions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json()) as
+    Awaited<ReturnType<typeof mutateRecommendedAction>> | { error: string };
+  if (!response.ok)
+    throw new Error("error" in body ? body.error : "Action update failed.");
+  return body as Awaited<ReturnType<typeof mutateRecommendedAction>>;
 }

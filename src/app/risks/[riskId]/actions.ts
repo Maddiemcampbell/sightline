@@ -72,20 +72,36 @@ export async function updateRiskDetailAction(
 
 export async function resolveRiskAction(input: unknown) {
   const parsed = resolveRiskSchema.parse(input);
-  return runServerMutation(resolveRiskSchema, parsed, (context, value) =>
-    new ResolutionTrackingService(createAdminSupabaseClient()).resolve(
-      context,
-      value,
-    ),
+  const resolution = await runServerMutation(
+    resolveRiskSchema,
+    parsed,
+    (context, value) =>
+      new ResolutionTrackingService(createAdminSupabaseClient()).resolve(
+        context,
+        value,
+      ),
   );
+  revalidateRiskViews(parsed.riskId);
+  return resolution;
 }
 
 export async function reopenRiskAction(input: unknown) {
   const parsed = reopenRiskSchema.parse(input);
-  return runServerMutation(reopenRiskSchema, parsed, (context, value) =>
-    new ResolutionTrackingService(createAdminSupabaseClient()).reopen(
-      context,
-      value,
-    ),
+  const risk = await runServerMutation(
+    reopenRiskSchema,
+    parsed,
+    (context, value) =>
+      new ResolutionTrackingService(createAdminSupabaseClient()).reopen(
+        context,
+        value,
+      ),
   );
+  revalidateRiskViews(parsed.riskId);
+  return risk;
+}
+
+function revalidateRiskViews(riskId: string) {
+  revalidatePath("/brief");
+  revalidatePath("/risks");
+  revalidatePath(`/risks/${riskId}`);
 }

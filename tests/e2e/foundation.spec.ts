@@ -135,6 +135,8 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
 test("records a guided resolution and reopens it with a reason", async ({
   page,
 }) => {
+  test.slow();
+
   await page.goto("/brief");
   await page
     .getByRole("article")
@@ -157,18 +159,28 @@ test("records a guided resolution and reopens it with a reason", async ({
   if (await accept.isVisible()) {
     await accept.click();
     await expect(page.getByText("accepted", { exact: true })).toBeVisible();
+    await expect(
+      page.locator('[data-action-id][data-pending="false"]').filter({
+        hasText: "accepted",
+      }),
+    ).toBeVisible();
   }
-  await page.reload();
-  const owner = page.getByLabel("Owner", { exact: true });
+  const owner = page
+    .getByRole("region", { name: "Risk actions" })
+    .getByRole("combobox", { name: "Owner" });
   await owner.selectOption("11000000-0000-4000-8000-000000000002");
-  await expect(page.getByRole("region", { name: "Risk actions" })).toHaveAttribute(
+  await expect(
+    page.getByRole("region", { name: "Risk actions" }),
+  ).toHaveAttribute(
     "data-persisted-owner-id",
     "11000000-0000-4000-8000-000000000002",
   );
   await page.reload();
-  await expect(page.getByLabel("Owner", { exact: true })).toHaveValue(
-    "11000000-0000-4000-8000-000000000002",
-  );
+  await expect(
+    page
+      .getByRole("region", { name: "Risk actions" })
+      .getByRole("combobox", { name: "Owner" }),
+  ).toHaveValue("11000000-0000-4000-8000-000000000002");
   await page
     .getByRole("link", { name: "Draft email", exact: true })
     .first()
@@ -190,6 +202,7 @@ test("records a guided resolution and reopens it with a reason", async ({
   await dialog.getByRole("button", { name: "Resolve risk" }).click();
   await expect(dialog).toBeHidden();
   await page.reload();
+  await page.getByRole("link", { name: "Resolution state" }).click();
   await expect(
     page.getByText("Resolution summary", { exact: true }),
   ).toBeVisible();
@@ -368,4 +381,49 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Download file" })).toHaveCount(
     0,
   );
+});
+
+test("follows an executive priority and updates an overdue action", async ({
+  page,
+}) => {
+  test.slow();
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Good morning, Matt." }),
+  ).toBeVisible();
+  const priorities = page.getByRole("region", { name: "Today’s priorities" });
+  await priorities
+    .getByRole("link", { name: /Open response|Review risk/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+/);
+
+  await page.goto("/");
+  const overdue = page.getByRole("region", { name: "Overdue actions" });
+  const actionLink = overdue.getByRole("link").first();
+  const actionTitle = await actionLink.textContent();
+  await actionLink.click();
+  await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+/);
+
+  await page.goto("/");
+  const overdueAction = page
+    .getByRole("region", { name: "Overdue actions" })
+    .getByText(actionTitle ?? "", { exact: true })
+    .locator("..");
+  await overdueAction
+    .getByLabel(`Due date for ${actionTitle ?? ""}`)
+    .fill("2026-07-26");
+  await expect(overdueAction.locator("[data-action-id]")).toHaveAttribute(
+    "data-pending",
+    "false",
+    { timeout: 20_000 },
+  );
+
+  await page.reload();
+  await expect(
+    page
+      .getByRole("region", { name: "Overdue actions" })
+      .getByText(actionTitle ?? "", { exact: true }),
+  ).toHaveCount(0);
 });
