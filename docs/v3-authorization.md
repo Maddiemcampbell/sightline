@@ -28,6 +28,8 @@ decision and named, discoverable functions:
 - `canManageMembers()`
 - `canManageOrganization()`
 - `canViewFinancialExposure()`
+- `canViewAuditLogs()`
+- `canAccessInternalAdmin()`
 
 Resource-aware checks also compare the resource's `organization_id` with the
 verified subject. `assertAuthorized()` converts denied decisions into the same

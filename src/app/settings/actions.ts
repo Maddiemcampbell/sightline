@@ -6,6 +6,7 @@ import { sendTestMorningBrief } from "@/features/email/delivery-service";
 import { emailPreferencesSchema } from "@/features/email/preferences";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { recordAuditEvent } from "@/features/audit/service";
 
 export async function updateEmailPreferencesAction(input: {
   enabled: boolean;
@@ -33,6 +34,22 @@ export async function updateEmailPreferencesAction(input: {
     .eq("organization_id", context.organizationId)
     .eq("id", user.id);
   if (updateError) throw new Error(updateError.message);
+  await recordAuditEvent({
+    organizationId: context.organizationId,
+    actorAuthUserId: context.authUserId,
+    actorUserId: context.userId,
+    action: "settings.updated",
+    resourceType: "email_preferences",
+    resourceId: context.userId,
+    metadata: {
+      changedFields: [
+        "emailDeliveryEnabled",
+        "preferredDeliveryTime",
+        "deliveryTimezone",
+      ],
+      emailDeliveryEnabled: value.enabled,
+    },
+  });
   revalidatePath("/settings");
 }
 

@@ -101,6 +101,11 @@ prevents a same-UUID or service-role write from linking records across tenants.
 - `UPDATE`: explicitly denied with a false policy and no grant.
 - `DELETE`: explicitly denied with a false policy and no grant.
 
+Authentication events created before organization membership may have a null
+organization and are insertable only by the server audit service. They are not
+visible through organization-scoped RLS. A database trigger additionally
+rejects every audit UPDATE and DELETE, including privileged application calls.
+
 The table indexes organization/time and organization/resource for bounded audit
 review. It is separate from user-facing `risk_activities`.
 

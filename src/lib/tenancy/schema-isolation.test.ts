@@ -24,6 +24,13 @@ const documentSecurityMigration = readFileSync(
   ),
   "utf8",
 );
+const auditMigration = readFileSync(
+  join(
+    process.cwd(),
+    "supabase/migrations/20260724040000_v3_audit_logging.sql",
+  ),
+  "utf8",
+);
 
 const tenantTables = [
   "users",
@@ -79,6 +86,12 @@ describe("tenant RLS schema coverage", () => {
     expect(isolationMigration).toContain("audit_logs_member_insert");
     expect(isolationMigration).toContain("audit_logs_no_update");
     expect(isolationMigration).toContain("audit_logs_no_delete");
+    expect(auditMigration).toContain("audit_logs_reject_update_delete");
+    expect(auditMigration).toContain(
+      "revoke update, delete, truncate on public.audit_logs",
+    );
+    expect(auditMigration).toContain("add column ip_address inet");
+    expect(auditMigration).toContain("add column correlation_id uuid not null");
   });
 
   it("binds document object paths to the row organization", () => {

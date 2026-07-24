@@ -12,6 +12,7 @@ import {
   createAdminSupabaseClient,
   createServerSupabaseClient,
 } from "@/lib/supabase/server";
+import { recordAuditEvent } from "@/features/audit/service";
 
 type Context = { params: Promise<{ documentId: string }> };
 
@@ -56,6 +57,15 @@ export async function GET(_request: Request, { params }: Context) {
   // Missing objects and signing failures intentionally look the same as
   // missing, archived, and cross-tenant document records.
   if (signedUrlError || !data?.signedUrl) return fileNotFound();
+  await recordAuditEvent({
+    organizationId: context.organizationId,
+    actorAuthUserId: context.authUserId,
+    actorUserId: context.userId,
+    action: "document.downloaded",
+    resourceType: "document",
+    resourceId: document.id,
+    metadata: {},
+  });
 
   const response = NextResponse.redirect(data.signedUrl);
   response.headers.set("Cache-Control", "private, no-store");

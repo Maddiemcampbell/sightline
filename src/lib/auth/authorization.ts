@@ -12,7 +12,9 @@ export type Permission =
   | "document:upload"
   | "members:manage"
   | "organization:manage"
-  | "financial_exposure:view";
+  | "financial_exposure:view"
+  | "audit:view"
+  | "internal_admin:access";
 
 export type AuthorizationSubject =
   | Readonly<{
@@ -30,6 +32,7 @@ export type OrganizationResource = Readonly<{
 
 export type ActorContext = AuthorizationSubject &
   Readonly<{
+    authUserId: string;
     userId: string;
     role: "executive" | "operations" | "project_manager" | "admin";
   }>;
@@ -46,6 +49,8 @@ const OWNER_PERMISSIONS = {
   "members:manage": true,
   "organization:manage": true,
   "financial_exposure:view": true,
+  "audit:view": true,
+  "internal_admin:access": true,
 } as const satisfies Record<Permission, boolean>;
 
 // Future roles are deliberately deny-by-default. Enabling a role is one policy
@@ -72,6 +77,8 @@ function denyAllPermissions(): Record<Permission, boolean> {
     "members:manage": false,
     "organization:manage": false,
     "financial_exposure:view": false,
+    "audit:view": false,
+    "internal_admin:access": false,
   };
 }
 
@@ -170,6 +177,18 @@ export function canViewFinancialExposure(
   resource?: OrganizationResource | null,
 ): boolean {
   return can(subject, "financial_exposure:view", resource);
+}
+
+export function canViewAuditLogs(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "audit:view");
+}
+
+export function canAccessInternalAdmin(
+  subject: AuthorizationSubject | null,
+): boolean {
+  return can(subject, "internal_admin:access");
 }
 
 export function assertAuthorized(

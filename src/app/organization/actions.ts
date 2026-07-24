@@ -18,6 +18,11 @@ import {
   requireCurrentMembership,
 } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import {
+  auditIdentifier,
+  recordAuditEvent,
+  recordAuditEvents,
+} from "@/features/audit/service";
 
 export type OrganizationActionState = Readonly<{
   error?: boolean;
@@ -93,6 +98,40 @@ export async function createOrganizationAction(
       slug: formData.get("slug"),
     });
     const organizationId = await service().createOrganization(principal, input);
+    const createdMembership = await new OrganizationRepository(
+      createAdminSupabaseClient(),
+    ).findMembership(principal.id, organizationId);
+    if (!createdMembership)
+      throw new Error("Created organization membership could not be loaded.");
+    await recordAuditEvents([
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: createdMembership.applicationUserId,
+        action: "organization.created",
+        resourceType: "organization",
+        resourceId: organizationId,
+        metadata: { slug: input.slug },
+      },
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: createdMembership.applicationUserId,
+        action: "membership.created",
+        resourceType: "organization_membership",
+        resourceId: createdMembership.id,
+        metadata: { role: createdMembership.role },
+      },
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: createdMembership.applicationUserId,
+        action: "authorization.permission_changed",
+        resourceType: "organization_membership",
+        resourceId: createdMembership.id,
+        metadata: { fromRole: null, toRole: createdMembership.role },
+      },
+    ]);
     await setActiveOrganization(organizationId);
   } catch (error) {
     return errorState(error);
@@ -110,6 +149,15 @@ export async function switchOrganizationAction(
   ).findMembership(principal.id, organizationId);
   if (!membership) throw new Error("Organization access denied.");
   await setActiveOrganization(organizationId);
+  await recordAuditEvent({
+    organizationId,
+    actorAuthUserId: principal.id,
+    actorUserId: membership.applicationUserId,
+    action: "settings.updated",
+    resourceType: "active_organization",
+    resourceId: organizationId,
+    metadata: { setting: "activeOrganization" },
+  });
   revalidatePath("/", "layout");
   redirect("/");
 }
@@ -130,6 +178,15 @@ export async function updateOrganizationAction(
       membership.organizationId,
       input,
     );
+    await recordAuditEvent({
+      organizationId: membership.organizationId,
+      actorAuthUserId: principal.id,
+      actorUserId: membership.applicationUserId,
+      action: "organization.updated",
+      resourceType: "organization",
+      resourceId: membership.organizationId,
+      metadata: { changedFields: ["name", "slug"] },
+    });
     revalidatePath("/", "layout");
     return { message: "Organization profile updated." };
   } catch (error) {
@@ -152,6 +209,14 @@ export async function createInvitationAction(
       membership.organizationId,
       input,
     );
+    await recordAuditEvent({
+      organizationId: membership.organizationId,
+      actorAuthUserId: principal.id,
+      actorUserId: membership.applicationUserId,
+      action: "invitation.created",
+      resourceType: "invitation",
+      metadata: { inviteeIdentifierHash: auditIdentifier(input.email) },
+    });
     const origin = process.env.APP_URL ?? "http://localhost:3000";
     revalidatePath("/organization/settings");
     return {
@@ -171,6 +236,39 @@ export async function acceptInvitationAction(
   try {
     const principal = await requireAuthenticatedUser();
     const organizationId = await service().acceptInvitation(principal, token);
+    const membership = await new OrganizationRepository(
+      createAdminSupabaseClient(),
+    ).findMembership(principal.id, organizationId);
+    if (!membership)
+      throw new Error("Accepted organization membership could not be loaded.");
+    await recordAuditEvents([
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: membership.applicationUserId,
+        action: "invitation.accepted",
+        resourceType: "invitation",
+        metadata: {},
+      },
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: membership.applicationUserId,
+        action: "membership.created",
+        resourceType: "organization_membership",
+        resourceId: membership.id,
+        metadata: { role: membership.role },
+      },
+      {
+        organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: membership.applicationUserId,
+        action: "authorization.permission_changed",
+        resourceType: "organization_membership",
+        resourceId: membership.id,
+        metadata: { fromRole: null, toRole: membership.role },
+      },
+    ]);
     await setActiveOrganization(organizationId);
   } catch (error) {
     return errorState(error);
@@ -187,9 +285,31 @@ export async function leaveOrganizationAction(
     const principal = await requireAuthenticatedUser();
     const membership = await requireCurrentMembership();
     await service().leaveOrganization(principal, membership.organizationId);
-    const remainingMembership = (await new OrganizationRepository(
-      createAdminSupabaseClient(),
-    ).listMemberships(principal.id))[0];
+    await recordAuditEvents([
+      {
+        organizationId: membership.organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: membership.applicationUserId,
+        action: "membership.deleted",
+        resourceType: "organization_membership",
+        resourceId: membership.id,
+        metadata: { previousRole: membership.role },
+      },
+      {
+        organizationId: membership.organizationId,
+        actorAuthUserId: principal.id,
+        actorUserId: membership.applicationUserId,
+        action: "authorization.permission_changed",
+        resourceType: "organization_membership",
+        resourceId: membership.id,
+        metadata: { fromRole: membership.role, toRole: null },
+      },
+    ]);
+    const remainingMembership = (
+      await new OrganizationRepository(
+        createAdminSupabaseClient(),
+      ).listMemberships(principal.id)
+    )[0];
     if (remainingMembership) {
       await setActiveOrganization(remainingMembership.organizationId);
       destination = "/";

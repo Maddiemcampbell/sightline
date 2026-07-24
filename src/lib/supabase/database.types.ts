@@ -93,12 +93,14 @@ export type InvitationRow = {
 export type AuditLogRow = {
   actor_auth_user_id: string | null;
   actor_user_id: string | null;
+  correlation_id: string;
   created_at: string;
   event_type: string;
   id: string;
+  ip_address: string | null;
   metadata: Json;
   occurred_at: string;
-  organization_id: string;
+  organization_id: string | null;
   outcome: "success" | "denied" | "failed";
   resource_id: string | null;
   resource_type: string;

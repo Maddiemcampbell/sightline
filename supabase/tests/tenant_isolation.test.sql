@@ -212,6 +212,24 @@ begin
 end;
 $$;
 
+reset role;
+set local role service_role;
+
+do $$
+begin
+  begin
+    update public.audit_logs set outcome = 'failed';
+    raise exception 'service-role audit UPDATE unexpectedly succeeded';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    delete from public.audit_logs;
+    raise exception 'service-role audit DELETE unexpectedly succeeded';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
+
 select pass('tenant data, storage, and audit isolation policies hold');
 select * from finish();
 

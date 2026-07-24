@@ -15,6 +15,8 @@ import {
   canViewFinancialExposure,
   canViewProject,
   canViewRisk,
+  canViewAuditLogs,
+  canAccessInternalAdmin,
   type AuthorizationSubject,
   type OrganizationRole,
   type Permission,
@@ -37,6 +39,8 @@ const permissions: readonly Permission[] = [
   "members:manage",
   "organization:manage",
   "financial_exposure:view",
+  "audit:view",
+  "internal_admin:access",
 ];
 
 describe("central authorization service", () => {
@@ -52,6 +56,8 @@ describe("central authorization service", () => {
     expect(canManageMembers(owner)).toBe(true);
     expect(canManageOrganization(owner)).toBe(true);
     expect(canViewFinancialExposure(owner)).toBe(true);
+    expect(canViewAuditLogs(owner)).toBe(true);
+    expect(canAccessInternalAdmin(owner)).toBe(true);
   });
 
   it("denies missing memberships and cross-organization resources", () => {

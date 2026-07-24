@@ -20,6 +20,7 @@ export async function requireActorContext(): Promise<ActorContext> {
     );
   }
   return {
+    authUserId: membership.authUserId,
     organizationId: data.organization_id,
     organizationRole: membership.role,
     userId: data.id,

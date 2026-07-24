@@ -5,6 +5,11 @@ import { z } from "zod";
 
 import { safeRedirectPath } from "@/lib/auth/redirects";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  auditIdentifier,
+  recordAuditEvent,
+  recordPrincipalAuditEvent,
+} from "@/features/audit/service";
 
 export type AuthActionState = Readonly<{
   message?: string;
@@ -25,9 +30,7 @@ function siteUrl(): string {
   return process.env.APP_URL ?? "http://localhost:3000";
 }
 
-function validationState(
-  error: z.ZodError,
-): AuthActionState {
+function validationState(error: z.ZodError): AuthActionState {
   return { fieldErrors: error.flatten().fieldErrors };
 }
 
@@ -36,7 +39,10 @@ export async function login(
   formData: FormData,
 ): Promise<AuthActionState> {
   const parsed = z
-    .object({ email: emailSchema, password: z.string().min(1, "Enter your password.") })
+    .object({
+      email: emailSchema,
+      password: z.string().min(1, "Enter your password."),
+    })
     .safeParse({
       email: formData.get("email"),
       password: formData.get("password"),
@@ -44,8 +50,25 @@ export async function login(
   if (!parsed.success) return validationState(parsed.error);
 
   const client = await createServerSupabaseClient();
-  const { error } = await client.auth.signInWithPassword(parsed.data);
-  if (error) return { message: "Email or password is incorrect." };
+  const { data, error } = await client.auth.signInWithPassword(parsed.data);
+  if (error) {
+    await recordAuditEvent({
+      organizationId: null,
+      actorAuthUserId: null,
+      actorUserId: null,
+      action: "auth.login",
+      resourceType: "session",
+      outcome: "failed",
+      metadata: { identifierHash: auditIdentifier(parsed.data.email) },
+    });
+    return { message: "Email or password is incorrect." };
+  }
+  await recordPrincipalAuditEvent({
+    actorAuthUserId: data.user.id,
+    action: "auth.login",
+    resourceType: "session",
+    metadata: { authenticationMethod: "password" },
+  });
 
   redirect(safeRedirectPath(formData.get("next")?.toString()));
 }
@@ -81,7 +104,15 @@ export async function signup(
   });
   if (error) return { message: error.message };
 
-  if (data.session) redirect("/");
+  if (data.session && data.user) {
+    await recordPrincipalAuditEvent({
+      actorAuthUserId: data.user.id,
+      action: "auth.login",
+      resourceType: "session",
+      metadata: { authenticationMethod: "password_signup" },
+    });
+    redirect("/");
+  }
   redirect(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
 }
 
@@ -91,7 +122,9 @@ export async function requestPasswordReset(
 ): Promise<AuthActionState> {
   const parsed = emailSchema.safeParse(formData.get("email"));
   if (!parsed.success) {
-    return { fieldErrors: { email: parsed.error.issues.map((issue) => issue.message) } };
+    return {
+      fieldErrors: { email: parsed.error.issues.map((issue) => issue.message) },
+    };
   }
 
   const client = await createServerSupabaseClient();
@@ -99,6 +132,14 @@ export async function requestPasswordReset(
     redirectTo: `${siteUrl()}/auth/callback?next=/reset-password`,
   });
   if (error) return { message: "We could not send a reset email. Try again." };
+  await recordAuditEvent({
+    organizationId: null,
+    actorAuthUserId: null,
+    actorUserId: null,
+    action: "auth.password_reset_requested",
+    resourceType: "account",
+    metadata: { identifierHash: auditIdentifier(parsed.data) },
+  });
 
   return {
     message:
@@ -126,7 +167,7 @@ export async function updatePassword(
   if (!parsed.success) return validationState(parsed.error);
 
   const client = await createServerSupabaseClient();
-  const { error } = await client.auth.updateUser({
+  const { data, error } = await client.auth.updateUser({
     password: parsed.data.password,
   });
   if (error) {
@@ -135,12 +176,25 @@ export async function updatePassword(
         "This reset link is invalid or expired. Request a new password reset.",
     };
   }
+  await recordPrincipalAuditEvent({
+    actorAuthUserId: data.user.id,
+    action: "auth.password_reset_completed",
+    resourceType: "account",
+  });
 
   redirect("/login?reset=success");
 }
 
 export async function logout(): Promise<void> {
   const client = await createServerSupabaseClient();
+  const { data } = await client.auth.getUser();
+  if (data.user) {
+    await recordPrincipalAuditEvent({
+      actorAuthUserId: data.user.id,
+      action: "auth.logout",
+      resourceType: "session",
+    });
+  }
   await client.auth.signOut();
   redirect("/login");
 }

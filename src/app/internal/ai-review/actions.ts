@@ -11,6 +11,7 @@ import {
 } from "@/features/ai/review-service";
 import { assertSameOrganization } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { recordAuditEvent } from "@/features/audit/service";
 
 function requireDevelopment() {
   if (process.env.NODE_ENV === "production")
@@ -29,6 +30,14 @@ export async function analyzeFixtureAction(formData: FormData) {
     input: fixture.input,
     deterministicFallback: fixture.deterministicFallback,
   });
+  await recordAuditEvent({
+    organizationId: context.organizationId,
+    actorAuthUserId: context.authUserId,
+    actorUserId: context.userId,
+    action: "ai.review_updated",
+    resourceType: "ai_analysis_fixture",
+    metadata: { operation: "analyzed", fixtureId: fixture.id },
+  });
   revalidatePath("/internal/ai-review");
 }
 
@@ -41,6 +50,15 @@ export async function approveSuggestionAction(formData: FormData) {
     suggestionId,
     reviewerUserId: context.userId,
     reviewNote: String(formData.get("reviewNote") ?? ""),
+  });
+  await recordAuditEvent({
+    organizationId: context.organizationId,
+    actorAuthUserId: context.authUserId,
+    actorUserId: context.userId,
+    action: "ai.review_updated",
+    resourceType: "ai_risk_suggestion",
+    resourceId: suggestionId,
+    metadata: { operation: "approved" },
   });
   revalidatePath("/internal/ai-review");
   revalidatePath("/risks");
@@ -55,6 +73,15 @@ export async function rejectSuggestionAction(formData: FormData) {
     suggestionId,
     reviewerUserId: context.userId,
     reason: String(formData.get("reviewNote") ?? ""),
+  });
+  await recordAuditEvent({
+    organizationId: context.organizationId,
+    actorAuthUserId: context.authUserId,
+    actorUserId: context.userId,
+    action: "ai.review_updated",
+    resourceType: "ai_risk_suggestion",
+    resourceId: suggestionId,
+    metadata: { operation: "rejected" },
   });
   revalidatePath("/internal/ai-review");
 }
