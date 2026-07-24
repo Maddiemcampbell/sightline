@@ -35,7 +35,7 @@ async function portfolioRows(organizationId: string) {
 export async function getProjects(filters: ProjectFilters) {
   const context = await requireActorContext();
   assertAuthorized(canViewProject(context));
-  assertAuthorized(canViewFinancialExposure(context));
+  const canSeeFinancials = canViewFinancialExposure(context);
   const { organizationId } = context;
   const { projects, risks } = await portfolioRows(organizationId);
   const search = filters.q.toLowerCase();
@@ -52,13 +52,19 @@ export async function getProjects(filters: ProjectFilters) {
         number: project.project_number,
         location: [project.city, project.state_code].filter(Boolean).join(", "),
         stage: project.status,
-        projectedMarginCents: project.projected_margin_cents,
-        contractValueCents: project.contract_value_cents,
+        projectedMarginCents: canSeeFinancials
+          ? project.projected_margin_cents
+          : 0,
+        contractValueCents: canSeeFinancials
+          ? project.contract_value_cents
+          : null,
         openRiskCount: projectRisks.length,
-        exposureCents: projectRisks.reduce(
-          (sum, risk) => sum + risk.potential_exposure_cents,
-          0,
-        ),
+        exposureCents: canSeeFinancials
+          ? projectRisks.reduce(
+              (sum, risk) => sum + risk.potential_exposure_cents,
+              0,
+            )
+          : 0,
         recentActivity: projectRisks.reduce(
           (latest, risk) => Math.max(latest, Date.parse(risk.updated_at)),
           Date.parse(project.updated_at),
@@ -87,7 +93,7 @@ export async function getProjects(filters: ProjectFilters) {
 export async function getRisks(filters: RiskFilters) {
   const context = await requireActorContext();
   assertAuthorized(canViewRisk(context));
-  assertAuthorized(canViewFinancialExposure(context));
+  const canSeeFinancials = canViewFinancialExposure(context);
   const { organizationId } = context;
   const { projects, risks } = await portfolioRows(organizationId);
   const projectById = new Map(projects.map((project) => [project.id, project]));
@@ -96,6 +102,12 @@ export async function getRisks(filters: RiskFilters) {
   return risks
     .map((risk) => ({
       ...risk,
+      potential_exposure_cents: canSeeFinancials
+        ? risk.potential_exposure_cents
+        : 0,
+      estimated_margin_impact_cents: canSeeFinancials
+        ? risk.estimated_margin_impact_cents
+        : 0,
       project: risk.project_id
         ? (projectById.get(risk.project_id) ?? null)
         : null,

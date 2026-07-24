@@ -8,6 +8,7 @@ import { AskSightlineService } from "@/features/ask-sightline/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { assertAuthorized, canUseAi } from "@/lib/auth/authorization";
+import { requireRiskProjectAccess } from "@/lib/auth/project-access";
 
 export async function askSightlineAction(input: unknown) {
   const parsed = askRiskQuestionSchema.parse(input);
@@ -15,6 +16,7 @@ export async function askSightlineAction(input: unknown) {
     askRiskQuestionSchema,
     parsed,
     async (context, value) => {
+      await requireRiskProjectAccess(context, value.riskId);
       assertAuthorized(canUseAi(context));
       return new AskSightlineService(await createServerSupabaseClient()).ask(
         context,

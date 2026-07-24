@@ -201,9 +201,28 @@ export type Database = {
         created_at: string;
         created_by_membership_id: string | null;
         id: string;
+        last_active_at: string | null;
         organization_id: string;
         organization_membership_id: string;
         project_id: string;
+        role: "owner" | "manager" | "contributor" | "viewer";
+        updated_at: string;
+      }>;
+      project_invitations: Table<{
+        accepted_at: string | null;
+        accepted_by_membership_id: string | null;
+        created_at: string;
+        email: string;
+        expires_at: string;
+        id: string;
+        invited_by_membership_id: string;
+        last_sent_at: string;
+        organization_id: string;
+        project_id: string;
+        revoked_at: string | null;
+        role: "owner" | "manager" | "contributor" | "viewer";
+        send_count: number;
+        token_hash: string;
       }>;
       team_activity_events: Table<{
         actor_membership_id: string | null;

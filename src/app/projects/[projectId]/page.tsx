@@ -6,17 +6,38 @@ import { formatMoney } from "@/features/daily-brief/formatters";
 import { getProjectDetail } from "@/features/portfolio/data";
 import { getActivityPage } from "@/features/activity/data";
 import { ActivityTimeline } from "@/features/activity/timeline";
+import { ProjectAccessRepository } from "@/features/project-access/repository";
+import { ProjectPermissions } from "@/features/project-access/project-permissions";
+import {
+  canAssignProject,
+  canViewProject,
+  canViewFinancialExposure,
+} from "@/lib/auth/authorization";
+import { requireActorContext } from "@/lib/auth/request-context";
+import { getProjectResource } from "@/lib/auth/project-access";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ projectId: string }> };
 
 export default async function ProjectPage({ params }: Props) {
   const { projectId } = await params;
+  const context = await requireActorContext();
+  const resource = await getProjectResource(context, projectId);
+  if (!resource || !canViewProject(context, resource)) notFound();
   const detail = await getProjectDetail(projectId);
   if (!detail) notFound();
-  const activityPage = await getActivityPage({ projectId, limit: 8 });
+  const repository = new ProjectAccessRepository(createAdminSupabaseClient());
+  const [activityPage, projectMembers, eligibleMembers, invitations] =
+    await Promise.all([
+      getActivityPage({ projectId, limit: 8 }),
+      repository.listProjectMembers(context.organizationId, projectId),
+      repository.listEligibleMembers(context.organizationId),
+      repository.listInvitations(context.organizationId, projectId),
+    ]);
   const openRisks = detail.risks.filter(
     (risk) => !["resolved", "dismissed"].includes(risk.status),
   );
+  const canSeeFinancials = canViewFinancialExposure(context);
   const profitAtRisk = openRisks.reduce(
     (sum, risk) => sum + risk.estimated_margin_impact_cents,
     0,
@@ -51,7 +72,7 @@ export default async function ProjectPage({ params }: Props) {
               Estimated project profit at risk
             </p>
             <p className="mt-1 text-3xl font-semibold">
-              {formatMoney(profitAtRisk)}
+              {canSeeFinancials ? formatMoney(profitAtRisk) : "Restricted"}
             </p>
           </div>
         </div>
@@ -63,14 +84,18 @@ export default async function ProjectPage({ params }: Props) {
         <Summary
           label="Contract value"
           value={
-            detail.project.contract_value_cents
+            canSeeFinancials && detail.project.contract_value_cents
               ? formatMoney(detail.project.contract_value_cents)
               : "Not set"
           }
         />
         <Summary
           label="Projected margin"
-          value={formatMoney(detail.project.projected_margin_cents)}
+          value={
+            canSeeFinancials
+              ? formatMoney(detail.project.projected_margin_cents)
+              : "Restricted"
+          }
         />
         <Summary label="Open risks" value={String(openRisks.length)} />
         <Summary label="Vendors" value={String(detail.vendors.length)} />
@@ -91,7 +116,9 @@ export default async function ProjectPage({ params }: Props) {
                     <div className="text-muted mt-2 flex flex-wrap gap-4 text-sm">
                       <span className="capitalize">{risk.severity}</span>
                       <span>
-                        {formatMoney(risk.potential_exposure_cents)} exposure
+                        {canSeeFinancials
+                          ? `${formatMoney(risk.potential_exposure_cents)} exposure`
+                          : "Exposure restricted"}
                       </span>
                       <span>{risk.confidence_score}% confidence</span>
                     </div>
@@ -143,6 +170,15 @@ export default async function ProjectPage({ params }: Props) {
             </Link>
           </Panel>
         </aside>
+      </div>
+      <div className="mt-6">
+        <ProjectPermissions
+          projectId={projectId}
+          canAssign={canAssignProject(context, resource)}
+          members={projectMembers}
+          eligibleMembers={eligibleMembers}
+          invitations={invitations}
+        />
       </div>
     </div>
   );

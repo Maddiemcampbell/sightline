@@ -13,6 +13,8 @@ import {
   createServerSupabaseClient,
 } from "@/lib/supabase/server";
 import { recordAuditEvent } from "@/features/audit/service";
+import { canViewProjectDocuments } from "@/lib/auth/authorization";
+import { requireProjectAccess } from "@/lib/auth/project-access";
 
 type Context = { params: Promise<{ documentId: string }> };
 
@@ -37,7 +39,7 @@ export async function GET(_request: Request, { params }: Context) {
   const client = await createServerSupabaseClient();
   const { data: document, error } = await client
     .from("documents")
-    .select("id,organization_id,storage_path,archived_at")
+    .select("id,organization_id,project_id,storage_path,archived_at")
     .eq("organization_id", context.organizationId)
     .eq("id", parsedId.data)
     .maybeSingle();
@@ -48,6 +50,16 @@ export async function GET(_request: Request, { params }: Context) {
     );
   }
   if (!isDocumentDownloadAllowed(context, document)) return fileNotFound();
+  if (document.project_id) {
+    const access = await requireProjectAccess(context, document.project_id);
+    if (!canViewProjectDocuments(context, access.resource))
+      return fileNotFound();
+  } else if (
+    context.organizationRole !== "owner" &&
+    context.organizationRole !== "administrator"
+  ) {
+    return fileNotFound();
+  }
 
   const { data, error: signedUrlError } = await createAdminSupabaseClient()
     .storage.from(DOCUMENT_BUCKET)

@@ -1,5 +1,6 @@
 export type OrganizationRole =
   "owner" | "administrator" | "manager" | "contributor";
+export type ProjectRole = "owner" | "manager" | "contributor" | "viewer";
 
 export type Permission =
   | "project:view"
@@ -36,6 +37,11 @@ export type AuthorizationSubject =
 export type OrganizationResource = Readonly<{
   organization_id: string;
 }>;
+
+export type ProjectResource = OrganizationResource &
+  Readonly<{
+    projectRole: ProjectRole | null;
+  }>;
 
 export type ActorContext = AuthorizationSubject &
   Readonly<{
@@ -79,6 +85,7 @@ const PERMISSIONS_BY_ROLE: Readonly<
   manager: {
     ...denyAllPermissions(),
     "project:view": true,
+    "project:edit": true,
     "risk:view": true,
     "risk:edit": true,
     "risk:resolve": true,
@@ -153,16 +160,109 @@ export function can(
 
 export function canViewProject(
   subject: AuthorizationSubject | null,
-  resource?: OrganizationResource | null,
+  resource?: OrganizationResource | ProjectResource | null,
 ): boolean {
-  return can(subject, "project:view", resource);
+  return projectScopedCan(subject, "project:view", resource);
 }
 
 export function canEditProject(
   subject: AuthorizationSubject | null,
-  resource?: OrganizationResource | null,
+  resource?: OrganizationResource | ProjectResource | null,
 ): boolean {
-  return can(subject, "project:edit", resource);
+  if (!projectScopedCan(subject, "project:edit", resource)) return false;
+  return (
+    !isProjectResource(resource) ||
+    hasOrganizationWideProjectAccess(subject) ||
+    resource.projectRole === "owner" ||
+    resource.projectRole === "manager"
+  );
+}
+
+export function canAssignProject(
+  subject: AuthorizationSubject | null,
+  resource?: ProjectResource | null,
+): boolean {
+  if (!can(subject, "project_members:manage", resource)) return false;
+  return (
+    !resource ||
+    hasOrganizationWideProjectAccess(subject) ||
+    resource.projectRole === "owner" ||
+    resource.projectRole === "manager"
+  );
+}
+
+export function canViewProjectDocuments(
+  subject: AuthorizationSubject | null,
+  resource?: ProjectResource | null,
+): boolean {
+  return projectScopedCan(subject, "document:view", resource);
+}
+
+export function canUploadProjectDocument(
+  subject: AuthorizationSubject | null,
+  resource?: ProjectResource | null,
+): boolean {
+  return (
+    projectScopedCan(subject, "document:upload", resource) &&
+    (!resource ||
+      hasOrganizationWideProjectAccess(subject) ||
+      resource.projectRole === "owner" ||
+      resource.projectRole === "manager" ||
+      resource.projectRole === "contributor")
+  );
+}
+
+export function canResolveProjectRisks(
+  subject: AuthorizationSubject | null,
+  resource?: ProjectResource | null,
+): boolean {
+  return (
+    projectScopedCan(subject, "risk:resolve", resource) &&
+    (!resource ||
+      hasOrganizationWideProjectAccess(subject) ||
+      resource.projectRole === "owner" ||
+      resource.projectRole === "manager")
+  );
+}
+
+export function canAssignProjectActions(
+  subject: AuthorizationSubject | null,
+  resource?: ProjectResource | null,
+): boolean {
+  return (
+    projectScopedCan(subject, "action:assign", resource) &&
+    (!resource ||
+      hasOrganizationWideProjectAccess(subject) ||
+      resource.projectRole === "owner" ||
+      resource.projectRole === "manager")
+  );
+}
+
+function projectScopedCan(
+  subject: AuthorizationSubject | null,
+  permission: Permission,
+  resource?: OrganizationResource | ProjectResource | null,
+): boolean {
+  if (!can(subject, permission, resource)) return false;
+  if (!isProjectResource(resource)) return true;
+  return (
+    hasOrganizationWideProjectAccess(subject) || resource.projectRole !== null
+  );
+}
+
+function isProjectResource(
+  resource?: OrganizationResource | ProjectResource | null,
+): resource is ProjectResource {
+  return Boolean(resource && "projectRole" in resource);
+}
+
+function hasOrganizationWideProjectAccess(
+  subject: AuthorizationSubject | null,
+): boolean {
+  if (!subject) return false;
+  const role =
+    "organizationRole" in subject ? subject.organizationRole : subject.role;
+  return role === "owner" || role === "administrator";
 }
 
 export function canViewRisk(

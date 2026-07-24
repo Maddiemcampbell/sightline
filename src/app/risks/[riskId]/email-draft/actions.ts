@@ -10,7 +10,15 @@ import {
 import { EmailDraftService } from "@/features/email-drafts/service";
 import { runServerMutation } from "@/lib/server-mutation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { assertAuthorized, canEditRisk } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  canEditRisk,
+  canResolveProjectRisks,
+} from "@/lib/auth/authorization";
+import {
+  requireEmailDraftProjectAccess,
+  requireRiskProjectAccess,
+} from "@/lib/auth/project-access";
 
 export async function generateEmailDraftAction(input: unknown) {
   const raw =
@@ -27,7 +35,11 @@ export async function generateEmailDraftAction(input: unknown) {
     generateEmailDraftSchema,
     parsed,
     async (context, value) => {
-      assertAuthorized(canEditRisk(context));
+      const access = await requireRiskProjectAccess(context, value.riskId);
+      assertAuthorized(
+        canEditRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
       return new EmailDraftService(await createServerSupabaseClient()).generate(
         context,
         value,
@@ -43,7 +55,14 @@ export async function saveEmailDraftAction(input: unknown) {
     saveEmailDraftSchema,
     parsed,
     async (context, value) => {
-      assertAuthorized(canEditRisk(context));
+      const access = await requireEmailDraftProjectAccess(
+        context,
+        value.draftId,
+      );
+      assertAuthorized(
+        canEditRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
       return new EmailDraftService(await createServerSupabaseClient()).save(
         context,
         value.draftId,
@@ -61,7 +80,11 @@ export async function markEmailDraftSentAction(draftId: string) {
     saveEmailDraftSchema.shape.draftId,
     value,
     async (context, id) => {
-      assertAuthorized(canEditRisk(context));
+      const access = await requireEmailDraftProjectAccess(context, id);
+      assertAuthorized(
+        canEditRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
       return new EmailDraftService(await createServerSupabaseClient()).markSent(
         context,
         id,

@@ -12,13 +12,16 @@ import {
   canAssignAction,
   canEditAction,
   canCompleteAction,
+  canAssignProjectActions,
 } from "@/lib/auth/authorization";
+import { requireActionProjectAccess } from "@/lib/auth/project-access";
 
 export async function mutateAction(input: ActionMutationInput) {
   return runServerMutation(
     actionMutationSchema,
     input,
     async (context, value) => {
+      const access = await requireActionProjectAccess(context, value.actionId);
       const service = new RecommendedActionService(
         await createServerSupabaseClient(),
       );
@@ -42,7 +45,10 @@ export async function mutateAction(input: ActionMutationInput) {
         assertAuthorized(data?.owner_user_id === context.userId);
       }
       if (value.operation === "assign") {
-        assertAuthorized(canAssignAction(context));
+        assertAuthorized(
+          canAssignAction(context) &&
+            canAssignProjectActions(context, access.resource),
+        );
       }
       return value.operation === "accept"
         ? service.accept(context, value.actionId)

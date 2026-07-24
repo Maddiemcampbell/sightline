@@ -11,9 +11,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   assertAuthorized,
   canResolveRisk,
-  canViewRisk,
   canComment,
+  canResolveProjectRisks,
 } from "@/lib/auth/authorization";
+import { requireRiskProjectAccess } from "@/lib/auth/project-access";
 
 const mutationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -41,7 +42,10 @@ export async function addRiskCommentAction(
     commentSchema,
     input,
     async (context, parsed) => {
-      assertAuthorized(canComment(context));
+      const access = await requireRiskProjectAccess(context, parsed.riskId);
+      assertAuthorized(
+        canComment(context) && access.resource.projectRole !== "viewer",
+      );
       const service = new RiskManagementService(
         await createServerSupabaseClient(),
       );
@@ -62,7 +66,8 @@ export async function updateRiskDetailAction(
   input: z.input<typeof mutationSchema>,
 ) {
   await runServerMutation(mutationSchema, input, async (context, value) => {
-    assertAuthorized(canViewRisk(context));
+    const access = await requireRiskProjectAccess(context, value.riskId);
+    assertAuthorized(canResolveProjectRisks(context, access.resource));
     const service = new RiskManagementService(
       await createServerSupabaseClient(),
     );
@@ -88,7 +93,11 @@ export async function resolveRiskAction(input: unknown) {
     resolveRiskSchema,
     parsed,
     async (context, value) => {
-      assertAuthorized(canResolveRisk(context));
+      const access = await requireRiskProjectAccess(context, value.riskId);
+      assertAuthorized(
+        canResolveRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
       return new ResolutionTrackingService(
         await createServerSupabaseClient(),
       ).resolve(context, value);
@@ -104,7 +113,11 @@ export async function reopenRiskAction(input: unknown) {
     reopenRiskSchema,
     parsed,
     async (context, value) => {
-      assertAuthorized(canResolveRisk(context));
+      const access = await requireRiskProjectAccess(context, value.riskId);
+      assertAuthorized(
+        canResolveRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
       return new ResolutionTrackingService(
         await createServerSupabaseClient(),
       ).reopen(context, value);

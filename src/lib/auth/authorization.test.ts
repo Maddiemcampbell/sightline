@@ -19,6 +19,11 @@ import {
   canViewRisk,
   canViewAuditLogs,
   canAccessInternalAdmin,
+  canAssignProject,
+  canAssignProjectActions,
+  canResolveProjectRisks,
+  canUploadProjectDocument,
+  canViewProjectDocuments,
   type AuthorizationSubject,
   type OrganizationRole,
   type Permission,
@@ -90,6 +95,7 @@ describe("central authorization service", () => {
       ),
       manager: [
         "project:view",
+        "project:edit",
         "risk:view",
         "risk:edit",
         "risk:resolve",
@@ -120,6 +126,43 @@ describe("central authorization service", () => {
           allowed[organizationRole].includes(permission),
         );
     }
+  });
+
+  it("requires project membership for scoped organization roles", () => {
+    const manager = { ...owner, organizationRole: "manager" as const };
+    const contributor = {
+      ...owner,
+      organizationRole: "contributor" as const,
+    };
+    const unassigned = {
+      organization_id: owner.organizationId,
+      projectRole: null,
+    } as const;
+    const managed = {
+      organization_id: owner.organizationId,
+      projectRole: "manager",
+    } as const;
+    const contributed = {
+      organization_id: owner.organizationId,
+      projectRole: "contributor",
+    } as const;
+    expect(canViewProject(manager, unassigned)).toBe(false);
+    expect(canViewProject(manager, managed)).toBe(true);
+    expect(canAssignProject(manager, managed)).toBe(true);
+    expect(canResolveProjectRisks(manager, managed)).toBe(true);
+    expect(canAssignProjectActions(manager, managed)).toBe(true);
+    expect(canViewProjectDocuments(contributor, contributed)).toBe(true);
+    expect(canUploadProjectDocument(contributor, contributed)).toBe(true);
+    expect(canUploadProjectDocument(contributor, unassigned)).toBe(false);
+  });
+
+  it("gives organization owners automatic project access", () => {
+    const unassigned = {
+      organization_id: owner.organizationId,
+      projectRole: null,
+    } as const;
+    expect(canViewProject(owner, unassigned)).toBe(true);
+    expect(canAssignProject(owner, unassigned)).toBe(true);
   });
 
   it("uses one non-disclosing error for denied permission assertions", () => {

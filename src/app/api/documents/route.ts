@@ -15,8 +15,13 @@ import {
   createServerSupabaseClient,
 } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
-import { assertAuthorized, canUploadDocument } from "@/lib/auth/authorization";
+import {
+  assertAuthorized,
+  canUploadDocument,
+  canUploadProjectDocument,
+} from "@/lib/auth/authorization";
 import { rejectCrossSiteMutation } from "@/lib/security/request";
+import { requireProjectAccess } from "@/lib/auth/project-access";
 
 export async function POST(request: Request) {
   const rejected = rejectCrossSiteMutation(request);
@@ -54,6 +59,18 @@ export async function POST(request: Request) {
     });
     const validatedFile = await validateUploadFile(file);
     await validateDocumentAssociations(metadata.projectId, metadata.vendorId);
+    if (
+      context.organizationRole !== "owner" &&
+      context.organizationRole !== "administrator"
+    ) {
+      if (!metadata.projectId)
+        return NextResponse.json(
+          { error: "Choose an assigned project." },
+          { status: 400 },
+        );
+      const access = await requireProjectAccess(context, metadata.projectId);
+      assertAuthorized(canUploadProjectDocument(context, access.resource));
+    }
 
     const client = await createServerSupabaseClient();
     const storageClient = createAdminSupabaseClient();
