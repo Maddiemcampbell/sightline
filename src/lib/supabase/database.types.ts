@@ -69,6 +69,27 @@ export type DatabaseEnums = {
   user_role: "executive" | "operations" | "project_manager" | "admin";
 };
 
+export type OrganizationMembershipRow = Timestamped & {
+  application_user_id: string;
+  auth_user_id: string;
+  id: string;
+  organization_id: string;
+  role: "owner";
+};
+
+export type InvitationRow = {
+  accepted_at: string | null;
+  accepted_by_auth_user_id: string | null;
+  created_at: string;
+  email: string;
+  expires_at: string;
+  id: string;
+  invited_by_membership_id: string;
+  organization_id: string;
+  revoked_at: string | null;
+  token_hash: string;
+};
+
 type Table<Row> = {
   Row: Row;
   Insert: Partial<Row>;
@@ -82,6 +103,7 @@ type Timestamped = {
 };
 
 type OrganizationRow = Timestamped & {
+  created_by_auth_user_id: string | null;
   id: string;
   name: string;
   slug: string;
@@ -151,6 +173,8 @@ export type Database = {
   public: {
     Tables: {
       organizations: Table<OrganizationRow>;
+      organization_memberships: Table<OrganizationMembershipRow>;
+      invitations: Table<InvitationRow>;
       users: Table<UserRow>;
       projects: Table<ProjectRow>;
       vendors: Table<VendorRow>;
@@ -482,7 +506,34 @@ export type Database = {
       }>;
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      create_organization_for_user: {
+        Args: {
+          organization_name: string;
+          organization_slug: string;
+          principal_auth_user_id: string;
+          principal_email: string;
+          principal_full_name: string;
+        };
+        Returns: string;
+      };
+      accept_organization_invitation: {
+        Args: {
+          invitation_token_hash: string;
+          principal_auth_user_id: string;
+          principal_email: string;
+          principal_full_name: string;
+        };
+        Returns: string;
+      };
+      leave_organization: {
+        Args: {
+          target_membership_id: string;
+          principal_auth_user_id: string;
+        };
+        Returns: undefined;
+      };
+    };
     Enums: DatabaseEnums;
     CompositeTypes: Record<never, never>;
   };

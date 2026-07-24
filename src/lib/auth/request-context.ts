@@ -1,16 +1,17 @@
 import "server-only";
 
 import type { ActorContext } from "@/lib/auth/authorization";
-import { requireAuthenticatedUser } from "@/lib/auth/session";
+import { requireCurrentMembership } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export async function requireActorContext(): Promise<ActorContext> {
-  const principal = await requireAuthenticatedUser();
+  const membership = await requireCurrentMembership();
   const client = createAdminSupabaseClient();
   const { data, error } = await client
     .from("users")
     .select("id,organization_id,role")
-    .eq("auth_user_id", principal.id)
+    .eq("id", membership.applicationUserId)
+    .eq("organization_id", membership.organizationId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) {

@@ -414,11 +414,9 @@ test("follows an executive priority and updates an overdue action", async ({
   await overdueAction
     .getByLabel(`Due date for ${actionTitle ?? ""}`)
     .fill("2026-07-26");
-  await expect(overdueAction.locator("[data-action-id]")).toHaveAttribute(
-    "data-pending",
-    "false",
-    { timeout: 20_000 },
-  );
+  await expect(
+    overdueAction.locator("[data-action-id]"),
+  ).toHaveAttribute("data-pending", "false", { timeout: 20_000 });
 
   await page.reload();
   await expect(

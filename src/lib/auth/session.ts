@@ -1,10 +1,19 @@
 import "server-only";
 
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Session, User } from "@supabase/supabase-js";
 
+import { OrganizationRepository } from "@/features/organizations/repository";
+import type {
+  Organization,
+  OrganizationMembership,
+} from "@/features/organizations/types";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+export const ACTIVE_ORGANIZATION_COOKIE = "sightline-organization";
 
 export type RequestPrincipal = Readonly<{
   id: string;
@@ -58,7 +67,44 @@ export async function requireAuthenticatedUser(
   return user;
 }
 
-export async function getCurrentOrganization(): Promise<null> {
-  // Organization membership and selection intentionally arrive in V3.1 PR 2.
-  return null;
+export const getCurrentMemberships = cache(
+  async (): Promise<OrganizationMembership[]> => {
+    const principal = await getCurrentUser();
+    if (!principal) return [];
+    return new OrganizationRepository(
+      createAdminSupabaseClient(),
+    ).listMemberships(principal.id);
+  },
+);
+
+export const getCurrentMembership = cache(
+  async (): Promise<OrganizationMembership | null> => {
+    const memberships = await getCurrentMemberships();
+    if (!memberships.length) return null;
+    const preferredOrganizationId = (await cookies()).get(
+      ACTIVE_ORGANIZATION_COOKIE,
+    )?.value;
+    return (
+      memberships.find(
+        (membership) =>
+          membership.organizationId === preferredOrganizationId,
+      ) ?? memberships[0]!
+    );
+  },
+);
+
+export const getCurrentOrganization = cache(
+  async (): Promise<Organization | null> =>
+    (await getCurrentMembership())?.organization ?? null,
+);
+
+export async function requireCurrentMembership(): Promise<OrganizationMembership> {
+  await requireAuthenticatedUser();
+  const membership = await getCurrentMembership();
+  if (!membership) redirect("/organizations/new");
+  return membership;
+}
+
+export async function requireCurrentOrganization(): Promise<Organization> {
+  return (await requireCurrentMembership()).organization;
 }

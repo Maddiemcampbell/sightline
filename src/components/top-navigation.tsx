@@ -1,13 +1,15 @@
 import { Bell, HelpCircle, LogOut } from "lucide-react";
 
 import { logout } from "@/app/auth/actions";
+import { getCurrentOrganization } from "@/lib/auth/session";
 
-export function TopNavigation() {
+export async function TopNavigation() {
+  const organization = await getCurrentOrganization();
   return (
     <header className="border-border bg-surface flex h-16 items-center justify-between border-b px-[var(--page-gutter)] lg:h-20">
       <div>
         <p className="text-muted text-xs font-medium tracking-[0.08em] uppercase">
-          BuildCo Construction
+          {organization?.name ?? "Sightline"}
         </p>
         <p className="text-ink mt-0.5 text-sm font-semibold">
           Profit intelligence workspace

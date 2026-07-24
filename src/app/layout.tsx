@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
-import { getCurrentUser } from "@/lib/auth/session";
+import { getCurrentMembership, getCurrentUser } from "@/lib/auth/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -35,6 +35,16 @@ export default async function RootLayout({
   if (!isPublic && !user) {
     const next = encodeURIComponent(pathname);
     redirect(`/login?next=${next}`);
+  }
+  const permitsMembershipOnboarding =
+    pathname === "/organizations/new" || pathname.startsWith("/invitations/");
+  if (
+    !isPublic &&
+    user &&
+    !permitsMembershipOnboarding &&
+    !(await getCurrentMembership())
+  ) {
+    redirect("/organizations/new");
   }
 
   return (
