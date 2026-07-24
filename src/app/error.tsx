@@ -3,6 +3,7 @@
 import { ErrorState } from "@/components/error-state";
 
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -13,6 +14,7 @@ export default function Error({
       <ErrorState
         title="The company overview could not be loaded"
         description="Your data has not been changed. Try loading the dashboard again."
+        {...(error.digest ? { reference: error.digest } : {})}
         action={
           <button
             onClick={reset}

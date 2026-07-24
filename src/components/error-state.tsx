@@ -5,12 +5,14 @@ type ErrorStateProps = Readonly<{
   title?: string;
   description: string;
   action?: ReactNode;
+  reference?: string;
 }>;
 
 export function ErrorState({
   title = "Something went wrong",
   description,
   action,
+  reference,
 }: ErrorStateProps) {
   return (
     <div
@@ -25,6 +27,11 @@ export function ErrorState({
         <div>
           <h2 className="text-danger text-sm font-semibold">{title}</h2>
           <p className="text-ink mt-1 text-sm leading-6">{description}</p>
+          {reference ? (
+            <p className="text-muted mt-2 text-xs">
+              Support reference: <code>{reference}</code>
+            </p>
+          ) : null}
           {action ? <div className="mt-4">{action}</div> : null}
         </div>
       </div>

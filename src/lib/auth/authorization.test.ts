@@ -73,7 +73,8 @@ describe("central authorization service", () => {
     expect(canManageOrganization(owner)).toBe(true);
     expect(canViewFinancialExposure(owner)).toBe(true);
     expect(canViewAuditLogs(owner)).toBe(true);
-    expect(canAccessInternalAdmin(owner)).toBe(true);
+    expect(canAccessInternalAdmin(owner)).toBe(false);
+    expect(canAccessInternalAdmin(owner, true)).toBe(true);
   });
 
   it("denies missing memberships and cross-organization resources", () => {

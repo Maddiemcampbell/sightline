@@ -5,10 +5,7 @@ import { getRiskEvidenceExperience } from "@/features/evidence/data";
 import { formatSourceLocation } from "@/features/evidence/evidence-experience";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import {
-  assertAuthorized,
-  canAccessInternalAdmin,
-} from "@/lib/auth/authorization";
+import { assertInternalAdmin } from "@/lib/auth/internal-admin";
 
 export default async function EvidenceDebugPage({
   searchParams,
@@ -17,7 +14,7 @@ export default async function EvidenceDebugPage({
 }) {
   if (process.env.NODE_ENV !== "development") notFound();
   const context = await requireActorContext();
-  assertAuthorized(canAccessInternalAdmin(context));
+  assertInternalAdmin(context);
   const requestedRiskId = (await searchParams).riskId;
   const client = await createServerSupabaseClient();
   const { data: defaultRisk, error } = requestedRiskId

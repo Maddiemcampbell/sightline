@@ -1,9 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { getAuditLogViewer } from "@/features/audit/data";
+import { assertInternalAdmin } from "@/lib/auth/internal-admin";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditViewerPage() {
+  assertInternalAdmin(await requireActorContext());
   const records = await getAuditLogViewer();
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-10">

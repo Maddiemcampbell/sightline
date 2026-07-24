@@ -383,8 +383,9 @@ export function canViewAuditLogs(
 
 export function canAccessInternalAdmin(
   subject: AuthorizationSubject | null,
+  isPlatformOperator = false,
 ): boolean {
-  return can(subject, "internal_admin:access");
+  return isPlatformOperator && can(subject, "internal_admin:access");
 }
 
 export function assertAuthorized(

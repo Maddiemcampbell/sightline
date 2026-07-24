@@ -107,7 +107,7 @@ export default async function PrivacySettingsPage() {
               `Archived documents: ${settings.document_retention_days} days`,
               `Activity history: ${settings.activity_retention_days} days`,
               `AI conversations: ${settings.ai_retention_days} days`,
-              `Audit evidence: ${settings.audit_retention_days} days`,
+              `Audit evidence policy: ${settings.audit_retention_days} days (automated purge pending legal approval)`,
               `Deletion grace period: ${settings.soft_delete_grace_days} days`,
             ]}
           />
@@ -212,7 +212,7 @@ export default async function PrivacySettingsPage() {
               <RetentionSelect name="documentRetentionDays" label="Archived documents" value={settings.document_retention_days} options={RETENTION_DAY_OPTIONS.documentRetentionDays} />
               <RetentionSelect name="activityRetentionDays" label="Activity history" value={settings.activity_retention_days} options={RETENTION_DAY_OPTIONS.activityRetentionDays} />
               <RetentionSelect name="aiRetentionDays" label="AI conversations" value={settings.ai_retention_days} options={RETENTION_DAY_OPTIONS.aiRetentionDays} />
-              <RetentionSelect name="auditRetentionDays" label="Audit evidence" value={settings.audit_retention_days} options={RETENTION_DAY_OPTIONS.auditRetentionDays} />
+              <RetentionSelect name="auditRetentionDays" label="Audit evidence policy (purge not yet automated)" value={settings.audit_retention_days} options={RETENTION_DAY_OPTIONS.auditRetentionDays} />
               <RetentionSelect name="deletedRecordRetentionDays" label="Deleted comment tombstones" value={settings.deleted_record_retention_days} options={RETENTION_DAY_OPTIONS.deletedRecordRetentionDays} />
             </div>
           </PrivacyForm>

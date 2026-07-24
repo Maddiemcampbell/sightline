@@ -31,7 +31,7 @@ autonomous workflows.
 3. Replace the sample values with the URL and publishable key from your
    Supabase project settings.
 
-   Set `CRON_SECRET` to a random value of at least 24 characters before enabling
+   Set `CRON_SECRET` to a random value of at least 32 characters before enabling
    scheduled detection. A scheduler can call `GET /api/cron/detect-risks` with
    `Authorization: Bearer <CRON_SECRET>`. Development also exposes the
    internal-only `/internal/detection` manual-run page.
@@ -41,6 +41,12 @@ autonomous workflows.
    on a regular interval with `GET /api/cron/send-briefs` and the same Bearer
    secret; Sightline evaluates each recipient's preferred local delivery time.
    Development exposes `/internal/email-preview` for HTML and plain-text review.
+
+   Schedule `GET /api/cron/privacy-cleanup` at least daily and
+   `GET /api/cron/data-exports` at least every five minutes with the same
+   bearer secret. Configure `INTERNAL_ADMIN_AUTH_USER_IDS` with a comma-separated
+   list of Supabase Auth UUIDs for Sightline platform operators. Organization
+   Owner status alone does not grant access to `/internal` tools.
 
 4. Start the development server:
 
@@ -68,7 +74,7 @@ The placeholder routes and production build do not require live credentials.
 | `npm run format:check`      | Check formatting without changing files             |
 | `npm run test`              | Run Vitest unit tests once                          |
 | `npm run test:watch`        | Run Vitest in watch mode                            |
-| `npm run test:e2e`          | Reset local data, then run Playwright tests         |
+| `npm run test:e2e`          | Reset data, run pgTAP, then run Playwright tests     |
 | `npm run test:e2e:no-reset` | Run Playwright without resetting local data         |
 | `npm run check`             | Run formatting, lint, types, and unit tests         |
 | `npm run db:start`          | Start the local Supabase stack                      |
@@ -137,8 +143,9 @@ feature flags, and testing strategy are documented in
 ## Deployment
 
 The application can deploy to any host that supports Next.js 16 and Node.js 22.
-For Vercel, import the repository, set the two variables from `.env.example`,
-and deploy. For another Node host, run `npm ci`, `npm run build`, and
+For Vercel, import the repository, configure every applicable value from
+`.env.example` in the platform secret store, and deploy. For another Node host,
+run `npm ci`, `npm run build`, and
 `npm run start`. Run `npm run check` and `npm run test:e2e` in CI before the
 deployment step.
 
