@@ -29,19 +29,19 @@ values (
 
 insert into public.projects (
   id, organization_id, name, project_number, status, address_line_1, city, state_code,
-  postal_code, contract_value_cents, start_date, target_completion_date
+  postal_code, contract_value_cents, start_date, target_completion_date, image_url
 )
 values
-  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Cedar Grove Medical Pavilion', 'BC-24017', 'active', '1800 Cedar Grove Way', 'Sacramento', 'CA', '95814', 2850000000, '2026-01-12', '2027-03-26'),
-  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'Riverfront Distribution Center', 'BC-24022', 'active', '450 Harbor Industrial Road', 'Stockton', 'CA', '95203', 4180000000, '2025-11-03', '2026-12-18'),
-  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'Northgate Civic Center', 'BC-25004', 'active', '900 Northgate Plaza', 'Roseville', 'CA', '95678', 1975000000, '2026-03-02', '2027-01-29'),
-  ('20000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Sierra Vista High School Modernization', 'BC-25009', 'active', '72 Falcon Drive', 'Folsom', 'CA', '95630', 1260000000, '2026-05-18', '2027-06-11'),
-  ('20000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', 'Juniper Row Apartments', 'BC-25011', 'active', '410 Juniper Street', 'Oakland', 'CA', '94607', 2340000000, '2026-02-09', '2027-08-20'),
-  ('20000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', 'Granite Peak Data Center', 'BC-25014', 'active', '8800 Logic Loop', 'Reno', 'NV', '89521', 5620000000, '2026-04-06', '2027-11-12'),
-  ('20000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', 'Mercer University Residence Hall', 'BC-25016', 'active', '60 College Avenue', 'Davis', 'CA', '95616', 1890000000, '2026-06-01', '2027-07-30'),
-  ('20000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', 'Market Square Mixed-Use Tower', 'BC-25018', 'active', '120 Market Square', 'San Jose', 'CA', '95113', 6850000000, '2025-09-15', '2028-02-18'),
-  ('20000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', 'Harbor Point Office Renewal', 'BC-24008', 'complete', '22 Embarcadero', 'San Francisco', 'CA', '94111', 980000000, '2025-01-13', '2026-06-26'),
-  ('20000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', 'Clearwater Pump Station', 'BC-25020', 'planning', '300 River Service Road', 'Modesto', 'CA', '95354', 1480000000, '2026-09-08', '2027-12-17');
+  ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Cedar Grove Medical Pavilion', 'BC-24017', 'active', '1800 Cedar Grove Way', 'Sacramento', 'CA', '95814', 2850000000, '2026-01-12', '2027-03-26', '/images/projects/cedar-grove-medical-pavilion.png'),
+  ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'Riverfront Distribution Center', 'BC-24022', 'active', '450 Harbor Industrial Road', 'Stockton', 'CA', '95203', 4180000000, '2025-11-03', '2026-12-18', '/images/projects/riverfront-distribution-center.png'),
+  ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'Northgate Civic Center', 'BC-25004', 'active', '900 Northgate Plaza', 'Roseville', 'CA', '95678', 1975000000, '2026-03-02', '2027-01-29', '/images/projects/northgate-civic-center.png'),
+  ('20000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Sierra Vista High School Modernization', 'BC-25009', 'active', '72 Falcon Drive', 'Folsom', 'CA', '95630', 1260000000, '2026-05-18', '2027-06-11', null),
+  ('20000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', 'Juniper Row Apartments', 'BC-25011', 'active', '410 Juniper Street', 'Oakland', 'CA', '94607', 2340000000, '2026-02-09', '2027-08-20', null),
+  ('20000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', 'Granite Peak Data Center', 'BC-25014', 'active', '8800 Logic Loop', 'Reno', 'NV', '89521', 5620000000, '2026-04-06', '2027-11-12', null),
+  ('20000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', 'Mercer University Residence Hall', 'BC-25016', 'active', '60 College Avenue', 'Davis', 'CA', '95616', 1890000000, '2026-06-01', '2027-07-30', null),
+  ('20000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', 'Market Square Mixed-Use Tower', 'BC-25018', 'active', '120 Market Square', 'San Jose', 'CA', '95113', 6850000000, '2025-09-15', '2028-02-18', null),
+  ('20000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', 'Harbor Point Office Renewal', 'BC-24008', 'complete', '22 Embarcadero', 'San Francisco', 'CA', '94111', 980000000, '2025-01-13', '2026-06-26', null),
+  ('20000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', 'Clearwater Pump Station', 'BC-25020', 'planning', '300 River Service Road', 'Modesto', 'CA', '95354', 1480000000, '2026-09-08', '2027-12-17', null);
 
 insert into public.vendors (id, organization_id, name, trade, contact_name, contact_email)
 values

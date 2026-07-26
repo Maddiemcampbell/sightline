@@ -168,6 +168,7 @@ type ProjectRow = Timestamped & {
   address_line_1: string | null;
   city: string | null;
   contract_value_cents: number | null;
+  image_url: string | null;
   projected_margin_cents: number;
   id: string;
   name: string;

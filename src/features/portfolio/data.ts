@@ -47,25 +47,85 @@ export async function getProjects(filters: ProjectFilters) {
           risk.project_id === project.id &&
           !["resolved", "dismissed"].includes(risk.status),
       );
+      const currentRiskCount = projectRisks.filter(
+        (risk) => Date.parse(risk.detected_at) >= Date.now() - 7 * 86_400_000,
+      ).length;
+      const previousRiskCount = projectRisks.filter((risk) => {
+        const detectedAt = Date.parse(risk.detected_at);
+        return (
+          detectedAt >= Date.now() - 14 * 86_400_000 &&
+          detectedAt < Date.now() - 7 * 86_400_000
+        );
+      }).length;
+      const mostImportantRisk = projectRisks.toSorted((a, b) => {
+        const severity = { low: 1, medium: 2, high: 3, critical: 4 } as const;
+        return (
+          severity[b.severity] - severity[a.severity] ||
+          b.potential_exposure_cents - a.potential_exposure_cents
+        );
+      })[0];
+      const exposureCents = projectRisks.reduce(
+        (sum, risk) => sum + risk.potential_exposure_cents,
+        0,
+      );
+      const criticalOrHigh = projectRisks.filter((risk) =>
+        ["critical", "high"].includes(risk.severity),
+      ).length;
+      const projectedMarginCents =
+        canSeeFinancials && project.projected_margin_cents !== null
+          ? project.projected_margin_cents
+          : null;
       return {
         id: project.id,
+        imageUrl: project.image_url,
         name: project.name,
         number: project.project_number,
         location: [project.city, project.state_code].filter(Boolean).join(", "),
         stage: project.status,
-        projectedMarginCents: canSeeFinancials
-          ? project.projected_margin_cents
-          : 0,
+        projectedMarginCents,
         contractValueCents: canSeeFinancials
           ? project.contract_value_cents
           : null,
+        forecastMarginPercent:
+          projectedMarginCents !== null && project.contract_value_cents
+            ? (projectedMarginCents / project.contract_value_cents) * 100
+            : null,
         openRiskCount: projectRisks.length,
-        exposureCents: canSeeFinancials
-          ? projectRisks.reduce(
-              (sum, risk) => sum + risk.potential_exposure_cents,
-              0,
-            )
-          : 0,
+        exposureCents: canSeeFinancials ? exposureCents : null,
+        health:
+          criticalOrHigh > 0 || (projectedMarginCents ?? 0) < 0
+            ? ("at_risk" as const)
+            : projectRisks.length > 0
+              ? ("watch" as const)
+              : ("on_track" as const),
+        riskScore: Math.min(
+          100,
+          criticalOrHigh * 25 +
+            Math.max(0, projectRisks.length - criticalOrHigh) * 10,
+        ),
+        riskTrend:
+          currentRiskCount === 0 && previousRiskCount === 0
+            ? ("insufficient" as const)
+            : currentRiskCount > previousRiskCount
+              ? ("rising" as const)
+              : currentRiskCount < previousRiskCount
+                ? ("improving" as const)
+                : ("steady" as const),
+        schedule:
+          project.status === "complete"
+            ? ("complete" as const)
+            : project.status === "on_hold"
+              ? ("paused" as const)
+              : project.target_completion_date &&
+                  Date.parse(project.target_completion_date) < Date.now()
+                ? ("delayed" as const)
+                : project.status === "planning"
+                  ? ("planned" as const)
+                  : ("on_track" as const),
+        targetCompletionDate: project.target_completion_date,
+        aiSummary:
+          mostImportantRisk?.summary ??
+          "No active project risk currently requires attention.",
         recentActivity: projectRisks.reduce(
           (latest, risk) => Math.max(latest, Date.parse(risk.updated_at)),
           Date.parse(project.updated_at),
@@ -82,14 +142,17 @@ export async function getProjects(filters: ProjectFilters) {
     );
   return views.toSorted((a, b) =>
     filters.sort === "margin"
-      ? a.projectedMarginCents - b.projectedMarginCents
+      ? (a.projectedMarginCents ?? Number.MAX_SAFE_INTEGER) -
+        (b.projectedMarginCents ?? Number.MAX_SAFE_INTEGER)
       : filters.sort === "name"
         ? a.name.localeCompare(b.name)
         : filters.sort === "activity"
           ? b.recentActivity - a.recentActivity
-          : b.exposureCents - a.exposureCents,
+          : (b.exposureCents ?? -1) - (a.exposureCents ?? -1),
   );
 }
+
+export type ProjectListView = Awaited<ReturnType<typeof getProjects>>[number];
 
 export async function getRisks(filters: RiskFilters) {
   const context = await requireActorContext();

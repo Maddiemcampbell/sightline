@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(14);
 
 select is((select count(*)::integer from public.organizations
   where id='10000000-0000-4000-8000-000000000001'),1,'one designated demo organization exists');
@@ -30,6 +30,12 @@ select cmp_ok((select count(*)::integer from public.risks
     and not financial_exposure_assessed),'>=',2,'demo distinguishes unassessed exposure from zero');
 select cmp_ok((select count(*)::integer from public.portfolio_risk_snapshots
   where organization_id='10000000-0000-4000-8000-000000000001'),'>=',2,'demo includes prior risk snapshots');
+select is((select count(*)::integer from public.projects
+  where organization_id='10000000-0000-4000-8000-000000000001'
+    and image_url is not null),3,'exactly three demo projects include rendered cover images');
+select is((select count(*)::integer from public.projects
+  where organization_id='10000000-0000-4000-8000-000000000001'
+    and image_url is null),7,'seven demo projects exercise fallback cover artwork');
 
 select * from finish();
 rollback;

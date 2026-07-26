@@ -14,7 +14,7 @@ const risk=(overrides:Partial<AnalyticsRisk>={}):AnalyticsRisk=>({
 const input=(risks:AnalyticsRisk[],extra:Partial<RiskAnalyticsInput>={}):RiskAnalyticsInput=>({
   now:new Date("2026-07-25T12:00:00Z"),projects:[{id:"p1",organization_id:"o1",name:"Atlas",
     project_number:"A",status:"active",address_line_1:null,city:null,state_code:null,postal_code:null,
-    contract_value_cents:null,projected_margin_cents:0,start_date:null,target_completion_date:null,created_at:"",updated_at:"",
+    contract_value_cents:null,image_url:null,projected_margin_cents:0,start_date:null,target_completion_date:null,created_at:"",updated_at:"",
     updated_by_user_id:null}],risks,actions:[],evidence:[],canViewFinancials:true,...extra,
 });
 

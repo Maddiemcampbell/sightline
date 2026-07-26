@@ -310,6 +310,7 @@ export type Database = {
           contract_value_cents: number | null;
           created_at: string;
           id: string;
+          image_url: string | null;
           name: string;
           organization_id: string;
           postal_code: string | null;
@@ -326,6 +327,7 @@ export type Database = {
           contract_value_cents?: number | null;
           created_at?: string;
           id?: string;
+          image_url?: string | null;
           name: string;
           organization_id: string;
           postal_code?: string | null;
@@ -342,6 +344,7 @@ export type Database = {
           contract_value_cents?: number | null;
           created_at?: string;
           id?: string;
+          image_url?: string | null;
           name?: string;
           organization_id?: string;
           postal_code?: string | null;
