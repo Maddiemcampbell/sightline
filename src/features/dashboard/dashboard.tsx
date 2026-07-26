@@ -34,6 +34,8 @@ import {
   useDashboardState,
   useWorkspaceResources,
 } from "@/features/workspace/workspace-provider";
+import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
+import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
 
 const heatmapColumns = [
   "schedule",
@@ -645,7 +647,18 @@ function PortfolioAdvisor({
   view: DashboardView;
   topRisk: DashboardView["priorities"][number] | null;
 }) {
-  const { advisorMode } = useDashboardState();
+  const { advisorMode, selectedProjectId } = useDashboardState();
+  const { projects, canUseAi } = useWorkspaceResources();
+  const { ask, pending, setOpen } = useSharedAsk();
+  const selectedProject =
+    projects.find((project) => project.id === selectedProjectId) ?? null;
+  const suggestedPrompts = getSuggestedOrganizationPrompts({
+    advisorMode,
+    pathname: "/",
+    selectedProjectName: selectedProject?.name ?? null,
+    hasPortfolioObservations: view.intelligence.portfolioWatch.length > 0,
+    hasRecentActivity: view.activity.length > 0,
+  });
   return (
     <aside className="border-border bg-surface shadow-surface h-fit rounded-xl border p-5 2xl:sticky 2xl:top-24">
       <div className="flex items-center gap-2">
@@ -675,24 +688,17 @@ function PortfolioAdvisor({
         Suggested next steps
       </p>
       <div className="mt-3 space-y-2">
-        {topRisk ? (
-          <>
-            <AdvisorLink href={`${topRisk.href}?tab=ask`}>
-              What evidence supports {topRisk.title}?
-            </AdvisorLink>
-            <AdvisorLink href={topRisk.href}>
-              Review the highest-priority risk
-            </AdvisorLink>
-          </>
-        ) : (
-          <AdvisorLink href="/risks">Review the risk register</AdvisorLink>
-        )}
-        <AdvisorLink href="/projects">
-          Which projects currently need attention?
-        </AdvisorLink>
-        <AdvisorLink href="/actions?due=overdue">
-          What actions should I prioritize?
-        </AdvisorLink>
+        {suggestedPrompts.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            disabled={pending || !canUseAi}
+            onClick={() => ask(prompt)}
+            className="border-border hover:bg-background block w-full rounded-lg border p-3 text-left text-xs leading-5 font-medium disabled:opacity-60"
+          >
+            {prompt}
+          </button>
+        ))}
       </div>
       {topRisk ? (
         <Link
@@ -703,6 +709,14 @@ function PortfolioAdvisor({
           Ask about top risk
         </Link>
       ) : null}
+      <button
+        type="button"
+        disabled={!canUseAi}
+        onClick={() => setOpen(true)}
+        className="border-border mt-2 inline-flex min-h-10 w-full items-center justify-center rounded-md border px-4 text-xs font-semibold disabled:opacity-60"
+      >
+        Open organization assistant
+      </button>
       <p className="text-muted mt-4 text-center text-[0.65rem] leading-4">
         Organization-wide questions are not yet supported. Answers remain
         bounded to authorized risk evidence.
@@ -814,23 +828,6 @@ export function filterDashboardView(
         ),
     },
   };
-}
-
-function AdvisorLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="border-border hover:bg-background block rounded-lg border p-3 text-xs leading-5 font-medium"
-    >
-      {children}
-    </Link>
-  );
 }
 
 function QuickPaths({

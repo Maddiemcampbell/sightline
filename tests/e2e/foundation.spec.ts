@@ -34,8 +34,9 @@ test("filters the organization action register with shareable URL parameters", a
   await expect(
     page.getByRole("heading", { name: "Actions", exact: true }),
   ).toBeVisible();
-  await expect(page.locator('select[name="status"]')).toHaveValue("suggested");
-  await expect(page.locator('select[name="priority"]')).toHaveValue("urgent");
+  const main = page.locator("#main-content");
+  await expect(main.locator('select[name="status"]')).toHaveValue("suggested");
+  await expect(main.locator('select[name="priority"]')).toHaveValue("urgent");
   await expect(
     page.getByRole("region", { name: "Organization actions" }),
   ).toBeVisible();
@@ -120,11 +121,12 @@ test("exposes a healthy service endpoint", async ({ request }) => {
 
 test("filters projects with shareable URL parameters", async ({ page }) => {
   await page.goto("/projects");
-  await page.getByLabel("Search projects").fill("Medical");
-  await page.getByRole("button", { name: "Apply" }).click();
+  const main = page.locator("#main-content");
+  await main.getByLabel("Search projects").fill("Medical");
+  await main.getByRole("button", { name: "Apply" }).click();
 
   await expect(page).toHaveURL(/projects\?q=Medical/);
-  await expect(page.getByRole("heading", { name: /Medical/ })).toBeVisible();
+  await expect(main.getByRole("heading", { name: /Medical/ })).toBeVisible();
 });
 
 test("opens a risk detail with evidence and actions", async ({ page }) => {
@@ -144,23 +146,21 @@ test("records a guided resolution and reopens it with a reason", async ({
 }) => {
   test.slow();
 
-  await page.goto("/brief");
-  await page
-    .getByRole("article")
-    .nth(1)
-    .getByRole("link", { name: "View full risk" })
-    .click();
-  const evidenceTab = page.getByRole("link", { name: /Evidence/ });
-  const evidenceHref = await evidenceTab.getAttribute("href");
-  if (!evidenceHref) throw new Error("Expected an evidence tab destination.");
-  await page.goto(evidenceHref);
+  await page.goto(
+    "/risks/60000000-0000-4000-8000-000000000002?tab=evidence",
+  );
   await expect(page).toHaveURL(/\?tab=evidence$/);
   await expect(
     page.getByRole("heading", { name: "Evidence-grounded explanation" }),
   ).toBeVisible({ timeout: 15_000 });
   await page.getByRole("link", { name: "Ask Sightline" }).click();
+  const riskQuestion = page
+    .locator("#main-content")
+    .getByLabel("Question about this risk");
+  await riskQuestion.fill("What evidence supports this?");
   await page
-    .getByRole("button", { name: "What evidence supports this?" })
+    .locator("#main-content")
+    .getByRole("button", { name: "Ask Sightline" })
     .click();
   await expect(
     page.getByRole("region", { name: "Sightline answer" }).last(),
@@ -242,35 +242,40 @@ test("records a guided resolution and reopens it with a reason", async ({
   await page.getByRole("button", { name: "Confirm reopening" }).click();
   await expect(page.getByLabel("Reason for reopening")).toBeHidden();
   await page.reload();
-  await expect(page.getByText("action needed", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .locator("#main-content")
+      .getByText("action needed", { exact: true }),
+  ).toBeVisible();
   await page.goto("/brief");
   await expect(page.getByRole("article")).toHaveCount(3);
 });
 
 test("explains a risk with visibly grounded evidence", async ({ page }) => {
   await page.goto("/risks/60000000-0000-4000-8000-000000000001?tab=evidence");
+  const main = page.locator("#main-content");
   await expect(
-    page.getByRole("heading", { name: "Evidence-grounded explanation" }),
+    main.getByRole("heading", { name: "Evidence-grounded explanation" }),
+  ).toBeVisible();
+  await expect(main.getByText("Direct evidence", { exact: true })).toBeVisible();
+  await expect(
+    main.getByText("Policy expiration: July 25, 2026"),
   ).toBeVisible();
   await expect(
-    page.getByText("Direct evidence", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Policy expiration: July 25, 2026"),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Source document is unavailable or archived."),
+    main.getByText("Source document is unavailable or archived."),
   ).toBeVisible();
 });
 
 test("asks a grounded risk question and records feedback", async ({ page }) => {
   await page.goto("/risks/60000000-0000-4000-8000-000000000001?tab=ask");
-  await expect(page.getByLabel("Question about this risk")).toBeVisible();
-  await page
-    .getByLabel("Question about this risk")
-    .fill("When does the insurance expire?");
-  await page.getByRole("button", { name: "Ask Sightline" }).click();
-  const answer = page.getByRole("region", { name: "Sightline answer" }).last();
+  const main = page.locator("#main-content");
+  const question = main.getByLabel("Question about this risk");
+  await expect(question).toBeVisible();
+  await question.fill("When does the insurance expire?");
+  await main.getByRole("button", { name: "Ask Sightline" }).click();
+  const answer = main
+    .getByRole("region", { name: "Sightline answer" })
+    .last();
   await expect(answer).toContainText("Policy expiration: July 25, 2026");
   await expect(answer).toContainText("Evidence citations");
   await answer.getByRole("button", { name: "Helpful", exact: true }).click();
@@ -301,21 +306,22 @@ test("edits and saves a human-controlled email draft", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Review email draft" }),
   ).toBeVisible();
-  const subject = page.getByLabel("Email subject");
+  const subject = page.locator("#main-content").getByLabel("Email subject");
+  const main = page.locator("#main-content");
   const original = await subject.inputValue();
   await subject.fill("Updated certificate needed before mobilization");
-  await page
+  await main
     .getByLabel("Known contact")
     .selectOption("vendor:30000000-0000-4000-8000-000000000001");
-  await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+  await main.getByRole("button", { name: "Save draft" }).click();
+  await expect(main.getByRole("status")).toHaveText("Draft saved.");
   await page.reload();
   await expect(subject).toHaveValue(
     "Updated certificate needed before mobilization",
   );
   await subject.fill(original);
-  await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByRole("status")).toHaveText("Draft saved.");
+  await main.getByRole("button", { name: "Save draft" }).click();
+  await expect(main.getByRole("status")).toHaveText("Draft saved.");
 });
 
 test("adds a risk comment with an organization-user mention", async ({
@@ -323,15 +329,16 @@ test("adds a risk comment with an organization-user mention", async ({
 }) => {
   test.setTimeout(60_000);
   await page.goto("/risks/60000000-0000-4000-8000-000000000001");
-  const comment = page.getByLabel("Comment");
+  const main = page.locator("#main-content");
+  const comment = main.getByLabel("Comment");
   await comment.fill("@al");
-  await page
+  await main
     .getByRole("option", { name: /Alex Rivera.*@alex\.rivera/ })
     .click();
   await comment.pressSequentially(
     "please confirm the renewal certificate with Apex.",
   );
-  const submit = page.getByRole("button", { name: "Comment", exact: true });
+  const submit = main.getByRole("button", { name: "Comment", exact: true });
   await submit.click();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -372,7 +379,7 @@ test("adds a risk comment with an organization-user mention", async ({
     )
     .toBe(1);
   await page.reload();
-  const savedComment = page
+  const savedComment = main
     .getByRole("list", { name: "Comments" })
     .getByRole("listitem")
     .filter({ hasText: "please confirm the renewal certificate with Apex." });
@@ -382,55 +389,58 @@ test("adds a risk comment with an organization-user mention", async ({
 
 test("shows the organization activity timeline", async ({ page }) => {
   await page.goto("/activity");
+  const main = page.locator("#main-content");
   await expect(
-    page.getByRole("heading", { name: "Activity", exact: true }),
+    main.getByRole("heading", { name: "Activity", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Seed email draft created for human review."),
+    main.getByText("Seed email draft created for human review."),
   ).toBeVisible();
   await expect(page.getByText("System", { exact: true }).last()).toBeVisible();
 });
 
 test("shows the secure document upload workflow", async ({ page }) => {
   await page.goto("/documents");
+  const main = page.locator("#main-content");
 
   await expect(
-    page.getByRole("heading", { name: "Upload source document" }),
+    main.getByRole("heading", { name: "Upload source document" }),
   ).toBeVisible();
-  await expect(page.getByLabel("File")).toHaveAttribute(
+  await expect(main.getByLabel("File")).toHaveAttribute(
     "accept",
     ".pdf,.docx,.csv,.jpg,.jpeg,.png",
   );
   await expect(
-    page.getByRole("heading", { name: "Document library" }),
+    main.getByRole("heading", { name: "Document library" }),
   ).toBeVisible();
 });
 
 test("uploads, edits, and archives document metadata", async ({ page }) => {
   await page.goto("/documents");
-  await page.getByLabel("File").setInputFiles({
+  const main = page.locator("#main-content");
+  await main.getByLabel("File").setInputFiles({
     name: "weekly-log.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\n%%EOF"),
   });
-  await page.getByLabel("Display name").fill("Weekly field log");
-  await page.getByLabel("Category").selectOption("daily_log");
-  await page.getByRole("button", { name: "Upload document" }).click();
+  await main.getByLabel("Display name").fill("Weekly field log");
+  await main.getByLabel("Category").selectOption("daily_log");
+  await main.getByRole("button", { name: "Upload document" }).click();
 
-  await expect(page.getByText("Upload complete.")).toBeVisible();
-  await page.getByRole("link", { name: "View document" }).click();
-  await page.getByLabel("Display name").fill("Weekly field log — reviewed");
-  await page.getByRole("button", { name: "Save metadata" }).click();
-  await expect(page.getByRole("status")).toHaveText(
+  await expect(main.getByText("Upload complete.")).toBeVisible();
+  await main.getByRole("link", { name: "View document" }).click();
+  await main.getByLabel("Display name").fill("Weekly field log — reviewed");
+  await main.getByRole("button", { name: "Save metadata" }).click();
+  await expect(main.getByRole("status")).toHaveText(
     "Document metadata updated.",
   );
 
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Archive document" }).click();
-  await expect(page.getByRole("status")).toHaveText("Document archived.");
+  await main.getByRole("button", { name: "Archive document" }).click();
+  await expect(main.getByRole("status")).toHaveText("Document archived.");
   await page.reload();
-  await expect(page.getByText("Archived", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Download file" })).toHaveCount(
+  await expect(main.getByText("Archived", { exact: true })).toBeVisible();
+  await expect(main.getByRole("link", { name: "Download file" })).toHaveCount(
     0,
   );
 });

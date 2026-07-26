@@ -6,10 +6,12 @@ import type {
   SearchResource,
   WorkspaceProject,
 } from "@/features/workspace/types";
+import { canUseAi } from "@/lib/auth/authorization";
 
 export async function getWorkspaceShellData(): Promise<{
   organizationId: string;
   userId: string;
+  canUseAi: boolean;
   projects: WorkspaceProject[];
   searchResources: SearchResource[];
 }> {
@@ -107,6 +109,7 @@ export async function getWorkspaceShellData(): Promise<{
   return {
     organizationId: context.organizationId,
     userId: context.authUserId,
+    canUseAi: canUseAi(context),
     projects: projectRows.map(({ id, name }) => ({ id, name })),
     searchResources,
   };

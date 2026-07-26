@@ -10,6 +10,10 @@ import type {
   RiskQuestionContext,
   RiskQuestionOutput,
 } from "@/domain/ai/risk-question";
+import type {
+  OrganizationQuestionContext,
+  OrganizationQuestionOutput,
+} from "@/domain/ai/organization-question";
 
 export type LlmUsage = {
   inputTokens: number | null;
@@ -48,6 +52,17 @@ export interface RiskQuestionProvider {
   readonly model: string;
   answer(input: RiskQuestionContext): Promise<{
     output: RiskQuestionOutput;
+    model: string;
+    latencyMs: number;
+    usage: LlmUsage;
+  }>;
+}
+
+export interface OrganizationQuestionProvider {
+  readonly name: string;
+  readonly model: string;
+  answerOrganization(input: OrganizationQuestionContext): Promise<{
+    output: OrganizationQuestionOutput;
     model: string;
     latencyMs: number;
     usage: LlmUsage;

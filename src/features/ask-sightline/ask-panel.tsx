@@ -13,9 +13,11 @@ import {
   askSightlineAction,
   rateSightlineAnswerAction,
 } from "@/app/risks/[riskId]/ask-actions";
-import { ASK_SUGGESTED_QUESTIONS } from "@/domain/ai/risk-question";
 import { Card } from "@/components/ui/card";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/button";
+import { useDashboardState } from "@/features/workspace/workspace-provider";
+import { getSuggestedRiskPrompts } from "@/features/ask-sightline/suggested-prompts";
+import { MarkdownContent } from "@/components/markdown-content";
 
 type Message = {
   id: string;
@@ -36,6 +38,8 @@ export function AskSightlinePanel({
   initialMessages: readonly Message[];
   evidenceLabels: Readonly<Record<string, string>>;
 }) {
+  const { advisorMode } = useDashboardState();
+  const suggestedQuestions = getSuggestedRiskPrompts(advisorMode);
   const [messages, setMessages] = useState([...initialMessages]);
   const [question, setQuestion] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
@@ -60,7 +64,11 @@ export function AskSightlinePanel({
     setMessages((current) => [...current, optimistic]);
     startTransition(async () => {
       try {
-        const answer = await askSightlineAction({ riskId, question: trimmed });
+        const answer = await askSightlineAction({
+          riskId,
+          question: trimmed,
+          advisorMode,
+        });
         setMessages((current) => [
           ...current.filter((item) => item.id !== optimistic.id),
           {
@@ -166,7 +174,7 @@ export function AskSightlinePanel({
         <Card>
           <h2 className="font-semibold">Suggested questions</h2>
           <div className="mt-4 space-y-2">
-            {ASK_SUGGESTED_QUESTIONS.map((item) => (
+            {suggestedQuestions.map((item) => (
               <button
                 key={item}
                 type="button"
@@ -213,7 +221,7 @@ function Answer({
           </span>
         )}
       </div>
-      <p className="mt-3 text-sm leading-6">{message.content}</p>
+      <MarkdownContent content={message.content} />
       {message.evidence_ids.length > 0 && (
         <div className="mt-4">
           <p className="text-muted text-xs font-semibold uppercase">

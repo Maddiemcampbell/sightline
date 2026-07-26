@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { advisorModeSchema } from "@/domain/ai/organization-question";
 
 export const RISK_QUESTION_PROMPT_VERSION = "risk-question-v1";
 export const ASK_HISTORY_LIMIT = 20;
@@ -20,6 +21,7 @@ const citedEvidenceSchema = z.object({
 export const riskQuestionContextSchema = z.object({
   organizationId: z.uuid(),
   userId: z.uuid(),
+  advisorMode: advisorModeSchema.default("risk"),
   risk: z.object({
     id: z.uuid(),
     title: z.string(),
@@ -83,6 +85,7 @@ export const riskQuestionOutputSchema = z.object({
 export const askRiskQuestionSchema = z.object({
   riskId: z.uuid(),
   question: z.string().trim().min(3).max(500),
+  advisorMode: advisorModeSchema.default("risk"),
 });
 export const feedbackSchema = z.object({
   messageId: z.uuid(),

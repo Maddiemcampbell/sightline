@@ -19,6 +19,7 @@ import type {
 
 type WorkspaceResourcesValue = Readonly<{
   organizationId: string;
+  canUseAi: boolean;
   projects: readonly WorkspaceProject[];
   searchResources: readonly SearchResource[];
 }>;
@@ -58,12 +59,14 @@ const advisorModes: readonly AdvisorMode[] = [
 export function WorkspaceProvider({
   organizationId,
   userId,
+  canUseAi,
   projects,
   searchResources,
   children,
 }: {
   organizationId: string;
   userId: string;
+  canUseAi: boolean;
   projects: readonly WorkspaceProject[];
   searchResources: readonly SearchResource[];
   children: ReactNode;
@@ -184,10 +187,11 @@ export function WorkspaceProvider({
   const resourcesValue = useMemo(
     () => ({
       organizationId,
+      canUseAi,
       projects,
       searchResources,
     }),
-    [organizationId, projects, searchResources],
+    [canUseAi, organizationId, projects, searchResources],
   );
   const dashboardValue = useMemo(
     () => ({

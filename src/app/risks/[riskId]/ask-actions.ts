@@ -22,6 +22,7 @@ export async function askSightlineAction(input: unknown) {
         context,
         value.riskId,
         value.question,
+        value.advisorMode,
       );
     },
   );

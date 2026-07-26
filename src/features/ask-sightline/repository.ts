@@ -123,6 +123,104 @@ export class AskSightlineRepository {
     };
   }
 
+  async retrieveOrganization(context: ActorContext, projectId: string | null) {
+    const projectQuery = this.client
+      .from("projects")
+      .select(
+        "id,name,project_number,status,contract_value_cents,projected_margin_cents",
+      )
+      .eq("organization_id", context.organizationId)
+      .order("name")
+      .limit(100);
+    const riskQuery = this.client
+      .from("risks")
+      .select(
+        "id,title,summary,status,severity,category,project_id,vendor_id,detected_at,resolved_at,potential_exposure_cents,detection_key",
+      )
+      .eq("organization_id", context.organizationId)
+      .order("detected_at", { ascending: false })
+      .limit(150);
+    const documentQuery = this.client
+      .from("documents")
+      .select("id,name,project_id,document_type,document_date,archived_at")
+      .eq("organization_id", context.organizationId)
+      .order("created_at", { ascending: false })
+      .limit(120);
+    if (projectId) {
+      projectQuery.eq("id", projectId);
+      riskQuery.eq("project_id", projectId);
+      documentQuery.eq("project_id", projectId);
+    }
+    const [projects, risks, documents, vendors] = await Promise.all([
+      projectQuery,
+      riskQuery,
+      documentQuery,
+      this.client
+        .from("vendors")
+        .select("id,name,trade")
+        .eq("organization_id", context.organizationId)
+        .order("name")
+        .limit(100),
+    ]);
+    for (const result of [projects, risks, documents, vendors])
+      if (result.error) throw new Error(result.error.message);
+
+    const riskIds = (risks.data ?? []).map((risk) => risk.id);
+    const [actions, evidence, activity, resolutions] = riskIds.length
+      ? await Promise.all([
+          this.client
+            .from("recommended_actions")
+            .select("id,risk_id,title,description,status,due_at")
+            .eq("organization_id", context.organizationId)
+            .in("risk_id", riskIds)
+            .order("created_at", { ascending: false })
+            .limit(150),
+          this.client
+            .from("risk_evidence")
+            .select(
+              "id,risk_id,document_id,title,excerpt,why_it_matters,evidence_type,relevance_score",
+            )
+            .eq("organization_id", context.organizationId)
+            .in("risk_id", riskIds)
+            .order("relevance_score", { ascending: false })
+            .limit(100),
+          this.client
+            .from("risk_activities")
+            .select("id,risk_id,summary,occurred_at")
+            .eq("organization_id", context.organizationId)
+            .in("risk_id", riskIds)
+            .order("occurred_at", { ascending: false })
+            .limit(100),
+          this.client
+            .from("risk_resolutions")
+            .select(
+              "id,risk_id,summary,resolution_type,resolved_at,exposure_before_cents,remaining_exposure_cents,estimated_loss_avoided_cents,warning_useful,prediction_accurate,reopened_at",
+            )
+            .eq("organization_id", context.organizationId)
+            .in("risk_id", riskIds)
+            .order("resolved_at", { ascending: false })
+            .limit(100),
+        ])
+      : [
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+          { data: [], error: null },
+        ];
+    for (const result of [actions, evidence, activity, resolutions])
+      if (result.error) throw new Error(result.error.message);
+    return {
+      projects: projects.data ?? [],
+      risks: risks.data ?? [],
+      documents: documents.data ?? [],
+      vendors: vendors.data ?? [],
+      actions: actions.data ?? [],
+      evidence: evidence.data ?? [],
+      activity: activity.data ?? [],
+      resolutions: resolutions.data ?? [],
+    };
+  }
+
   async conversation(context: ActorContext, riskId: string) {
     await this.requireRisk(context, riskId);
     const { data, error } = await this.client

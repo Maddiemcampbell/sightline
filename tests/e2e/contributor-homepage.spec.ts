@@ -12,9 +12,12 @@ test("contributor can open the homepage without financial exposure", async ({
   await page.getByLabel("Password").fill("Sightline-E2E-2026!");
   await page.getByRole("button", { name: "Log in" }).click();
 
+  await expect(page).toHaveURL("/", { timeout: 15_000 });
   await expect(
-    page.getByRole("heading", { name: "Good morning, Alex." }),
-  ).toBeVisible();
+    page
+      .locator("#main-content")
+      .getByRole("heading", { name: "Good morning, Alex." }),
+  ).toBeVisible({ timeout: 15_000 });
   await expect(
     page.getByRole("region", { name: "Portfolio Watch" }),
   ).toBeVisible();

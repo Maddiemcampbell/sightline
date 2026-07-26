@@ -8,16 +8,20 @@ vi.mock("@/features/actions/action-controls", () => ({
 import { Dashboard, filterDashboardView } from "@/features/dashboard/dashboard";
 import type { DashboardView } from "@/features/dashboard/types";
 import { WorkspaceProvider } from "@/features/workspace/workspace-provider";
+import { SharedAskProvider } from "@/features/ask-sightline/shared-ask-provider";
 
 function TestDashboard({ view }: { view: DashboardView }) {
   return (
     <WorkspaceProvider
       organizationId="organization-1"
       userId="user-1"
+      canUseAi
       projects={view.portfolio.map(({ id, name }) => ({ id, name }))}
       searchResources={[]}
     >
-      <Dashboard view={view} />
+      <SharedAskProvider storageIdentity="user-1:organization-1">
+        <Dashboard view={view} />
+      </SharedAskProvider>
     </WorkspaceProvider>
   );
 }
