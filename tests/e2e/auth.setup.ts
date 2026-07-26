@@ -22,6 +22,7 @@ class UnusedWebSocketTransport {
 setup(
   "creates and authenticates the verified organization owner",
   async ({ page }) => {
+    setup.setTimeout(90_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !serviceRoleKey) {
@@ -118,22 +119,21 @@ async function ensureAuthUser(
   userEmail: string,
 ) {
   let lastError = "Supabase Auth did not return a user.";
-  const retryDelays = [0, 250, 500, 1_000, 2_000] as const;
+  const retryDelays = [0, 250, 500, 1_000, 2_000, 4_000, 4_000, 4_000] as const;
   for (const delay of retryDelays) {
-    if (delay)
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    const { data: listed, error: listError } =
-      await admin.auth.admin.listUsers({
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    const { data: listed, error: listError } = await admin.auth.admin.listUsers(
+      {
         page: 1,
         perPage: 1_000,
-      });
+      },
+    );
     if (listError) {
-      lastError = `Unable to list Auth users: ${listError.message}`;
+      lastError = `Unable to list Auth users: ${listError.message || listError.name || "Auth service unavailable"}`;
       continue;
     }
     const existingByEmail = listed.users.find(
-      (candidate) =>
-        candidate.email?.toLowerCase() === userEmail.toLowerCase(),
+      (candidate) => candidate.email?.toLowerCase() === userEmail.toLowerCase(),
     );
     const existingById = listed.users.find(
       (candidate) => candidate.id === preferredId,

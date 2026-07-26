@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { logout } from "@/app/auth/actions";
 import { AcceptInvitationForm } from "@/components/organizations/organization-forms";
 import { Card } from "@/components/ui/card";
 import { OrganizationRepository } from "@/features/organizations/repository";
@@ -47,9 +48,22 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
               This invitation is no longer available.
             </p>
           ) : wrongEmail ? (
-            <p role="alert" className="bg-soft-red text-danger rounded-md p-3">
-              Log in as {preview.invitation.email} to accept this invitation.
-            </p>
+            <div className="bg-soft-red text-danger rounded-md p-4">
+              <p role="alert">
+                This account does not match the invitation. Log in as{" "}
+                {preview.invitation.email} to continue.
+              </p>
+              <form action={logout} className="mt-3">
+                <input
+                  type="hidden"
+                  name="next"
+                  value={`/invitations/${parsedToken.data}`}
+                />
+                <button className="text-sm font-semibold underline">
+                  Switch accounts
+                </button>
+              </form>
+            </div>
           ) : (
             <AcceptInvitationForm token={parsedToken.data} />
           )}

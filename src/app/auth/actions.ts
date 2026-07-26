@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { safeRedirectPath } from "@/lib/auth/redirects";
+import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
+import {
+  getCurrentUser,
+  setActiveOrganizationCookie,
+} from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   auditIdentifier,
@@ -13,6 +18,7 @@ import {
 import { getServerEnv } from "@/lib/env";
 
 export type AuthActionState = Readonly<{
+  error?: boolean;
   message?: string;
   fieldErrors?: Readonly<{
     email?: readonly string[];
@@ -20,6 +26,22 @@ export type AuthActionState = Readonly<{
     confirmPassword?: readonly string[];
   }>;
 }>;
+
+async function completeAuthentication(
+  next: string | null | undefined,
+  welcome?: "signup",
+): Promise<never> {
+  const principal = await getCurrentUser();
+  if (!principal) redirect("/login?error=invalid_session");
+  const resolution = await resolveOnboardingDestination(principal, {
+    ...(next === undefined ? {} : { next }),
+    ...(welcome === undefined ? {} : { welcome }),
+  });
+  if (resolution.organizationId) {
+    await setActiveOrganizationCookie(resolution.organizationId);
+  }
+  redirect(resolution.destination);
+}
 
 const emailSchema = z.email("Enter a valid email address.").trim();
 const passwordSchema = z
@@ -71,7 +93,9 @@ export async function login(
     metadata: { authenticationMethod: "password" },
   });
 
-  redirect(safeRedirectPath(formData.get("next")?.toString()));
+  return completeAuthentication(
+    safeRedirectPath(formData.get("next")?.toString()),
+  );
 }
 
 export async function signup(
@@ -83,6 +107,7 @@ export async function signup(
       email: emailSchema,
       password: passwordSchema,
       confirmPassword: z.string(),
+      next: z.string().optional(),
     })
     .refine((value) => value.password === value.confirmPassword, {
       path: ["confirmPassword"],
@@ -92,15 +117,17 @@ export async function signup(
       email: formData.get("email"),
       password: formData.get("password"),
       confirmPassword: formData.get("confirmPassword"),
+      next: formData.get("next")?.toString(),
     });
   if (!parsed.success) return validationState(parsed.error);
 
+  const next = safeRedirectPath(parsed.data.next, "/");
   const client = await createServerSupabaseClient();
   const { data, error } = await client.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=/verify-email`,
+      emailRedirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
   if (error) return { message: "The account could not be created." };
@@ -112,9 +139,43 @@ export async function signup(
       resourceType: "session",
       metadata: { authenticationMethod: "password_signup" },
     });
-    redirect("/");
+    await completeAuthentication(next, "signup");
   }
-  redirect(`/verify-email?email=${encodeURIComponent(parsed.data.email)}`);
+  const query = new URLSearchParams({ email: parsed.data.email });
+  if (next !== "/") query.set("next", next);
+  redirect(`/verify-email?${query.toString()}`);
+}
+
+export async function resendVerificationEmail(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) {
+    return {
+      fieldErrors: { email: parsed.error.issues.map((issue) => issue.message) },
+    };
+  }
+  const next = safeRedirectPath(formData.get("next")?.toString(), "/");
+  const client = await createServerSupabaseClient();
+  const { error } = await client.auth.resend({
+    type: "signup",
+    email: parsed.data,
+    options: {
+      emailRedirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
+  });
+  if (error) {
+    return {
+      error: true,
+      message:
+        "A new verification email could not be sent yet. Wait a moment and try again.",
+    };
+  }
+  return {
+    message:
+      "If this address has a pending account, a new verification link is on its way.",
+  };
 }
 
 export async function requestPasswordReset(
@@ -186,7 +247,7 @@ export async function updatePassword(
   redirect("/login?reset=success");
 }
 
-export async function logout(): Promise<void> {
+export async function logout(formData?: FormData): Promise<void> {
   const client = await createServerSupabaseClient();
   const { data } = await client.auth.getUser();
   if (data.user) {
@@ -197,5 +258,6 @@ export async function logout(): Promise<void> {
     });
   }
   await client.auth.signOut();
-  redirect("/login");
+  const next = safeRedirectPath(formData?.get("next")?.toString(), "");
+  redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
 }

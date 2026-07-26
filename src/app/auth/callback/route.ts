@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { safeRedirectPath } from "@/lib/auth/redirects";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { recordPrincipalAuditEvent } from "@/features/audit/service";
+import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
+import { ACTIVE_ORGANIZATION_COOKIE } from "@/lib/auth/session";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
@@ -29,5 +31,35 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  if (!data.user?.email) {
+    return NextResponse.redirect(
+      new URL("/login?error=invalid_callback", request.url),
+    );
+  }
+  const resolution = await resolveOnboardingDestination(
+    {
+      id: data.user.id,
+      email: data.user.email,
+      emailVerified: Boolean(data.user.email_confirmed_at),
+    },
+    { next, welcome: "signup" },
+  );
+  const response = NextResponse.redirect(
+    new URL(resolution.destination, request.url),
+  );
+  if (resolution.organizationId) {
+    response.cookies.set(
+      ACTIVE_ORGANIZATION_COOKIE,
+      resolution.organizationId,
+      {
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure:
+          process.env.NODE_ENV === "production" &&
+          process.env.SIGHTLINE_E2E !== "true",
+      },
+    );
+  }
+  return response;
 }

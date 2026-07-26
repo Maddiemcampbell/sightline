@@ -16,6 +16,7 @@ import {
   ACTIVE_ORGANIZATION_COOKIE,
   requireAuthenticatedUser,
   requireCurrentMembership,
+  setActiveOrganizationCookie,
 } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/features/audit/service";
 import { getServerEnv } from "@/lib/env";
 import { TeamRepository } from "@/features/team/repository";
+import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
 
 export type OrganizationActionState = Readonly<{
   error?: boolean;
@@ -81,27 +83,36 @@ function errorState(error: unknown): OrganizationActionState {
 }
 
 async function setActiveOrganization(organizationId: string): Promise<void> {
-  (await cookies()).set(ACTIVE_ORGANIZATION_COOKIE, organizationId, {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure:
-      process.env.NODE_ENV === "production" &&
-      process.env.SIGHTLINE_E2E !== "true",
-  });
+  await setActiveOrganizationCookie(organizationId);
 }
 
 export async function createOrganizationAction(
   _state: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
+  let organizationId: string;
+  let principal: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
+  let input: z.infer<typeof createOrganizationSchema>;
   try {
-    const principal = await requireAuthenticatedUser();
-    const input = createOrganizationSchema.parse({
+    principal = await requireAuthenticatedUser();
+    input = createOrganizationSchema.parse({
       name: formData.get("name"),
       slug: formData.get("slug"),
     });
-    const organizationId = await service().createOrganization(principal, input);
+    organizationId = await service().createOrganization(principal, input);
+  } catch (error) {
+    return errorState(error);
+  }
+
+  try {
+    await setActiveOrganization(organizationId);
+  } catch (error) {
+    console.error("Active organization preference could not be stored.", {
+      organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+  try {
     const createdMembership = await new OrganizationRepository(
       createAdminSupabaseClient(),
     ).findMembership(principal.id, organizationId);
@@ -136,11 +147,13 @@ export async function createOrganizationAction(
         metadata: { fromRole: null, toRole: createdMembership.role },
       },
     ]);
-    await setActiveOrganization(organizationId);
   } catch (error) {
-    return errorState(error);
+    console.error("Organization onboarding follow-up failed.", {
+      organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
   }
-  redirect("/");
+  redirect("/projects/new?welcome=organization");
 }
 
 export async function switchOrganizationAction(
@@ -264,9 +277,25 @@ export async function acceptInvitationAction(
   _state: OrganizationActionState,
 ): Promise<OrganizationActionState> {
   void _state;
+  let organizationId: string;
+  let principal: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
+  let destination = "/";
   try {
-    const principal = await requireAuthenticatedUser();
-    const organizationId = await service().acceptInvitation(principal, token);
+    principal = await requireAuthenticatedUser();
+    organizationId = await service().acceptInvitation(principal, token);
+  } catch (error) {
+    return errorState(error);
+  }
+
+  try {
+    await setActiveOrganization(organizationId);
+  } catch (error) {
+    console.error("Active organization preference could not be stored.", {
+      organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+  try {
     const membership = await new OrganizationRepository(
       createAdminSupabaseClient(),
     ).findMembership(principal.id, organizationId);
@@ -300,11 +329,26 @@ export async function acceptInvitationAction(
         metadata: { fromRole: null, toRole: membership.role },
       },
     ]);
-    await setActiveOrganization(organizationId);
   } catch (error) {
-    return errorState(error);
+    console.error("Invitation acceptance follow-up failed.", {
+      organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
   }
-  redirect("/");
+  try {
+    destination = (
+      await resolveOnboardingDestination(principal, {
+        preferredOrganizationId: organizationId,
+        welcome: "invitation",
+      })
+    ).destination;
+  } catch (error) {
+    console.error("Post-invitation destination could not be resolved.", {
+      organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+  redirect(destination);
 }
 
 export async function leaveOrganizationAction(

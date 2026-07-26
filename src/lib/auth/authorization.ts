@@ -3,6 +3,7 @@ export type OrganizationRole =
 export type ProjectRole = "owner" | "manager" | "contributor" | "viewer";
 
 export type Permission =
+  | "project:create"
   | "project:view"
   | "project:edit"
   | "risk:view"
@@ -52,6 +53,7 @@ export type ActorContext = AuthorizationSubject &
   }>;
 
 const OWNER_PERMISSIONS = {
+  "project:create": true,
   "project:view": true,
   "project:edit": true,
   "risk:view": true,
@@ -114,6 +116,7 @@ const PERMISSIONS_BY_ROLE: Readonly<
 
 function denyAllPermissions(): Record<Permission, boolean> {
   return {
+    "project:create": false,
     "project:view": false,
     "project:edit": false,
     "risk:view": false,
@@ -173,6 +176,13 @@ export function canViewProject(
   resource?: OrganizationResource | ProjectResource | null,
 ): boolean {
   return projectScopedCan(subject, "project:view", resource);
+}
+
+export function canCreateProject(
+  subject: AuthorizationSubject | null,
+  resource?: OrganizationResource | null,
+): boolean {
+  return can(subject, "project:create", resource);
 }
 
 export function canEditProject(

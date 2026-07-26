@@ -11,18 +11,18 @@ import {
   Search,
   ShieldAlert,
   Sparkles,
+  Plus,
 } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
-import {
-  getProjects,
-  type ProjectListView,
-} from "@/features/portfolio/data";
+import { getProjects, type ProjectListView } from "@/features/portfolio/data";
 import { ProjectsAssistant } from "@/features/portfolio/projects-assistant";
 import { projectFiltersSchema } from "@/features/portfolio/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
+import { canCreateProject } from "@/lib/auth/authorization";
+import { requireActorContext } from "@/lib/auth/request-context";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,6 +31,10 @@ type Props = {
 const fallbackImage = "/images/project-fallback-architecture-v2.png";
 
 export default async function ProjectsPage({ searchParams }: Props) {
+  const context = await requireActorContext();
+  const canCreate = canCreateProject(context, {
+    organization_id: context.organizationId,
+  });
   const filters = projectFiltersSchema.parse(await searchParams);
   const projects = await getProjects(filters);
   const activeProjects = projects.filter(
@@ -66,13 +70,24 @@ export default async function ProjectsPage({ searchParams }: Props) {
             risk across your accessible portfolio.
           </p>
         </div>
-        <Link
-          href="/brief"
-          className="border-border bg-surface text-deep-green inline-flex min-h-10 w-fit items-center gap-2 rounded-md border px-4 text-sm font-semibold hover:bg-background"
-        >
-          <Sparkles aria-hidden="true" className="size-4" />
-          Open Daily Brief
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/brief"
+            className="border-border bg-surface text-deep-green hover:bg-background inline-flex min-h-10 w-fit items-center gap-2 rounded-md border px-4 text-sm font-semibold"
+          >
+            <Sparkles aria-hidden="true" className="size-4" />
+            Open Daily Brief
+          </Link>
+          {canCreate ? (
+            <Link
+              href="/projects/new"
+              className="bg-deep-green hover:bg-ink inline-flex min-h-10 w-fit items-center gap-2 rounded-md px-4 text-sm font-semibold text-white"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              New project
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       <section
@@ -104,7 +119,11 @@ export default async function ProjectsPage({ searchParams }: Props) {
         />
         <SummaryMetric
           label="Average forecast margin"
-          value={averageMargin === null ? "Not available" : `${averageMargin.toFixed(1)}%`}
+          value={
+            averageMargin === null
+              ? "Not available"
+              : `${averageMargin.toFixed(1)}%`
+          }
           detail="Projects with available financials"
           icon={ArrowUpRight}
         />
@@ -155,7 +174,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
             <option value="activity">Recent activity</option>
           </select>
         </label>
-        <button className="bg-deep-green flex h-10 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold text-white hover:bg-ink">
+        <button className="bg-deep-green hover:bg-ink flex h-10 items-center justify-center gap-2 rounded-md px-5 text-sm font-semibold text-white">
           <ListFilter aria-hidden="true" className="size-4" />
           Apply
         </button>
@@ -174,14 +193,28 @@ export default async function ProjectsPage({ searchParams }: Props) {
         <div className="min-w-0">
           {projects.length === 0 ? (
             <EmptyState
-              title="No projects match"
-              description="Adjust the search or stage filter to see more projects."
+              title={
+                !filters.q && filters.stage === "all"
+                  ? "Create your first project"
+                  : "No projects match"
+              }
+              description={
+                !filters.q && filters.stage === "all"
+                  ? "Start a secure workspace for project risks, actions, documents, and collaboration."
+                  : "Adjust the search or stage filter to see more projects."
+              }
               action={
                 <Link
-                  href="/projects"
+                  href={
+                    !filters.q && filters.stage === "all" && canCreate
+                      ? "/projects/new"
+                      : "/projects"
+                  }
                   className="text-deep-green text-sm font-semibold"
                 >
-                  Clear filters
+                  {!filters.q && filters.stage === "all" && canCreate
+                    ? "Add first project"
+                    : "Clear filters"}
                 </Link>
               }
             />
@@ -276,7 +309,7 @@ function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
             {projects.map((project) => (
               <tr
                 key={project.id}
-                className="border-border group border-b last:border-b-0 hover:bg-background/45"
+                className="border-border group hover:bg-background/45 border-b last:border-b-0"
               >
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
@@ -297,7 +330,8 @@ function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
                         </Link>
                       </h2>
                       <p className="text-muted mt-1 truncate text-xs">
-                        {project.number} · {project.location || "Location unavailable"}
+                        {project.number} ·{" "}
+                        {project.location || "Location unavailable"}
                       </p>
                     </div>
                     <WatchlistButton
@@ -463,7 +497,10 @@ function ProjectBadge({ kind }: { kind: string }) {
         badgeStyles[kind] ?? badgeStyles.cancelled
       }`}
     >
-      <span aria-hidden="true" className="mr-1.5 size-1.5 rounded-full bg-current" />
+      <span
+        aria-hidden="true"
+        className="mr-1.5 size-1.5 rounded-full bg-current"
+      />
       {badgeLabels[kind] ?? kind.replaceAll("_", " ")}
     </span>
   );
@@ -518,9 +555,7 @@ function RiskScore({ project }: { project: ProjectListView }) {
         ? ArrowDownRight
         : Minus;
   const trendLabel =
-    project.riskTrend === "insufficient"
-      ? "No trend"
-      : project.riskTrend;
+    project.riskTrend === "insufficient" ? "No trend" : project.riskTrend;
   return (
     <div>
       <div className="flex items-center gap-2">

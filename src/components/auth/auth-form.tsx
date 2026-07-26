@@ -14,7 +14,8 @@ import { PrimaryButton } from "@/components/ui/button";
 
 type AuthFormProps =
   | Readonly<{ mode: "login"; next?: string }>
-  | Readonly<{ mode: "signup" | "forgot-password" | "reset-password" }>;
+  | Readonly<{ mode: "signup"; next?: string }>
+  | Readonly<{ mode: "forgot-password" | "reset-password" }>;
 
 const initialState: AuthActionState = {};
 
@@ -57,7 +58,7 @@ export function AuthForm(props: AuthFormProps) {
 
   return (
     <form action={formAction} className="space-y-5" noValidate>
-      {props.mode === "login" ? (
+      {props.mode === "login" || props.mode === "signup" ? (
         <input type="hidden" name="next" value={props.next ?? "/"} />
       ) : null}
       {asksForEmail ? (

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { AuthForm } from "@/components/auth/auth-form";
 import { safeRedirectPath } from "@/lib/auth/redirects";
+import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
 import { getCurrentUser } from "@/lib/auth/session";
 
 type LoginPageProps = Readonly<{
@@ -15,8 +16,12 @@ type LoginPageProps = Readonly<{
 }>;
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  if (await getCurrentUser()) redirect("/");
   const params = await searchParams;
+  const next = safeRedirectPath(params.next);
+  const user = await getCurrentUser();
+  if (user) {
+    redirect((await resolveOnboardingDestination(user, { next })).destination);
+  }
 
   return (
     <AuthCard
@@ -26,7 +31,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <>
           New to Sightline?{" "}
           <Link
-            href="/signup"
+            href={`/signup?next=${encodeURIComponent(next)}`}
             className="text-deep-green font-semibold underline-offset-4 hover:underline"
           >
             Create an account
@@ -50,7 +55,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           That email link is invalid or expired. Please try again.
         </p>
       ) : null}
-      <AuthForm mode="login" next={safeRedirectPath(params.next)} />
+      <AuthForm mode="login" next={next} />
     </AuthCard>
   );
 }

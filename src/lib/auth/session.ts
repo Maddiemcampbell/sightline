@@ -66,6 +66,19 @@ export async function requireAuthenticatedUser(
   return user;
 }
 
+export async function setActiveOrganizationCookie(
+  organizationId: string,
+): Promise<void> {
+  (await cookies()).set(ACTIVE_ORGANIZATION_COOKIE, organizationId, {
+    httpOnly: true,
+    path: "/",
+    sameSite: "lax",
+    secure:
+      process.env.NODE_ENV === "production" &&
+      process.env.SIGHTLINE_E2E !== "true",
+  });
+}
+
 export const getCurrentMemberships = cache(
   async (): Promise<OrganizationMembership[]> => {
     const principal = await getCurrentUser();
