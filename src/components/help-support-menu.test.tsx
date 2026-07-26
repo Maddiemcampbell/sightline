@@ -1,16 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { HelpSupportMenu } from "@/components/help-support-menu";
+import { HelpSupportMenu, helpMenuItems } from "@/components/help-support-menu";
 
 describe("help and support menu", () => {
-  it("provides actionable and privacy-safe support destinations", () => {
+  it("provides the shared help destinations", () => {
     const markup = renderToStaticMarkup(<HelpSupportMenu />);
 
     expect(markup).toContain("Help and support");
-    expect(markup).toContain("Report a problem");
-    expect(markup).toContain("mailto:support@sightline.app");
-    expect(markup).toContain("/settings/privacy");
-    expect(markup).toContain("Never include passwords");
+    expect(helpMenuItems.map(({ label }) => label)).toEqual([
+      "Documentation",
+      "Keyboard Shortcuts",
+      "Contact Support",
+      "Release Notes",
+      "About Sightline",
+    ]);
+    expect(helpMenuItems[2]?.href).toContain("mailto:support@sightline.app");
   });
 });

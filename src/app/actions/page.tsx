@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { ActionControls } from "@/features/actions/action-controls";
 import { getActionsWorkspace } from "@/features/actions/data";
 import { actionFiltersSchema } from "@/features/actions/validation";
+import { WatchlistButton } from "@/features/workspace/watchlist-button";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -121,13 +122,25 @@ export default async function ActionsPage({ searchParams }: Props) {
                         </Link>
                       </p>
                     </div>
-                    {action.dueAt &&
-                      new Date(action.dueAt) < new Date() &&
-                      !["completed", "dismissed"].includes(action.status) && (
-                        <span className="bg-danger/10 text-danger rounded-full px-2.5 py-1 text-xs font-semibold">
-                          Overdue
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2">
+                      {action.dueAt &&
+                        new Date(action.dueAt) < new Date() &&
+                        !["completed", "dismissed"].includes(action.status) && (
+                          <span className="bg-danger/10 text-danger rounded-full px-2.5 py-1 text-xs font-semibold">
+                            Overdue
+                          </span>
+                        )}
+                      <WatchlistButton
+                        item={{
+                          id: action.id,
+                          type: "action",
+                          title: action.title,
+                          detail:
+                            project?.name ?? risk?.title ?? "Risk response",
+                          href: `/risks/${action.riskId}`,
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="mt-4">
                     <ActionControls

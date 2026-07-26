@@ -15,6 +15,7 @@ import {
   projectFiltersSchema,
   riskFiltersSchema,
 } from "@/features/portfolio/validation";
+import { WatchlistButton } from "@/features/workspace/watchlist-button";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -233,6 +234,15 @@ export default async function RisksPage({ searchParams }: Props) {
                 >
                   View risk →
                 </Link>
+                <WatchlistButton
+                  item={{
+                    id: risk.id,
+                    type: "risk",
+                    title: risk.title,
+                    detail: risk.project?.name ?? "No project",
+                    href: `/risks/${risk.id}`,
+                  }}
+                />
               </div>
             </Card>
           ))}

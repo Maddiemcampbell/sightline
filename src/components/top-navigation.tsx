@@ -9,6 +9,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NotificationRepository } from "@/features/notifications/repository";
 import { NotificationMenu } from "@/features/notifications/notification-menu";
 import { HelpSupportMenu } from "@/components/help-support-menu";
+import { GlobalSearch } from "@/features/workspace/global-search";
 
 export async function TopNavigation() {
   const [organization, membership] = await Promise.all([
@@ -48,6 +49,9 @@ export async function TopNavigation() {
       </div>
       <nav aria-label="Utility navigation">
         <ul className="flex items-center gap-1">
+          <li>
+            <GlobalSearch />
+          </li>
           <li>
             <HelpSupportMenu />
           </li>

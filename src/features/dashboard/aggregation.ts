@@ -389,6 +389,7 @@ export function buildDashboardView(
         location:
           [project.city, project.state_code].filter(Boolean).join(", ") ||
           "Location unavailable",
+        contractValueCents: project.contract_value_cents,
         projectedMarginCents: project.projected_margin_cents ?? null,
         openRiskCount: projectRisks.length,
         exposureCents,

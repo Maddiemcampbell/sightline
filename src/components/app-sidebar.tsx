@@ -9,6 +9,7 @@ import {
   getCurrentMemberships,
   getCurrentUser,
 } from "@/lib/auth/session";
+import { WatchlistShortcut } from "@/features/workspace/watchlist-shortcut";
 
 export async function AppSidebar() {
   const [principal, currentMembership, memberships] = await Promise.all([
@@ -99,6 +100,9 @@ export async function AppSidebar() {
               </Link>
             </li>
           ))}
+          <li>
+            <WatchlistShortcut />
+          </li>
         </ul>
       </nav>
 

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import { getProjects } from "@/features/portfolio/data";
 import { projectFiltersSchema } from "@/features/portfolio/validation";
+import { WatchlistButton } from "@/features/workspace/watchlist-button";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -90,9 +91,20 @@ export default async function ProjectsPage({ searchParams }: Props) {
                   </p>
                   <h2 className="mt-1 text-lg font-semibold">{project.name}</h2>
                 </div>
-                <span className="bg-soft-green text-deep-green rounded-full px-2.5 py-1 text-xs font-semibold capitalize">
-                  {project.stage.replace("_", " ")}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="bg-soft-green text-deep-green rounded-full px-2.5 py-1 text-xs font-semibold capitalize">
+                    {project.stage.replace("_", " ")}
+                  </span>
+                  <WatchlistButton
+                    item={{
+                      id: project.id,
+                      type: "project",
+                      title: project.name,
+                      detail: `${project.number} · ${project.location}`,
+                      href: `/projects/${project.id}`,
+                    }}
+                  />
+                </div>
               </div>
               <dl className="mt-6 grid grid-cols-3 gap-3 border-y py-4">
                 <div>

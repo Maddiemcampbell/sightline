@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -23,6 +25,15 @@ import type {
 } from "@/features/dashboard/types";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import type { PortfolioObservation } from "@/features/portfolio-intelligence/types";
+import { ProjectFilter } from "@/features/workspace/project-filter";
+import {
+  AdvisorSelector,
+  advisorModeLabels,
+} from "@/features/workspace/advisor-selector";
+import {
+  useDashboardState,
+  useWorkspaceResources,
+} from "@/features/workspace/workspace-provider";
 
 const heatmapColumns = [
   "schedule",
@@ -33,6 +44,12 @@ const heatmapColumns = [
 ] as const;
 
 export function Dashboard({ view }: { view: DashboardView }) {
+  const { selectedProjectId } = useDashboardState();
+  const { projects } = useWorkspaceResources();
+  const filteredView = filterDashboardView(view, selectedProjectId);
+  const selectedProject = projects.find(
+    (project) => project.id === selectedProjectId,
+  );
   const date = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -64,7 +81,9 @@ export function Dashboard({ view }: { view: DashboardView }) {
       </div>
     );
 
-  const topRisk = view.priorities.find((priority) => priority.kind === "risk");
+  const topRisk = filteredView.priorities.find(
+    (priority) => priority.kind === "risk",
+  );
   return (
     <div className="mx-auto w-full max-w-[96rem] px-[var(--page-gutter)] py-6 lg:py-8">
       <section className="relative isolate min-h-[15.5rem] overflow-hidden rounded-2xl bg-[#f7f7f1] px-6 py-8 sm:px-8 lg:px-10">
@@ -85,13 +104,17 @@ export function Dashboard({ view }: { view: DashboardView }) {
             Good morning, {firstName}.
           </h1>
           <p className="text-muted mt-4 text-sm leading-6 sm:text-base">
-            {changeSummary(view)}
+            {selectedProject
+              ? `Dashboard intelligence is scoped to ${selectedProject.name}.`
+              : changeSummary(view)}
           </p>
           <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
-            Sightline found {view.intelligence.portfolioWatch.length} portfolio
-            signal
-            {view.intelligence.portfolioWatch.length === 1 ? "" : "s"} that
-            currently deserve executive attention.
+            Sightline found {filteredView.intelligence.portfolioWatch.length}{" "}
+            portfolio signal
+            {filteredView.intelligence.portfolioWatch.length === 1
+              ? ""
+              : "s"}{" "}
+            that currently deserve executive attention.
           </p>
           <Link
             href="/brief"
@@ -107,27 +130,27 @@ export function Dashboard({ view }: { view: DashboardView }) {
       <div className="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0 space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
-            <PortfolioOverview view={view} />
+            <PortfolioOverview view={filteredView} />
             <RiskDrivers
-              drivers={view.riskDrivers}
-              canViewFinancials={view.canViewFinancials}
+              drivers={filteredView.riskDrivers}
+              canViewFinancials={filteredView.canViewFinancials}
             />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
-            <RiskHeatmap rows={view.riskHeatmap} />
+            <RiskHeatmap rows={filteredView.riskHeatmap} />
             <div className="space-y-4">
-              <RecentIntelligence view={view} />
-              <OverdueActions view={view} />
-              <ExecutiveRecommendations view={view} />
+              <RecentIntelligence view={filteredView} />
+              <OverdueActions view={filteredView} />
+              <ExecutiveRecommendations view={filteredView} />
             </div>
           </div>
         </div>
 
-        <PortfolioAdvisor view={view} topRisk={topRisk ?? null} />
+        <PortfolioAdvisor view={filteredView} topRisk={topRisk ?? null} />
       </div>
 
-      <QuickPaths view={view} topRisk={topRisk ?? null} />
+      <QuickPaths view={filteredView} topRisk={topRisk ?? null} />
     </div>
   );
 }
@@ -146,12 +169,7 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
           </p>
           <h2 className="mt-1 text-lg font-semibold">Portfolio overview</h2>
         </div>
-        <Link
-          href="/projects"
-          className="border-border hover:bg-background inline-flex min-h-9 items-center rounded-md border px-3 text-xs font-semibold"
-        >
-          All accessible projects
-        </Link>
+        <ProjectFilter />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <OverviewMetric
@@ -426,7 +444,10 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
         </p>
       )}
       {hypothesis && (
-        <div className="border-border mt-4 border-t pt-4">
+        <div
+          id={`hypothesis-${hypothesis.key}`}
+          className="border-border mt-4 scroll-mt-24 border-t pt-4"
+        >
           <p className="text-warning text-[0.68rem] font-semibold uppercase">
             Hypothesis — not a conclusion
           </p>
@@ -450,8 +471,7 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
               )}
               {hypothesis.recommendedInvestigationSteps[0] && (
                 <p>
-                  Investigate:{" "}
-                  {hypothesis.recommendedInvestigationSteps[0]}
+                  Investigate: {hypothesis.recommendedInvestigationSteps[0]}
                 </p>
               )}
             </div>
@@ -625,6 +645,7 @@ function PortfolioAdvisor({
   view: DashboardView;
   topRisk: DashboardView["priorities"][number] | null;
 }) {
+  const { advisorMode } = useDashboardState();
   return (
     <aside className="border-border bg-surface shadow-surface h-fit rounded-xl border p-5 2xl:sticky 2xl:top-24">
       <div className="flex items-center gap-2">
@@ -633,16 +654,21 @@ function PortfolioAdvisor({
           AI assistant
         </p>
       </div>
+      <div className="mt-4">
+        <AdvisorSelector />
+      </div>
       <div className="mt-6">
         <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-full">
           <Bot className="size-5" aria-hidden="true" />
         </span>
         <h2 className="mt-4 text-lg font-semibold">
-          Hi {view.currentUserName.split(" ")[0]}, I’m your Risk Advisor.
+          Hi {view.currentUserName.split(" ")[0]}.{" "}
+          {advisorModeLabels[advisorMode]} mode is selected.
         </h2>
         <p className="text-muted mt-2 text-sm leading-6">
-          Ask grounded questions from a risk’s authorized evidence, citations,
-          and conversation history.
+          This preference is ready for future advisor behavior. Today, Ask
+          Sightline answers grounded questions from a risk’s authorized
+          evidence, citations, and conversation history.
         </p>
       </div>
       <p className="text-muted mt-6 text-[0.68rem] font-semibold tracking-[0.08em] uppercase">
@@ -683,6 +709,111 @@ function PortfolioAdvisor({
       </p>
     </aside>
   );
+}
+
+export function filterDashboardView(
+  view: DashboardView,
+  projectId: string,
+): DashboardView {
+  if (projectId === "all") return view;
+  const portfolio = view.portfolio.filter((row) => row.id === projectId);
+  const heatmap = view.riskHeatmap.filter((row) => row.projectId === projectId);
+  const priorities = view.priorities.filter(
+    (priority) => priority.projectId === projectId,
+  );
+  const allowedObservationKeys = new Set(
+    view.observations
+      .filter((observation) =>
+        observation.affectedProjectIds.includes(projectId),
+      )
+      .map((observation) => observation.key),
+  );
+  const rootCauseSuggestions = view.intelligence.rootCauseSuggestions.filter(
+    (suggestion) =>
+      suggestion.supportingObservations.some((observation) =>
+        allowedObservationKeys.has(observation.key),
+      ),
+  );
+  const allowedHypothesisKeys = new Set(
+    rootCauseSuggestions.map((suggestion) => suggestion.key),
+  );
+  const projectRiskDrivers: RiskDriver[] = heatmap.flatMap((row) =>
+    heatmapColumns.flatMap((category) => {
+      const severity = row.cells[category];
+      if (!severity) return [];
+      return [
+        {
+          category,
+          label: `${category[0]?.toUpperCase()}${category.slice(1)}`,
+          riskCount: 1,
+          exposureCents: 0,
+          level:
+            severity === "critical" || severity === "high"
+              ? ("high" as const)
+              : severity === "medium"
+                ? ("medium" as const)
+                : ("low" as const),
+        },
+      ];
+    }),
+  );
+  const selectedPortfolio = portfolio[0];
+  return {
+    ...view,
+    priorities,
+    portfolio,
+    riskHeatmap: heatmap,
+    riskDrivers: projectRiskDrivers,
+    portfolioSummary: {
+      activeProjects: selectedPortfolio ? 1 : 0,
+      projectsAtRisk: selectedPortfolio?.openRiskCount ? 1 : 0,
+      totalExposureCents: selectedPortfolio?.exposureCents ?? 0,
+      forecastMarginPercent:
+        selectedPortfolio?.projectedMarginCents != null &&
+        selectedPortfolio.contractValueCents
+          ? Number(
+              (
+                (selectedPortfolio.projectedMarginCents /
+                  selectedPortfolio.contractValueCents) *
+                100
+              ).toFixed(1),
+            )
+          : null,
+    },
+    observations: view.observations.filter((observation) =>
+      allowedObservationKeys.has(observation.key),
+    ),
+    work: {
+      ...view.work,
+      overdue: view.work.overdue.filter((action) =>
+        priorities.some(
+          (priority) =>
+            priority.kind === "action" && priority.id === `action:${action.id}`,
+        ),
+      ),
+    },
+    intelligence: {
+      ...view.intelligence,
+      portfolioWatch: view.intelligence.portfolioWatch.filter((observation) =>
+        allowedObservationKeys.has(observation.key),
+      ),
+      emergingPatterns: view.intelligence.emergingPatterns.filter(
+        ({ observation }) => allowedObservationKeys.has(observation.key),
+      ),
+      historicalComparisons: [],
+      rootCauseSuggestions,
+      executiveRecommendations:
+        view.intelligence.executiveRecommendations.filter((recommendation) =>
+          recommendation.source === "observation"
+            ? allowedObservationKeys.has(
+                recommendation.key.replace(/^observation:/, ""),
+              )
+            : allowedHypothesisKeys.has(
+                recommendation.key.replace(/^hypothesis:/, ""),
+              ),
+        ),
+    },
+  };
 }
 
 function AdvisorLink({

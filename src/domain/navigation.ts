@@ -6,6 +6,8 @@ import {
   ShieldAlert,
   ListChecks,
   History,
+  BarChart3,
+  Blocks,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,5 +24,7 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/actions", label: "Actions", icon: ListChecks },
   { href: "/activity", label: "Activity", icon: History },
   { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/integrations", label: "Integrations", icon: Blocks },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

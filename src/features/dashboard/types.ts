@@ -50,6 +50,7 @@ export type PortfolioHealthRow = Readonly<{
   id: string;
   name: string;
   location: string;
+  contractValueCents: number | null;
   projectedMarginCents: number | null;
   openRiskCount: number;
   exposureCents: number;

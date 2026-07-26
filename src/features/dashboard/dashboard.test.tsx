@@ -5,8 +5,22 @@ vi.mock("@/features/actions/action-controls", () => ({
   ActionControls: () => null,
 }));
 
-import { Dashboard } from "@/features/dashboard/dashboard";
+import { Dashboard, filterDashboardView } from "@/features/dashboard/dashboard";
 import type { DashboardView } from "@/features/dashboard/types";
+import { WorkspaceProvider } from "@/features/workspace/workspace-provider";
+
+function TestDashboard({ view }: { view: DashboardView }) {
+  return (
+    <WorkspaceProvider
+      organizationId="organization-1"
+      userId="user-1"
+      projects={view.portfolio.map(({ id, name }) => ({ id, name }))}
+      searchResources={[]}
+    >
+      <Dashboard view={view} />
+    </WorkspaceProvider>
+  );
+}
 
 const view: DashboardView = {
   generatedAt: "2026-07-23T16:00:00.000Z",
@@ -52,6 +66,7 @@ const view: DashboardView = {
       id: "project-1",
       name: "Riverfront",
       location: "Stockton, CA",
+      contractValueCents: 16_000_000,
       projectedMarginCents: 2_000_000,
       openRiskCount: 1,
       exposureCents: 5_000_000,
@@ -107,8 +122,42 @@ const view: DashboardView = {
 };
 
 describe("company dashboard", () => {
+  it("applies one project selection across dashboard modules", () => {
+    const filtered = filterDashboardView(
+      {
+        ...view,
+        portfolio: [
+          ...view.portfolio,
+          {
+            ...view.portfolio[0]!,
+            id: "project-2",
+            name: "Beacon",
+            openRiskCount: 0,
+            exposureCents: 0,
+          },
+        ],
+        riskHeatmap: [
+          ...view.riskHeatmap,
+          {
+            ...view.riskHeatmap[0]!,
+            projectId: "project-2",
+            projectName: "Beacon",
+          },
+        ],
+      },
+      "project-2",
+    );
+
+    expect(filtered.portfolio.map(({ id }) => id)).toEqual(["project-2"]);
+    expect(filtered.riskHeatmap.map(({ projectId }) => projectId)).toEqual([
+      "project-2",
+    ]);
+    expect(filtered.priorities).toEqual([]);
+    expect(filtered.portfolioSummary.projectsAtRisk).toBe(0);
+  });
+
   it("renders the executive portfolio workspace from real view data", () => {
-    const markup = renderToStaticMarkup(<Dashboard view={view} />);
+    const markup = renderToStaticMarkup(<TestDashboard view={view} />);
 
     expect(markup).toContain("Good morning, Matt.");
     expect(markup).toContain("Portfolio Watch");
@@ -125,7 +174,7 @@ describe("company dashboard", () => {
 
   it("labels root-cause suggestions as hypotheses rather than conclusions", () => {
     const markup = renderToStaticMarkup(
-      <Dashboard
+      <TestDashboard
         view={{
           ...view,
           intelligence: {
@@ -190,7 +239,7 @@ describe("company dashboard", () => {
       algorithmVersion: "test",
     };
     const markup = renderToStaticMarkup(
-      <Dashboard
+      <TestDashboard
         view={{
           ...view,
           canViewFinancials: false,
@@ -209,7 +258,7 @@ describe("company dashboard", () => {
 
   it("renders the empty organization state with a next step", () => {
     const markup = renderToStaticMarkup(
-      <Dashboard
+      <TestDashboard
         view={{
           ...view,
           isEmptyOrganization: true,
