@@ -65,12 +65,12 @@ export function AdminShell({
     process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? "local build";
   return (
     <div className="min-h-screen bg-[#f6f7f8] text-slate-950 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="border-slate-800 bg-slate-950 text-slate-100 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r">
-        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
-          <SightlineMark className="bg-white/10 ring-1 ring-white/15" />
+      <aside className="text-deep-green border-[#b5c963] bg-[#D4E87D] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r">
+        <div className="border-deep-green/15 flex h-16 items-center gap-3 border-b px-5">
+          <SightlineMark className="bg-deep-green/10 ring-deep-green/15 ring-1" />
           <div>
             <p className="font-semibold tracking-tight">Sightline</p>
-            <p className="text-[0.65rem] font-semibold tracking-[0.13em] text-slate-400 uppercase">
+            <p className="text-deep-green/70 text-[0.65rem] font-semibold tracking-[0.13em] uppercase">
               Platform Admin
             </p>
           </div>
@@ -88,7 +88,7 @@ export function AdminShell({
                 <li key={href}>
                   <Link
                     href={href}
-                    className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+                    className="text-deep-green hover:bg-deep-green flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold hover:text-[#D4E87D]"
                   >
                     <Icon aria-hidden="true" className="size-4" />
                     {label}
@@ -97,16 +97,18 @@ export function AdminShell({
               ))}
           </ul>
         </nav>
-        <div className="hidden border-t border-white/10 p-4 lg:block">
+        <div className="border-deep-green/15 hidden border-t p-4 lg:block">
           <p className="truncate text-sm font-semibold">
             {operator.displayName}
           </p>
-          <p className="truncate text-xs text-slate-400">{operator.email}</p>
+          <p className="text-deep-green/70 truncate text-xs">
+            {operator.email}
+          </p>
           <form action={logout} className="mt-3">
             <input type="hidden" name="next" value="/internal/admin" />
             <button
               type="submit"
-              className="text-xs font-semibold text-slate-300 hover:text-white"
+              className="text-deep-green/80 hover:text-deep-green text-xs font-semibold hover:underline"
             >
               Sign out
             </button>
