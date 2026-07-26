@@ -99,10 +99,13 @@ export class TeamRepository {
     invitationId: string,
     expiresAt: string,
     tokenHash: string,
-  ): Promise<void> {
+  ): Promise<{
+    email: string;
+    role: "administrator" | "manager" | "contributor";
+  }> {
     const { data, error } = await this.client
       .from("invitations")
-      .select("send_count")
+      .select("email,role,send_count")
       .eq("organization_id", organizationId)
       .eq("id", invitationId)
       .is("accepted_at", null)
@@ -121,6 +124,7 @@ export class TeamRepository {
       .eq("organization_id", organizationId)
       .eq("id", invitationId);
     if (updateError) throw new Error(updateError.message);
+    return { email: data.email, role: data.role };
   }
 
   async appendEvent(input: {

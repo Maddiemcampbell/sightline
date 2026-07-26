@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
   "risk_assigned",
   "action_completed",
   "data_export_ready",
+  "background_job_failed",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

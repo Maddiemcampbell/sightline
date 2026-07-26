@@ -226,6 +226,38 @@ export type Database = {
       organization_memberships: Table<OrganizationMembershipRow>;
       invitations: Table<InvitationRow>;
       audit_logs: Table<AuditLogRow>;
+      organization_job_schedules: Table<
+        Timestamped & {
+          daily_brief_enabled: boolean;
+          daily_brief_time: string;
+          max_attempts: number;
+          organization_id: string;
+          portfolio_refresh_enabled: boolean;
+          portfolio_refresh_time: string;
+          timezone: string;
+        }
+      >;
+      organization_job_runs: Table<
+        Timestamped & {
+          attempt_count: number;
+          completed_at: string | null;
+          correlation_id: string;
+          duration_ms: number | null;
+          error_message: string | null;
+          id: string;
+          idempotency_key: string;
+          job_type: "portfolio_refresh" | "daily_executive_brief";
+          max_attempts: number;
+          metrics: Json;
+          next_retry_at: string | null;
+          organization_id: string;
+          requested_by_membership_id: string | null;
+          scheduled_for: string | null;
+          started_at: string | null;
+          status: "queued" | "running" | "succeeded" | "failed";
+          trigger_source: "scheduled" | "manual" | "retry";
+        }
+      >;
       organization_data_exports: Table<{
         artifact_mime_type: string | null;
         artifact_name: string | null;
@@ -355,7 +387,8 @@ export type Database = {
           | "project_added"
           | "risk_assigned"
           | "action_completed"
-          | "data_export_ready";
+          | "data_export_ready"
+          | "background_job_failed";
         organization_id: string;
         payload: Json;
         read_at: string | null;

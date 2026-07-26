@@ -146,9 +146,7 @@ test("records a guided resolution and reopens it with a reason", async ({
 }) => {
   test.slow();
 
-  await page.goto(
-    "/risks/60000000-0000-4000-8000-000000000002?tab=evidence",
-  );
+  await page.goto("/risks/60000000-0000-4000-8000-000000000002?tab=evidence");
   await expect(page).toHaveURL(/\?tab=evidence$/);
   await expect(
     page.getByRole("heading", { name: "Evidence-grounded explanation" }),
@@ -243,9 +241,7 @@ test("records a guided resolution and reopens it with a reason", async ({
   await expect(page.getByLabel("Reason for reopening")).toBeHidden();
   await page.reload();
   await expect(
-    page
-      .locator("#main-content")
-      .getByText("action needed", { exact: true }),
+    page.locator("#main-content").getByText("action needed", { exact: true }),
   ).toBeVisible();
   await page.goto("/brief");
   await expect(page.getByRole("article")).toHaveCount(3);
@@ -257,7 +253,9 @@ test("explains a risk with visibly grounded evidence", async ({ page }) => {
   await expect(
     main.getByRole("heading", { name: "Evidence-grounded explanation" }),
   ).toBeVisible();
-  await expect(main.getByText("Direct evidence", { exact: true })).toBeVisible();
+  await expect(
+    main.getByText("Direct evidence", { exact: true }),
+  ).toBeVisible();
   await expect(
     main.getByText("Policy expiration: July 25, 2026"),
   ).toBeVisible();
@@ -273,9 +271,7 @@ test("asks a grounded risk question and records feedback", async ({ page }) => {
   await expect(question).toBeVisible();
   await question.fill("When does the insurance expire?");
   await main.getByRole("button", { name: "Ask Sightline" }).click();
-  const answer = main
-    .getByRole("region", { name: "Sightline answer" })
-    .last();
+  const answer = main.getByRole("region", { name: "Sightline answer" }).last();
   await expect(answer).toContainText("Policy expiration: July 25, 2026");
   await expect(answer).toContainText("Evidence citations");
   await answer.getByRole("button", { name: "Helpful", exact: true }).click();
@@ -478,7 +474,10 @@ test("follows an executive priority and updates an overdue action", async ({
   const overdueDueDate = page.getByLabel(`Due date for ${actionTitle}`, {
     exact: true,
   });
-  await overdueDueDate.fill("2026-07-26");
+  const futureDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000)
+    .toISOString()
+    .slice(0, 10);
+  await overdueDueDate.fill(futureDueDate);
   await expect
     .poll(
       async () => {
@@ -488,7 +487,7 @@ test("follows an executive priority and updates an overdue action", async ({
         if ((await current.count()) === 0) return "settled";
         const action = current.locator("xpath=ancestor::*[@data-action-id]");
         return (await action.getAttribute("data-pending")) === "false" &&
-          (await current.inputValue()) === "2026-07-26"
+          (await current.inputValue()) === futureDueDate
           ? "settled"
           : "pending";
       },

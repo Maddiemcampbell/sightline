@@ -4,7 +4,7 @@ import type { DailyBriefView } from "@/features/daily-brief/types";
 import { toActionView } from "@/features/actions/data";
 import { requireActorContext } from "@/lib/auth/request-context";
 import type { Json } from "@/lib/supabase/database.types";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 function requireRows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -26,7 +26,7 @@ export async function getDailyBriefView(): Promise<DailyBriefView | null> {
 export async function getDailyBriefViewForOrganization(
   organizationId: string,
 ): Promise<DailyBriefView | null> {
-  const client = await createServerSupabaseClient();
+  const client = createAdminSupabaseClient();
   const { data: brief, error: briefError } = await client
     .from("daily_briefs")
     .select("*")

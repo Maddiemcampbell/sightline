@@ -27,6 +27,7 @@ import {
 import { getServerEnv } from "@/lib/env";
 import { TeamRepository } from "@/features/team/repository";
 import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
+import { sendOrganizationInvitation } from "@/features/email/organization-invitation";
 
 export type OrganizationActionState = Readonly<{
   error?: boolean;
@@ -215,18 +216,28 @@ export async function createInvitationAction(
   _state: OrganizationActionState,
   formData: FormData,
 ): Promise<OrganizationActionState> {
+  let principal: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
+  let membership: Awaited<ReturnType<typeof requireCurrentMembership>>;
+  let input: z.infer<typeof createInvitationSchema>;
+  let token: string;
   try {
-    const principal = await requireAuthenticatedUser();
-    const membership = await requireCurrentMembership();
-    const input = createInvitationSchema.parse({
+    principal = await requireAuthenticatedUser();
+    membership = await requireCurrentMembership();
+    input = createInvitationSchema.parse({
       email: formData.get("email"),
       role: formData.get("role") || "contributor",
     });
-    const token = await service().createInvitation(
+    token = await service().createInvitation(
       principal,
       membership.organizationId,
       input,
     );
+  } catch (error) {
+    return errorState(error);
+  }
+
+  const invitationUrl = `${getServerEnv().APP_URL}/invitations/${token}`;
+  try {
     await recordAuditEvent({
       organizationId: membership.organizationId,
       actorAuthUserId: principal.id,
@@ -260,16 +271,37 @@ export async function createInvitationAction(
         },
       }),
     ]);
-    const origin = getServerEnv().APP_URL;
-    revalidatePath("/organization/settings");
-    revalidatePath("/settings/team");
-    return {
-      message: "Invitation created. Share this single-use link securely.",
-      invitationUrl: `${origin}/invitations/${token}`,
-    };
   } catch (error) {
-    return errorState(error);
+    console.error("Organization invitation follow-up recording failed.", {
+      organizationId: membership.organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
   }
+
+  let deliveryFailed = false;
+  try {
+    await sendOrganizationInvitation({
+      organizationId: membership.organizationId,
+      organizationName: membership.organization.name,
+      email: input.email,
+      role: input.role,
+      token,
+    });
+  } catch (error) {
+    deliveryFailed = true;
+    console.error("Organization invitation email delivery failed.", {
+      organizationId: membership.organizationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+  revalidatePath("/organization/settings");
+  revalidatePath("/settings/team");
+  return {
+    message: deliveryFailed
+      ? "Invitation created, but email delivery failed. Share this single-use link securely."
+      : "Invitation email sent. You can also share this single-use link securely.",
+    invitationUrl,
+  };
 }
 
 export async function acceptInvitationAction(

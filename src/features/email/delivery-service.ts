@@ -35,42 +35,75 @@ export async function deliverScheduledMorningBriefs(
       name: organization.name,
     })),
     async (organization) => {
-      const organizationId = organization.organizationId;
-      const brief = await getDailyBriefViewForOrganization(organizationId);
-      if (!brief || brief.risks.length !== 3) return;
-      const { data: users, error: usersError } = await client
-        .from("users")
-        .select("*")
-        .eq("organization_id", organizationId)
-        .eq("email_delivery_enabled", true);
-      if (usersError) throw new Error(usersError.message);
-      for (const user of users ?? []) {
-        if (
-          !isBriefDeliveryDue({
-            now,
-            timezone: user.delivery_timezone,
-            preferredTime: user.preferred_delivery_time.slice(0, 5),
-            briefDate: brief.briefDate,
-          })
-        ) {
-          summary.skipped += 1;
-          continue;
-        }
-        const outcome = await sendBriefEmail({
-          organizationId,
-          provider,
-          organizationName: organization.name,
-          user,
-          brief,
-          appUrl: config.appUrl,
-          from: config.from,
-          kind: "scheduled",
-          now,
-        });
-        summary[outcome] += 1;
-      }
+      const result = await deliverScheduledMorningBriefsForOrganization(
+        organization.organizationId,
+        now,
+        { provider, config, respectUserSchedule: true },
+      );
+      summary.sent += result.sent;
+      summary.skipped += result.skipped;
+      summary.failed += result.failed;
     },
   );
+  return summary;
+}
+
+export async function deliverScheduledMorningBriefsForOrganization(
+  organizationId: string,
+  now = new Date(),
+  options?: {
+    provider?: EmailProvider;
+    config?: { appUrl: string; from: string };
+    respectUserSchedule?: boolean;
+  },
+): Promise<DeliverySummary> {
+  const client = createAdminSupabaseClient();
+  const [organizationResult, usersResult, brief] = await Promise.all([
+    client
+      .from("organizations")
+      .select("name")
+      .eq("id", organizationId)
+      .single(),
+    client
+      .from("users")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .eq("email_delivery_enabled", true),
+    getDailyBriefViewForOrganization(organizationId),
+  ]);
+  if (organizationResult.error)
+    throw new Error(organizationResult.error.message);
+  if (usersResult.error) throw new Error(usersResult.error.message);
+  const summary: DeliverySummary = { sent: 0, skipped: 0, failed: 0 };
+  if (!brief || brief.risks.length !== 3) return summary;
+  const provider = options?.provider ?? configuredEmailProvider();
+  const config = options?.config ?? emailConfig();
+  for (const user of usersResult.data ?? []) {
+    if (
+      options?.respectUserSchedule !== false &&
+      !isBriefDeliveryDue({
+        now,
+        timezone: user.delivery_timezone,
+        preferredTime: user.preferred_delivery_time.slice(0, 5),
+        briefDate: brief.briefDate,
+      })
+    ) {
+      summary.skipped += 1;
+      continue;
+    }
+    const outcome = await sendBriefEmail({
+      organizationId,
+      provider,
+      organizationName: organizationResult.data.name,
+      user,
+      brief,
+      appUrl: config.appUrl,
+      from: config.from,
+      kind: "scheduled",
+      now,
+    });
+    summary[outcome] += 1;
+  }
   return summary;
 }
 

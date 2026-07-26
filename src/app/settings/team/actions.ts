@@ -9,6 +9,7 @@ import { TeamService } from "@/features/team/service";
 import { requireCurrentMembership } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { getServerEnv } from "@/lib/env";
+import { sendOrganizationInvitation } from "@/features/email/organization-invitation";
 
 export type TeamActionState = Readonly<{
   ok?: boolean;
@@ -205,13 +206,23 @@ export async function resendInvitationAction(
   _state: TeamActionState,
   formData: FormData,
 ): Promise<TeamActionState> {
+  let actor: Awaited<ReturnType<typeof requireCurrentMembership>>;
+  let repository: TeamRepository;
+  let result: Awaited<ReturnType<TeamService["resendInvitation"]>>;
   try {
-    const actor = await requireCurrentMembership();
-    const { repository, service } = dependencies();
-    const result = await service.resendInvitation(actor, {
+    actor = await requireCurrentMembership();
+    const dependenciesValue = dependencies();
+    repository = dependenciesValue.repository;
+    result = await dependenciesValue.service.resendInvitation(actor, {
       invitationId: formData.get("invitationId"),
     });
-    const invitationId = result.invitationId;
+  } catch (error) {
+    return failure(error);
+  }
+
+  const invitationId = result.invitationId;
+  const invitationUrl = `${getServerEnv().APP_URL}/invitations/${result.token}`;
+  try {
     await repository.appendEvent({
       organizationId: actor.organizationId,
       actorMembershipId: actor.id,
@@ -238,16 +249,41 @@ export async function resendInvitationAction(
         },
       ]),
     ]);
-    revalidatePath("/settings/team");
-    return {
-      ok: true,
-      message: "Invitation resent and extended for seven days.",
-      resentInvitationId: invitationId,
-      invitationUrl: `${getServerEnv().APP_URL}/invitations/${result.token}`,
-    };
   } catch (error) {
-    return failure(error);
+    console.error("Invitation resend follow-up recording failed.", {
+      organizationId: actor.organizationId,
+      invitationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
   }
+
+  let deliveryFailed = false;
+  try {
+    await sendOrganizationInvitation({
+      organizationId: actor.organizationId,
+      organizationName: actor.organization.name,
+      email: result.email,
+      role: result.role,
+      token: result.token,
+      invitationId,
+    });
+  } catch (error) {
+    deliveryFailed = true;
+    console.error("Organization invitation resend delivery failed.", {
+      organizationId: actor.organizationId,
+      invitationId,
+      cause: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+  revalidatePath("/settings/team");
+  return {
+    ok: true,
+    message: deliveryFailed
+      ? "Invitation extended, but email delivery failed. Share the new link securely."
+      : "Invitation resent and extended for seven days.",
+    resentInvitationId: invitationId,
+    invitationUrl,
+  };
 }
 
 export async function assignMemberProjectsAction(

@@ -27,7 +27,9 @@ export type AuditAction =
   | "data_export.requested"
   | "data_export.completed"
   | "data_export.failed"
-  | "data_export.downloaded";
+  | "data_export.downloaded"
+  | "automation.schedule_updated"
+  | "automation.manual_run";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;

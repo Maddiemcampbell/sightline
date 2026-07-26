@@ -62,27 +62,28 @@ The placeholder routes and production build do not require live credentials.
 
 ## Scripts
 
-| Script                        | Purpose                                             |
-| ----------------------------- | --------------------------------------------------- |
-| `npm run dev`                 | Start the local Next.js development server          |
-| `npm run build`               | Create a production build                           |
-| `npm run start`               | Serve a production build                            |
-| `npm run lint`                | Run ESLint with zero warnings allowed               |
-| `npm run lint:fix`            | Apply safe ESLint fixes                             |
-| `npm run typecheck`           | Run strict TypeScript checks without emitting files |
-| `npm run format`              | Format supported files with Prettier                |
-| `npm run format:check`        | Check formatting without changing files             |
-| `npm run test`                | Run Vitest unit tests once                          |
-| `npm run test:watch`          | Run Vitest in watch mode                            |
-| `npm run test:e2e`            | Reset data, run pgTAP, then run Playwright tests    |
-| `npm run test:e2e:no-reset`   | Run Playwright without resetting local data         |
-| `npm run dev:bootstrap-users` | Repair local Owner and Contributor test identities  |
-| `npm run check`               | Run formatting, lint, types, and unit tests         |
-| `npm run db:start`            | Start the local Supabase stack                      |
-| `npm run db:stop`             | Stop the local Supabase stack                       |
-| `npm run db:reset`            | Reapply migrations and deterministic seed data      |
-| `npm run db:status`           | Show local Supabase endpoints and status            |
-| `npm run db:types`            | Regenerate types from the local PostgreSQL schema   |
+| Script                            | Purpose                                               |
+| --------------------------------- | ----------------------------------------------------- |
+| `npm run dev`                     | Start the local Next.js development server            |
+| `npm run build`                   | Create a production build                             |
+| `npm run start`                   | Serve a production build                              |
+| `npm run lint`                    | Run ESLint with zero warnings allowed                 |
+| `npm run lint:fix`                | Apply safe ESLint fixes                               |
+| `npm run typecheck`               | Run strict TypeScript checks without emitting files   |
+| `npm run format`                  | Format supported files with Prettier                  |
+| `npm run format:check`            | Check formatting without changing files               |
+| `npm run test`                    | Run Vitest unit tests once                            |
+| `npm run test:watch`              | Run Vitest in watch mode                              |
+| `npm run test:e2e`                | Reset data, run pgTAP, then run Playwright tests      |
+| `npm run test:e2e:no-reset`       | Run Playwright without resetting local data           |
+| `npm run dev:bootstrap-users`     | Repair local Owner and Contributor test identities    |
+| `npm run validate:production-env` | Validate production variables without printing values |
+| `npm run check`                   | Run formatting, lint, types, and unit tests           |
+| `npm run db:start`                | Start the local Supabase stack                        |
+| `npm run db:stop`                 | Stop the local Supabase stack                         |
+| `npm run db:reset`                | Reapply migrations and deterministic seed data        |
+| `npm run db:status`               | Show local Supabase endpoints and status              |
+| `npm run db:types`                | Regenerate types from the local PostgreSQL schema     |
 
 Before the first E2E run, install Playwright's Chromium binary with
 `npx playwright install chromium`. The default E2E command intentionally resets
@@ -148,6 +149,12 @@ feature flags, and testing strategy are documented in
 [`docs/v2-architecture.md`](docs/v2-architecture.md).
 
 ## Deployment
+
+Production secrets belong in the deployment provider, not in `.env` files or
+Git. The hosted Supabase Auth project also requires its own Site URL, redirect
+allowlist, email-confirmation, and SMTP configuration. Follow
+[`docs/production-configuration.md`](docs/production-configuration.md) and run
+`npm run validate:production-env` in the production deployment environment.
 
 The application can deploy to any host that supports Next.js 16 and Node.js 22.
 For Vercel, import the repository, configure every applicable value from

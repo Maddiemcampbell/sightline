@@ -11,6 +11,7 @@ const items = [
   ["/settings/projects", "Projects"],
   ["/settings/privacy", "Privacy & retention"],
   ["/settings/data-export", "Data export"],
+  ["/settings/automation", "Automation"],
 ] as const;
 
 export default function SettingsLayout({
@@ -26,7 +27,8 @@ export default function SettingsLayout({
           Settings
         </h1>
         <p className="text-muted mt-2 max-w-2xl">
-          Manage your profile, organization, security, and collaboration defaults.
+          Manage your profile, organization, security, and collaboration
+          defaults.
         </p>
       </header>
       <div className="mt-7 grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
@@ -36,7 +38,7 @@ export default function SettingsLayout({
               <li key={href}>
                 <Link
                   href={href}
-                  className="hover:bg-background hover:text-deep-green block whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold"
+                  className="hover:bg-background hover:text-deep-green block rounded-md px-3 py-2 text-sm font-semibold whitespace-nowrap"
                 >
                   {label}
                 </Link>

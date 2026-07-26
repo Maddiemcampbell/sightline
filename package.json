@@ -19,6 +19,7 @@
     "test:e2e": "npm run db:reset && supabase test db && playwright test",
     "test:e2e:no-reset": "playwright test",
     "dev:bootstrap-users": "node --env-file=.env.local scripts/bootstrap-local-users.mjs",
+    "validate:production-env": "node scripts/validate-production-env.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "db:start": "supabase start",
     "db:stop": "supabase stop",

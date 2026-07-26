@@ -386,19 +386,29 @@ async function persistDetection(
   if (activityError) throw new Error(activityError.message);
 }
 
-async function regenerateDailyBrief(
+export async function regenerateDailyBrief(
   organizationId: string,
   now: Date,
 ): Promise<number> {
   const client = createAdminSupabaseClient();
-  const { data: rows, error } = await client
-    .from("risks")
-    .select("*")
-    .eq("organization_id", organizationId);
+  const [risksResult, organizationResult] = await Promise.all([
+    client.from("risks").select("*").eq("organization_id", organizationId),
+    client
+      .from("organizations")
+      .select("timezone")
+      .eq("id", organizationId)
+      .single(),
+  ]);
+  const { data: rows, error } = risksResult;
   if (error) throw new Error(error.message);
+  if (organizationResult.error)
+    throw new Error(organizationResult.error.message);
   const risks = (rows ?? []).map(mapRisk);
   const selected = selectDailyBriefRisks(risks);
-  const briefDate = formatOrganizationDate(now);
+  const briefDate = formatOrganizationDate(
+    now,
+    organizationResult.data.timezone,
+  );
   const { data: brief, error: briefError } = await client
     .from("daily_briefs")
     .upsert(

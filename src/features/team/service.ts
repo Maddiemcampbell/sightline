@@ -113,17 +113,27 @@ export class TeamService {
   async resendInvitation(
     actor: OrganizationMembership,
     input: unknown,
-  ): Promise<{ invitationId: string; token: string }> {
+  ): Promise<{
+    invitationId: string;
+    token: string;
+    email: string;
+    role: "administrator" | "manager" | "contributor";
+  }> {
     assertAuthorized(canManageMembers(actor));
     const { invitationId } = invitationMutationSchema.parse(input);
     const token = randomBytes(32).toString("hex");
-    await this.repository.resendInvitation(
+    const invitation = await this.repository.resendInvitation(
       actor.organizationId,
       invitationId,
       new Date(Date.now() + INVITATION_LIFETIME_MS).toISOString(),
       hashInvitationToken(token),
     );
-    return { invitationId, token };
+    return {
+      invitationId,
+      token,
+      email: invitation.email,
+      role: invitation.role,
+    };
   }
 
   async assignProjects(

@@ -1,5 +1,5 @@
 import { cronSecretMatches } from "@/features/detection/cron-auth";
-import { deliverScheduledMorningBriefs } from "@/features/email/delivery-service";
+import { runScheduledOrganizationJobs } from "@/features/background-jobs/runners";
 import { getServerEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -15,8 +15,8 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized." }, { status: 401 });
   }
   try {
-    const summary = await deliverScheduledMorningBriefs();
-    return Response.json({ ok: true, ...summary });
+    const summary = await runScheduledOrganizationJobs("daily_executive_brief");
+    return Response.json({ ok: summary.failed === 0, ...summary });
   } catch {
     return Response.json(
       { error: "Morning email delivery failed." },
