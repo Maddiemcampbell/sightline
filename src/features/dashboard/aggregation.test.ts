@@ -185,6 +185,19 @@ describe("dashboard aggregation", () => {
       openRiskCount: 1,
       exposureCents: 5_000_000,
     });
+    expect(view.portfolioSummary).toEqual({
+      activeProjects: 1,
+      projectsAtRisk: 1,
+      totalExposureCents: 5_000_000,
+      forecastMarginPercent: 10,
+    });
+    expect(view.riskDrivers[0]).toMatchObject({
+      category: "financial",
+      label: "Financial",
+      riskCount: 1,
+      level: "medium",
+    });
+    expect(view.riskHeatmap[0]?.cells.budget).toBe("medium");
     expect(view.value).toMatchObject({
       risksResolved: 1,
       estimatedExposureReducedCents: 4_000_000,

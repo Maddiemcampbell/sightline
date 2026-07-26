@@ -10,6 +10,21 @@ import type {
 const DAY_MS = 86_400_000;
 const terminalRiskStatuses = new Set(["resolved", "dismissed"]);
 const terminalActionStatuses = new Set(["completed", "dismissed"]);
+const severityRank = { low: 1, medium: 2, high: 3, critical: 4 } as const;
+
+function riskGroup(category: DashboardSource["risks"][number]["category"]) {
+  if (category === "schedule" || category === "weather") return "schedule";
+  if (category === "financial") return "budget";
+  if (category === "vendor" || category === "safety") return "resources";
+  if (["contract", "insurance"].includes(category)) return "contracts";
+  return "design";
+}
+
+function labelCategory(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 function toActionView(
   row: DashboardSource["actions"][number],
@@ -131,6 +146,77 @@ export function buildDashboardView(
   const openActions = source.actions.filter(
     (action) => !terminalActionStatuses.has(action.status),
   );
+  const activeProjects = source.projects.filter(
+    (project) => project.status === "active",
+  );
+  const projectsAtRisk = new Set(
+    openRisks.flatMap((risk) => (risk.project_id ? [risk.project_id] : [])),
+  ).size;
+  const totalContractValueCents = activeProjects.reduce(
+    (sum, project) => sum + (project.contract_value_cents ?? 0),
+    0,
+  );
+  const totalProjectedMarginCents = activeProjects.reduce(
+    (sum, project) => sum + project.projected_margin_cents,
+    0,
+  );
+  const driverGroups = new Map<
+    string,
+    { riskCount: number; exposureCents: number; maxSeverity: number }
+  >();
+  for (const risk of openRisks) {
+    const current = driverGroups.get(risk.category) ?? {
+      riskCount: 0,
+      exposureCents: 0,
+      maxSeverity: 0,
+    };
+    driverGroups.set(risk.category, {
+      riskCount: current.riskCount + 1,
+      exposureCents: current.exposureCents + risk.potential_exposure_cents,
+      maxSeverity: Math.max(current.maxSeverity, severityRank[risk.severity]),
+    });
+  }
+  const riskDrivers = [...driverGroups.entries()]
+    .map(([category, values]) => ({
+      category,
+      label: labelCategory(category),
+      riskCount: values.riskCount,
+      exposureCents: values.exposureCents,
+      level:
+        values.maxSeverity >= severityRank.high
+          ? ("high" as const)
+          : values.maxSeverity >= severityRank.medium
+            ? ("medium" as const)
+            : ("low" as const),
+    }))
+    .toSorted(
+      (left, right) =>
+        right.riskCount - left.riskCount ||
+        right.exposureCents - left.exposureCents ||
+        left.label.localeCompare(right.label),
+    )
+    .slice(0, 5);
+  const riskHeatmap = activeProjects.slice(0, 6).map((project) => {
+    const cells: Record<
+      "schedule" | "budget" | "resources" | "contracts" | "design",
+      "critical" | "high" | "medium" | "low" | null
+    > = {
+      schedule: null,
+      budget: null,
+      resources: null,
+      contracts: null,
+      design: null,
+    };
+    for (const risk of openRisks.filter(
+      (candidate) => candidate.project_id === project.id,
+    )) {
+      const group = riskGroup(risk.category);
+      const current = cells[group];
+      if (!current || severityRank[risk.severity] > severityRank[current])
+        cells[group] = risk.severity;
+    }
+    return { projectId: project.id, projectName: project.name, cells };
+  });
   const actionViews = source.actions.map((action) =>
     toActionView(
       action,
@@ -433,6 +519,24 @@ export function buildDashboardView(
     },
     priorities,
     portfolio,
+    portfolioSummary: {
+      activeProjects: activeProjects.length,
+      projectsAtRisk,
+      totalExposureCents: openRisks.reduce(
+        (sum, risk) => sum + risk.potential_exposure_cents,
+        0,
+      ),
+      forecastMarginPercent: totalContractValueCents
+        ? Number(
+            (
+              (totalProjectedMarginCents / totalContractValueCents) *
+              100
+            ).toFixed(1),
+          )
+        : null,
+    },
+    riskDrivers,
+    riskHeatmap,
     work: {
       dueToday,
       overdue,

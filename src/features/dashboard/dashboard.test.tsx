@@ -60,6 +60,34 @@ const view: DashboardView = {
       concernScore: 25,
     },
   ],
+  portfolioSummary: {
+    activeProjects: 1,
+    projectsAtRisk: 1,
+    totalExposureCents: 5_000_000,
+    forecastMarginPercent: 12.7,
+  },
+  riskDrivers: [
+    {
+      category: "financial",
+      label: "Financial",
+      riskCount: 1,
+      exposureCents: 5_000_000,
+      level: "high",
+    },
+  ],
+  riskHeatmap: [
+    {
+      projectId: "project-1",
+      projectName: "Riverfront",
+      cells: {
+        schedule: null,
+        budget: "high",
+        resources: null,
+        contracts: null,
+        design: null,
+      },
+    },
+  ],
   work: {
     dueToday: [],
     overdue: [],
@@ -79,19 +107,23 @@ const view: DashboardView = {
 };
 
 describe("company dashboard", () => {
-  it("renders the executive questions as accessible major sections", () => {
+  it("renders the executive portfolio workspace from real view data", () => {
     const markup = renderToStaticMarkup(<Dashboard view={view} />);
 
     expect(markup).toContain("Good morning, Matt.");
     expect(markup).toContain("Portfolio Watch");
-    expect(markup).toContain("Emerging Patterns");
-    expect(markup).toContain("Similar to Last Quarter");
-    expect(markup).toContain("Executive Recommendations");
-    expect(markup).toContain("will not speculate from weak signals");
-    expect(markup).toContain("hypotheses for investigation");
+    expect(markup).toContain("Portfolio overview");
+    expect(markup).toContain("Top risk drivers");
+    expect(markup).toContain("Portfolio risk heatmap");
+    expect(markup).toContain("Recent intelligence");
+    expect(markup).toContain("Overdue actions");
+    expect(markup).toContain("AI assistant");
+    expect(markup).toContain("Quick paths");
+    expect(markup).toContain("12.7%");
+    expect(markup).toContain("Financial");
   });
 
-  it("labels root-cause suggestions as hypotheses with assumptions", () => {
+  it("labels root-cause suggestions as hypotheses rather than conclusions", () => {
     const markup = renderToStaticMarkup(
       <Dashboard
         view={{
@@ -137,11 +169,8 @@ describe("company dashboard", () => {
     );
 
     expect(markup).toContain("Hypothesis — not a conclusion");
-    expect(markup).toContain("80% hypothesis confidence");
-    expect(markup).toContain("Assumptions to validate");
-    expect(markup).toContain(
-      "Confirm whether records exist outside Sightline.",
-    );
+    expect(markup).toContain("80% confidence");
+    expect(markup).toContain("Review assumptions before acting");
   });
 
   it("does not render portfolio exposure for a restricted role", () => {
@@ -174,7 +203,7 @@ describe("company dashboard", () => {
       />,
     );
 
-    expect(markup).toContain("Restricted for your role");
+    expect(markup).toContain("Restricted");
     expect(markup).not.toContain("$");
   });
 

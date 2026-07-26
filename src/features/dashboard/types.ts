@@ -58,6 +58,25 @@ export type PortfolioHealthRow = Readonly<{
   concernScore: number;
 }>;
 
+export type RiskDriver = Readonly<{
+  category: string;
+  label: string;
+  riskCount: number;
+  exposureCents: number;
+  level: "high" | "medium" | "low";
+}>;
+
+export type PortfolioRiskHeatmapRow = Readonly<{
+  projectId: string;
+  projectName: string;
+  cells: Readonly<
+    Record<
+      "schedule" | "budget" | "resources" | "contracts" | "design",
+      "critical" | "high" | "medium" | "low" | null
+    >
+  >;
+}>;
+
 export type WorkInMotion = Readonly<{
   dueToday: readonly ActionView[];
   overdue: readonly ActionView[];
@@ -86,6 +105,14 @@ export type DashboardView = Readonly<{
   };
   priorities: readonly PriorityItem[];
   portfolio: readonly PortfolioHealthRow[];
+  portfolioSummary: {
+    activeProjects: number;
+    projectsAtRisk: number;
+    totalExposureCents: number;
+    forecastMarginPercent: number | null;
+  };
+  riskDrivers: readonly RiskDriver[];
+  riskHeatmap: readonly PortfolioRiskHeatmapRow[];
   work: WorkInMotion;
   activity: readonly TimelineItem[];
   value: {

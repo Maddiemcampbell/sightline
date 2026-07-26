@@ -1,21 +1,36 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
-  BookOpenCheck,
-  Eye,
-  History,
-  Lightbulb,
+  Bot,
+  BriefcaseBusiness,
+  CalendarClock,
+  CircleDollarSign,
+  FileQuestion,
   ListChecks,
+  MessageSquareText,
+  ShieldAlert,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import type { DashboardView } from "@/features/dashboard/types";
-import { formatMoney } from "@/features/daily-brief/formatters";
 import type {
-  HistoricalComparison,
-  PortfolioObservation,
-  RootCauseSuggestion,
-} from "@/features/portfolio-intelligence/types";
+  DashboardView,
+  PortfolioRiskHeatmapRow,
+  RiskDriver,
+} from "@/features/dashboard/types";
+import { formatMoney } from "@/features/daily-brief/formatters";
+import type { PortfolioObservation } from "@/features/portfolio-intelligence/types";
+
+const heatmapColumns = [
+  "schedule",
+  "budget",
+  "resources",
+  "contracts",
+  "design",
+] as const;
 
 export function Dashboard({ view }: { view: DashboardView }) {
   const date = new Intl.DateTimeFormat("en-US", {
@@ -29,17 +44,15 @@ export function Dashboard({ view }: { view: DashboardView }) {
   if (view.isEmptyOrganization)
     return (
       <div className="mx-auto w-full max-w-[var(--content-width)] px-[var(--page-gutter)] py-8 lg:py-10">
-        <header>
-          <p className="text-deep-green text-sm font-semibold">{date}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-            Good morning, {firstName}.
-          </h1>
-        </header>
+        <p className="text-deep-green text-sm font-semibold">{date}</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
+          Good morning, {firstName}.
+        </h1>
         <Card className="mt-8 py-14 text-center">
           <h2 className="text-xl font-semibold">Your portfolio is ready</h2>
           <p className="text-muted mx-auto mt-2 max-w-lg text-sm leading-6">
-            Add a project to begin seeing evidence-backed patterns, historical
-            comparisons, and prioritized recommendations.
+            Add a project to begin seeing organization-level risks, actions,
+            evidence-backed intelligence, and portfolio performance.
           </p>
           <Link
             href="/projects"
@@ -51,385 +64,700 @@ export function Dashboard({ view }: { view: DashboardView }) {
       </div>
     );
 
-  const intelligence = view.intelligence;
+  const topRisk = view.priorities.find((priority) => priority.kind === "risk");
   return (
-    <div className="mx-auto w-full max-w-[90rem] px-[var(--page-gutter)] py-8 lg:py-10">
-      <header className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
+    <div className="mx-auto w-full max-w-[96rem] px-[var(--page-gutter)] py-6 lg:py-8">
+      <section className="relative isolate min-h-[15.5rem] overflow-hidden rounded-2xl bg-[#f7f7f1] px-6 py-8 sm:px-8 lg:px-10">
+        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[62%] lg:block">
+          <Image
+            src="/images/executive-home-construction.png"
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 1024px) 62vw, 0vw"
+            className="object-cover object-[55%_58%] opacity-65 mix-blend-multiply"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f7f7f1] via-[#f7f7f1]/65 to-[#f7f7f1]/10" />
+        </div>
+        <div className="max-w-2xl">
           <p className="text-deep-green text-sm font-semibold">{date}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-[2.75rem]">
             Good morning, {firstName}.
           </h1>
-          <p className="text-muted mt-3 max-w-2xl text-base leading-7">
-            {changeSummary(view)} Sightline found{" "}
-            {intelligence.portfolioWatch.length} portfolio signal
-            {intelligence.portfolioWatch.length === 1 ? "" : "s"} that currently
-            deserve executive attention.
+          <p className="text-muted mt-4 text-sm leading-6 sm:text-base">
+            {changeSummary(view)}
           </p>
+          <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
+            Sightline found {view.intelligence.portfolioWatch.length} portfolio
+            signal
+            {view.intelligence.portfolioWatch.length === 1 ? "" : "s"} that
+            currently deserve executive attention.
+          </p>
+          <Link
+            href="/brief"
+            className="bg-deep-green mt-6 inline-flex min-h-11 items-center gap-3 rounded-md px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#0f3026]"
+          >
+            <MessageSquareText className="size-4" aria-hidden="true" />
+            Open Daily Brief
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+
+      <div className="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="min-w-0 space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
+            <PortfolioOverview view={view} />
+            <RiskDrivers
+              drivers={view.riskDrivers}
+              canViewFinancials={view.canViewFinancials}
+            />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
+            <RiskHeatmap rows={view.riskHeatmap} />
+            <div className="space-y-4">
+              <RecentIntelligence view={view} />
+              <OverdueActions view={view} />
+              <ExecutiveRecommendations view={view} />
+            </div>
+          </div>
+        </div>
+
+        <PortfolioAdvisor view={view} topRisk={topRisk ?? null} />
+      </div>
+
+      <QuickPaths view={view} topRisk={topRisk ?? null} />
+    </div>
+  );
+}
+
+function PortfolioOverview({ view }: { view: DashboardView }) {
+  const summary = view.portfolioSummary;
+  return (
+    <section
+      aria-label="Portfolio Watch"
+      className="border-border bg-surface shadow-surface rounded-xl border p-5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-deep-green text-[0.68rem] font-semibold tracking-[0.09em] uppercase">
+            Portfolio Watch
+          </p>
+          <h2 className="mt-1 text-lg font-semibold">Portfolio overview</h2>
         </div>
         <Link
-          href="/brief"
-          className="border-border bg-surface text-deep-green hover:bg-background inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-md border px-4 text-sm font-semibold"
+          href="/projects"
+          className="border-border hover:bg-background inline-flex min-h-9 items-center rounded-md border px-3 text-xs font-semibold"
         >
-          Open Daily Brief
-          <ArrowRight className="size-4" aria-hidden="true" />
+          All accessible projects
         </Link>
-      </header>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <OverviewMetric
+          label="Active projects"
+          value={String(summary.activeProjects)}
+          detail={`${view.portfolio.length} visible to you`}
+          icon={BriefcaseBusiness}
+          tone="positive"
+        />
+        <OverviewMetric
+          label="Projects at risk"
+          value={String(summary.projectsAtRisk)}
+          detail={
+            summary.projectsAtRisk ? "Needs attention" : "No active risk signal"
+          }
+          icon={ShieldAlert}
+          tone={summary.projectsAtRisk ? "warning" : "positive"}
+        />
+        <OverviewMetric
+          label="Potential exposure"
+          value={
+            view.canViewFinancials
+              ? formatMoney(summary.totalExposureCents)
+              : "Restricted for your role"
+          }
+          detail={
+            view.canViewFinancials
+              ? "Across unresolved risks"
+              : "Not available for your role"
+          }
+          icon={CircleDollarSign}
+          tone="neutral"
+        />
+        <OverviewMetric
+          label="Forecasted margin"
+          value={
+            !view.canViewFinancials
+              ? "Restricted for your role"
+              : summary.forecastMarginPercent === null
+                ? "Not available"
+                : `${summary.forecastMarginPercent}%`
+          }
+          detail="Projected active-project margin"
+          icon={TrendingUp}
+          tone="positive"
+        />
+      </div>
+    </section>
+  );
+}
 
-      <Section
-        title="Portfolio Watch"
-        description="The three highest-impact observations supported by current organization data."
-        className="mt-10"
+function OverviewMetric({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: typeof ShieldAlert;
+  tone: "positive" | "warning" | "neutral";
+}) {
+  return (
+    <div className="border-border rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-muted text-xs font-medium">{label}</p>
+        <Icon className="text-muted size-4" aria-hidden="true" />
+      </div>
+      <p className="mt-5 text-2xl font-semibold tracking-[-0.035em]">{value}</p>
+      <p
+        className={`mt-2 text-xs ${
+          tone === "warning"
+            ? "text-danger"
+            : tone === "positive"
+              ? "text-deep-green"
+              : "text-muted"
+        }`}
       >
-        {intelligence.portfolioWatch.length ? (
-          <div className="mt-4 grid gap-4 xl:grid-cols-3">
-            {intelligence.portfolioWatch.map((observation, index) => (
-              <ObservationCard
-                key={observation.key}
-                observation={observation}
-                rank={index + 1}
-                canViewFinancials={view.canViewFinancials}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState>
-            No cross-project pattern currently meets Sightline’s deterministic
-            thresholds.
-          </EmptyState>
-        )}
-      </Section>
-
-      <Section
-        title="Emerging Patterns"
-        description="Early signals and carefully framed hypotheses. Sightline omits suggestions when evidence is insufficient."
-        className="mt-10"
-      >
-        <div className="mt-4 grid gap-4 xl:grid-cols-2">
-          {intelligence.rootCauseSuggestions.map((suggestion) => (
-            <HypothesisCard key={suggestion.key} suggestion={suggestion} />
-          ))}
-          {intelligence.emergingPatterns.map((pattern) => (
-            <Card key={pattern.observation.key}>
-              <p className="text-deep-green text-xs font-semibold uppercase">
-                Early deterministic signal
-              </p>
-              <h3 className="mt-2 font-semibold">
-                {pattern.observation.title}
-              </h3>
-              <p className="text-muted mt-2 text-sm leading-6">
-                {pattern.recentRiskCount} related risk
-                {pattern.recentRiskCount === 1 ? "" : "s"} were detected in the
-                last 30 days. This is a timing correlation, not a forecast.
-              </p>
-            </Card>
-          ))}
-        </div>
-        {!intelligence.rootCauseSuggestions.length &&
-          !intelligence.emergingPatterns.length && (
-            <EmptyState>
-              No emerging pattern has enough evidence to show. Sightline will
-              not speculate from weak signals.
-            </EmptyState>
-          )}
-      </Section>
-
-      <Section
-        title="Similar to Last Quarter"
-        description="Comparable resolved issues from this organization’s accessible history, with recorded outcomes."
-        className="mt-10"
-      >
-        {intelligence.historicalComparisons.length ? (
-          <div className="mt-4 grid gap-4 xl:grid-cols-3">
-            {intelligence.historicalComparisons.map((comparison) => (
-              <HistoricalCard
-                key={`${comparison.currentRiskId}:${comparison.match.riskId}`}
-                comparison={comparison}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState>
-            No resolved historical case meets the deterministic similarity
-            threshold for current risks.
-          </EmptyState>
-        )}
-      </Section>
-
-      <Section
-        title="Executive Recommendations"
-        description="Prioritized investigation and response steps derived from the evidence above."
-        className="mt-10"
-      >
-        {intelligence.executiveRecommendations.length ? (
-          <Card className="mt-4 p-0">
-            <ol>
-              {intelligence.executiveRecommendations.map((recommendation) => (
-                <li
-                  key={recommendation.key}
-                  className="border-border grid gap-4 border-b p-5 last:border-b-0 md:grid-cols-[2.25rem_minmax(0,1fr)_auto] md:items-center"
-                >
-                  <span className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-full text-sm font-semibold">
-                    {recommendation.priority}
-                  </span>
-                  <div>
-                    <p className="text-muted text-xs font-semibold uppercase">
-                      {recommendation.source === "hypothesis"
-                        ? "Investigation"
-                        : "Observed condition"}
-                    </p>
-                    <h3 className="mt-1 font-semibold">
-                      {recommendation.title}
-                    </h3>
-                    <p className="text-muted mt-1 text-sm leading-6">
-                      {recommendation.rationale}
-                    </p>
-                    <p className="mt-2 text-sm">
-                      <strong>Next step:</strong> {recommendation.nextStep}
-                    </p>
-                  </div>
-                  <Link
-                    href={recommendation.href}
-                    className="border-border text-deep-green inline-flex min-h-10 items-center justify-center rounded-md border px-4 text-sm font-semibold"
-                  >
-                    Review
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </Card>
-        ) : (
-          <EmptyState>
-            No executive recommendation is warranted by the current evidence.
-          </EmptyState>
-        )}
-      </Section>
-
-      <p className="text-muted mt-10 border-t pt-5 text-xs leading-5">
-        Portfolio observations are deterministic. Root-cause suggestions are
-        hypotheses for investigation, never conclusions or predictions.
+        {detail}
       </p>
     </div>
   );
 }
 
-function ObservationCard({
-  observation,
-  rank,
+function RiskDrivers({
+  drivers,
   canViewFinancials,
 }: {
-  observation: PortfolioObservation;
-  rank: number;
+  drivers: readonly RiskDriver[];
   canViewFinancials: boolean;
 }) {
+  const maxCount = Math.max(1, ...drivers.map((driver) => driver.riskCount));
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
-        <span className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-full font-semibold">
-          {rank}
-        </span>
-        <span className="bg-background rounded-full px-2.5 py-1 text-xs font-semibold">
-          {observation.confidence}% confidence
-        </span>
-      </div>
-      <h3 className="mt-4 text-lg leading-7 font-semibold">
-        {observation.title}
-      </h3>
-      <p className="text-muted mt-2 text-sm leading-6">{observation.summary}</p>
-      <dl className="mt-4 grid gap-3 text-sm">
-        <Fact
-          label="Current exposure represented"
-          value={
-            !canViewFinancials
-              ? "Restricted for your role"
-              : observation.businessImpactEstimateCents === null
-                ? "Not estimated"
-                : formatMoney(observation.businessImpactEstimateCents)
-          }
-        />
-        <Fact
-          label="Affected projects"
-          value={observation.affectedProjects
-            .map((project) => project.name)
-            .join(", ")}
-        />
-      </dl>
-      <details className="border-border mt-4 border-t pt-4">
-        <summary className="text-deep-green cursor-pointer text-sm font-semibold">
-          Evidence and calculation
-        </summary>
-        <ul className="text-muted mt-3 space-y-2 text-sm">
-          {observation.supportingEvidence.map((item) => (
-            <li key={`${item.entityType}:${item.entityId}`}>
-              <strong className="text-ink">{item.label}:</strong> {item.value}
+    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+      <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+        Top risk drivers
+      </h2>
+      {drivers.length ? (
+        <ol className="mt-5 space-y-4">
+          {drivers.map((driver) => (
+            <li key={driver.category}>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <Link
+                  href={`/risks?category=${driver.category}`}
+                  className="truncate font-medium hover:underline"
+                >
+                  {driver.label}
+                </Link>
+                <span className="text-muted shrink-0">
+                  {driver.riskCount} risk
+                  {driver.riskCount === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="bg-background h-2 flex-1 overflow-hidden rounded-full">
+                  <div
+                    className={`h-full rounded-full ${
+                      driver.level === "high"
+                        ? "bg-danger"
+                        : driver.level === "medium"
+                          ? "bg-[#dfb827]"
+                          : "bg-[#2b9348]"
+                    }`}
+                    style={{
+                      width: `${Math.max(12, (driver.riskCount / maxCount) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-muted w-12 text-right text-[0.68rem] capitalize">
+                  {driver.level}
+                </span>
+              </div>
+              {canViewFinancials && (
+                <p className="text-muted mt-1.5 text-[0.68rem]">
+                  {formatMoney(driver.exposureCents)} represented exposure
+                </p>
+              )}
             </li>
           ))}
-        </ul>
-        <p className="text-muted mt-3 text-xs leading-5">
-          {observation.businessImpactExplanation}
+        </ol>
+      ) : (
+        <p className="text-muted mt-5 text-sm">
+          No unresolved risk drivers are visible.
         </p>
-      </details>
-    </Card>
-  );
-}
-
-function HypothesisCard({ suggestion }: { suggestion: RootCauseSuggestion }) {
-  return (
-    <Card id={`hypothesis-${suggestion.key}`} className="border-amber-200">
-      <div className="flex items-start justify-between gap-4">
-        <span className="grid size-9 place-items-center rounded-full bg-amber-50 text-amber-800">
-          <Lightbulb className="size-4" aria-hidden="true" />
-        </span>
-        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900">
-          {suggestion.confidence}% hypothesis confidence
-        </span>
-      </div>
-      <p className="mt-4 text-xs font-semibold text-amber-800 uppercase">
-        Hypothesis — not a conclusion
-      </p>
-      <h3 className="mt-1 text-lg font-semibold">{suggestion.title}</h3>
-      <p className="text-muted mt-2 text-sm leading-6">
-        {suggestion.hypothesis}
-      </p>
-      <details className="border-border mt-4 border-t pt-4">
-        <summary className="cursor-pointer text-sm font-semibold">
-          Evidence, assumptions, and investigation
-        </summary>
-        <DetailList
-          icon={Eye}
-          title="Evidence"
-          items={suggestion.evidence.map(
-            (item) => `${item.label}: ${item.value}`,
-          )}
-        />
-        <DetailList
-          icon={BookOpenCheck}
-          title="Assumptions to validate"
-          items={suggestion.assumptions}
-        />
-        <DetailList
-          icon={ListChecks}
-          title="Investigation steps"
-          items={suggestion.recommendedInvestigationSteps}
-          ordered
-        />
-        <DetailList
-          icon={History}
-          title="Similar historical cases"
-          items={
-            suggestion.similarHistoricalCases.length
-              ? suggestion.similarHistoricalCases.map(
-                  (item) =>
-                    `${item.projectName}: ${item.title} — ${item.outcome}`,
-                )
-              : ["No sufficiently similar resolved case is available."]
-          }
-        />
-      </details>
-    </Card>
-  );
-}
-
-function HistoricalCard({ comparison }: { comparison: HistoricalComparison }) {
-  return (
-    <Card>
-      <p className="text-deep-green text-xs font-semibold uppercase">
-        {comparison.match.similarityScore}% deterministic similarity
-      </p>
-      <h3 className="mt-2 font-semibold">
-        {comparison.currentRiskTitle} resembles a resolved issue on{" "}
-        {comparison.match.projectName}
-      </h3>
-      <p className="text-muted mt-3 text-sm leading-6">
-        {comparison.match.resolutionSummary}
-      </p>
-      <dl className="mt-4 grid gap-3 text-sm">
-        <Fact label="Recorded outcome" value={comparison.match.outcome} />
-        <Fact
-          label="Resolution time"
-          value={formatDuration(comparison.match.timeToResolutionHours)}
-        />
-        <Fact
-          label="Why it matched"
-          value={comparison.match.matchReasons.join(", ")}
-        />
-      </dl>
+      )}
       <Link
-        href={`/risks/${comparison.currentRiskId}`}
-        className="text-deep-green mt-4 inline-flex items-center gap-1 text-sm font-semibold"
+        href="/risks"
+        className="text-deep-green border-border mt-5 inline-flex w-full items-center justify-between border-t pt-4 text-xs font-semibold"
       >
-        Compare cases <ArrowRight className="size-3.5" aria-hidden="true" />
+        View all risks <ArrowRight className="size-3.5" aria-hidden="true" />
       </Link>
-    </Card>
+    </section>
   );
 }
 
-function DetailList({
-  icon: Icon,
-  title,
-  items,
-  ordered = false,
+function RiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
+  return (
+    <section className="border-border bg-surface shadow-surface overflow-hidden rounded-xl border p-5">
+      <div>
+        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          Portfolio risk heatmap
+        </h2>
+        <p className="text-muted mt-1 text-xs">
+          Highest unresolved severity by project and risk group.
+        </p>
+      </div>
+      {rows.length ? (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full min-w-[34rem] text-left text-xs">
+            <thead>
+              <tr className="text-muted">
+                <th className="pb-3 font-medium">Project</th>
+                {heatmapColumns.map((column) => (
+                  <th
+                    key={column}
+                    className="px-3 pb-3 text-center font-medium capitalize"
+                  >
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <HeatmapRow key={row.projectId} row={row} />
+              ))}
+            </tbody>
+          </table>
+          <div className="border-border text-muted mt-4 flex flex-wrap gap-4 border-t pt-4 text-[0.68rem]">
+            {[
+              ["High", "bg-danger"],
+              ["Medium", "bg-[#ef6c19]"],
+              ["Low", "bg-[#2b9348]"],
+              ["No signal", "bg-[#e7e9e3]"],
+            ].map(([label, color]) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className={`size-2.5 rounded-full ${color}`} />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-muted mt-5 text-sm">
+          No active projects are available for the heatmap.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function HeatmapRow({ row }: { row: PortfolioRiskHeatmapRow }) {
+  return (
+    <tr className="border-border border-t first:border-t-0">
+      <th className="max-w-48 py-3 pr-3 font-medium">
+        <Link
+          href={`/projects/${row.projectId}`}
+          className="hover:text-deep-green line-clamp-1"
+        >
+          {row.projectName}
+        </Link>
+      </th>
+      {heatmapColumns.map((column) => {
+        const severity = row.cells[column];
+        return (
+          <td key={column} className="px-3 py-3 text-center">
+            <span
+              className={`inline-block size-3 rounded-full ${
+                severity === "critical" || severity === "high"
+                  ? "bg-danger"
+                  : severity === "medium"
+                    ? "bg-[#ef6c19]"
+                    : severity === "low"
+                      ? "bg-[#2b9348]"
+                      : "bg-border"
+              }`}
+              title={`${row.projectName}, ${column}: ${severity ?? "no signal"}`}
+            >
+              <span className="sr-only">
+                {row.projectName}, {column}: {severity ?? "no signal"}
+              </span>
+            </span>
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+function RecentIntelligence({ view }: { view: DashboardView }) {
+  const observation = view.intelligence.portfolioWatch[0] ?? null;
+  const hypothesis = view.intelligence.rootCauseSuggestions[0] ?? null;
+  const historicalComparison =
+    view.intelligence.historicalComparisons[0] ?? null;
+  return (
+    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          Recent intelligence
+        </h2>
+        <Link href="/risks" className="text-deep-green text-xs font-semibold">
+          View risks
+        </Link>
+      </div>
+      {observation ? (
+        <Insight observation={observation} />
+      ) : (
+        <p className="text-muted mt-4 text-sm">
+          No cross-project observation meets the current evidence threshold.
+        </p>
+      )}
+      {hypothesis && (
+        <div className="border-border mt-4 border-t pt-4">
+          <p className="text-warning text-[0.68rem] font-semibold uppercase">
+            Hypothesis — not a conclusion
+          </p>
+          <p className="mt-1 text-sm font-semibold">{hypothesis.title}</p>
+          <p className="text-muted mt-1 text-xs leading-5">
+            {hypothesis.confidence}% confidence · Review assumptions before
+            acting.
+          </p>
+          <details className="mt-3 text-xs">
+            <summary className="text-deep-green cursor-pointer font-semibold">
+              Review hypothesis evidence
+            </summary>
+            <div className="text-muted mt-2 space-y-2 leading-5">
+              {hypothesis.evidence.slice(0, 2).map((evidence) => (
+                <p key={`${evidence.entityType}:${evidence.entityId}`}>
+                  {evidence.label}: {evidence.value}
+                </p>
+              ))}
+              {hypothesis.assumptions[0] && (
+                <p>Assumption: {hypothesis.assumptions[0]}</p>
+              )}
+              {hypothesis.recommendedInvestigationSteps[0] && (
+                <p>
+                  Investigate:{" "}
+                  {hypothesis.recommendedInvestigationSteps[0]}
+                </p>
+              )}
+            </div>
+          </details>
+        </div>
+      )}
+      {historicalComparison && (
+        <div className="border-border mt-4 border-t pt-4">
+          <p className="text-deep-green text-[0.68rem] font-semibold uppercase">
+            Similar to previous work
+          </p>
+          <p className="mt-1 text-sm font-semibold">
+            {historicalComparison.match.projectName}:{" "}
+            {historicalComparison.match.title}
+          </p>
+          <p className="text-muted mt-1 text-xs leading-5">
+            {historicalComparison.match.outcome}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Insight({ observation }: { observation: PortfolioObservation }) {
+  const projectId = observation.affectedProjectIds[0];
+  return (
+    <div className="bg-soft-green/60 mt-4 rounded-lg p-4">
+      <div className="flex gap-3">
+        <span className="bg-surface text-deep-green grid size-9 shrink-0 place-items-center rounded-full">
+          <Sparkles className="size-4" aria-hidden="true" />
+        </span>
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="bg-surface text-deep-green rounded-full px-2 py-1 text-[0.65rem] font-semibold">
+              {observation.confidence}% confidence
+            </span>
+            <span className="text-muted text-[0.65rem]">
+              Deterministic observation
+            </span>
+          </div>
+          <p className="mt-2 text-sm font-semibold">{observation.title}</p>
+          <p className="text-muted mt-1 text-xs leading-5">
+            {observation.recommendedNextStep}
+          </p>
+          <Link
+            href={projectId ? `/projects/${projectId}` : "/risks"}
+            className="text-deep-green mt-3 inline-flex items-center gap-1 text-xs font-semibold"
+          >
+            Review evidence <ArrowRight className="size-3" aria-hidden="true" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OverdueActions({ view }: { view: DashboardView }) {
+  const actions = view.work.overdue.slice(0, 2);
+  const representedExposure = view.priorities
+    .filter(
+      (priority) =>
+        priority.kind === "action" &&
+        view.work.overdue.some(
+          (action) => `action:${action.id}` === priority.id,
+        ),
+    )
+    .reduce((sum, priority) => sum + (priority.exposureCents ?? 0), 0);
+  return (
+    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          Overdue actions
+        </h2>
+        <Link
+          href="/actions?due=overdue"
+          className="text-deep-green text-xs font-semibold"
+        >
+          View all
+        </Link>
+      </div>
+      <div className="mt-4 flex items-start gap-5">
+        <div className="shrink-0">
+          <p className="text-danger text-3xl font-light">
+            {view.work.overdue.length}
+          </p>
+          <p className="text-muted text-[0.68rem]">Overdue</p>
+          {view.canViewFinancials && representedExposure > 0 && (
+            <p className="mt-2 text-xs font-semibold">
+              {formatMoney(representedExposure)} at risk
+            </p>
+          )}
+        </div>
+        <ol className="border-border min-w-0 flex-1 border-l pl-4">
+          {actions.length ? (
+            actions.map((action) => (
+              <li
+                key={action.id}
+                className="border-border border-b py-2 first:pt-0 last:border-0 last:pb-0"
+              >
+                <Link
+                  href={`/risks/${action.riskId}`}
+                  className="flex items-center justify-between gap-3 text-xs font-medium"
+                >
+                  <span className="line-clamp-1">{action.title}</span>
+                  <ArrowRight
+                    className="text-muted size-3.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                </Link>
+                <p className="text-danger mt-1 text-[0.65rem]">
+                  {overdueLabel(action.dueAt, view.generatedAt)}
+                </p>
+              </li>
+            ))
+          ) : (
+            <li className="text-muted text-xs">Nothing is overdue.</li>
+          )}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+function ExecutiveRecommendations({ view }: { view: DashboardView }) {
+  const recommendations = view.intelligence.executiveRecommendations.slice(
+    0,
+    2,
+  );
+  return (
+    <section
+      aria-label="Executive Recommendations"
+      className="border-border bg-surface shadow-surface rounded-xl border p-5"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          Executive recommendations
+        </h2>
+        <ListChecks className="text-deep-green size-4" aria-hidden="true" />
+      </div>
+      {recommendations.length ? (
+        <ol className="mt-3 space-y-3">
+          {recommendations.map((recommendation) => (
+            <li key={recommendation.key} className="text-xs leading-5">
+              <p className="font-semibold">{recommendation.title}</p>
+              <p className="text-muted mt-0.5 line-clamp-2">
+                {recommendation.nextStep}
+              </p>
+              <Link
+                href={recommendation.href}
+                className="text-deep-green mt-1 inline-block font-semibold"
+              >
+                Review
+              </Link>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-muted mt-3 text-xs">
+          No recommendation is warranted by current evidence.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function PortfolioAdvisor({
+  view,
+  topRisk,
 }: {
-  icon: typeof Eye;
-  title: string;
-  items: readonly string[];
-  ordered?: boolean;
+  view: DashboardView;
+  topRisk: DashboardView["priorities"][number] | null;
 }) {
-  const List = ordered ? "ol" : "ul";
   return (
-    <div className="mt-4">
-      <h4 className="flex items-center gap-2 text-xs font-semibold uppercase">
-        <Icon className="size-3.5" aria-hidden="true" />
-        {title}
-      </h4>
-      <List
-        className={`text-muted mt-2 space-y-1 text-sm ${ordered ? "list-decimal pl-5" : "list-disc pl-5"}`}
-      >
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </List>
-    </div>
+    <aside className="border-border bg-surface shadow-surface h-fit rounded-xl border p-5 2xl:sticky 2xl:top-24">
+      <div className="flex items-center gap-2">
+        <Sparkles className="text-deep-green size-4" aria-hidden="true" />
+        <p className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          AI assistant
+        </p>
+      </div>
+      <div className="mt-6">
+        <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-full">
+          <Bot className="size-5" aria-hidden="true" />
+        </span>
+        <h2 className="mt-4 text-lg font-semibold">
+          Hi {view.currentUserName.split(" ")[0]}, I’m your Risk Advisor.
+        </h2>
+        <p className="text-muted mt-2 text-sm leading-6">
+          Ask grounded questions from a risk’s authorized evidence, citations,
+          and conversation history.
+        </p>
+      </div>
+      <p className="text-muted mt-6 text-[0.68rem] font-semibold tracking-[0.08em] uppercase">
+        Suggested next steps
+      </p>
+      <div className="mt-3 space-y-2">
+        {topRisk ? (
+          <>
+            <AdvisorLink href={`${topRisk.href}?tab=ask`}>
+              What evidence supports {topRisk.title}?
+            </AdvisorLink>
+            <AdvisorLink href={topRisk.href}>
+              Review the highest-priority risk
+            </AdvisorLink>
+          </>
+        ) : (
+          <AdvisorLink href="/risks">Review the risk register</AdvisorLink>
+        )}
+        <AdvisorLink href="/projects">
+          Which projects currently need attention?
+        </AdvisorLink>
+        <AdvisorLink href="/actions?due=overdue">
+          What actions should I prioritize?
+        </AdvisorLink>
+      </div>
+      {topRisk ? (
+        <Link
+          href={`${topRisk.href}?tab=ask`}
+          className="bg-deep-green mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white"
+        >
+          <FileQuestion className="size-4" aria-hidden="true" />
+          Ask about top risk
+        </Link>
+      ) : null}
+      <p className="text-muted mt-4 text-center text-[0.65rem] leading-4">
+        Organization-wide questions are not yet supported. Answers remain
+        bounded to authorized risk evidence.
+      </p>
+    </aside>
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-muted text-xs font-semibold uppercase">{label}</dt>
-      <dd className="mt-1 leading-5">{value}</dd>
-    </div>
-  );
-}
-
-function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <Card className="mt-4">
-      <p className="text-muted text-sm">{children}</p>
-    </Card>
-  );
-}
-
-function Section({
-  title,
-  description,
-  className,
+function AdvisorLink({
+  href,
   children,
 }: {
-  title: string;
-  description: string;
-  className?: string;
+  href: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className={className} aria-labelledby={slug(title)}>
-      <h2 id={slug(title)} className="text-xl font-semibold tracking-tight">
-        {title}
-      </h2>
-      <p className="text-muted mt-1 max-w-3xl text-sm leading-6">
-        {description}
-      </p>
+    <Link
+      href={href}
+      className="border-border hover:bg-background block rounded-lg border p-3 text-xs leading-5 font-medium"
+    >
       {children}
+    </Link>
+  );
+}
+
+function QuickPaths({
+  view,
+  topRisk,
+}: {
+  view: DashboardView;
+  topRisk: DashboardView["priorities"][number] | null;
+}) {
+  const links = [
+    {
+      label: "Open executive Daily Brief",
+      href: "/brief",
+      icon: MessageSquareText,
+    },
+    {
+      label: "Review portfolio performance",
+      href: "/projects",
+      icon: TrendingDown,
+    },
+    {
+      label: "Prioritize overdue actions",
+      href: "/actions?due=overdue",
+      icon: CalendarClock,
+    },
+    {
+      label: topRisk ? "Ask about the top risk" : "Review active risks",
+      href: topRisk ? `${topRisk.href}?tab=ask` : "/risks",
+      icon: FileQuestion,
+    },
+  ];
+  return (
+    <section className="bg-soft-green/65 border-border mt-4 overflow-hidden rounded-xl border">
+      <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center">
+        <div className="flex shrink-0 items-center gap-2">
+          <Sparkles className="text-deep-green size-5" aria-hidden="true" />
+          <h2 className="text-deep-green text-sm font-semibold">Quick paths</h2>
+        </div>
+        <p className="text-muted text-xs">
+          Continue into real Sightline workflows using your current organization
+          and project permissions.
+        </p>
+        <span className="text-muted ml-auto hidden text-[0.65rem] sm:block">
+          {view.portfolioSummary.activeProjects} active projects
+        </span>
+      </div>
+      <div className="border-border grid border-t sm:grid-cols-2 xl:grid-cols-4">
+        {links.map(({ label, href, icon: Icon }) => (
+          <Link
+            key={label}
+            href={href}
+            className="border-border bg-surface/80 hover:bg-surface flex min-h-14 items-center gap-3 border-b px-5 text-xs font-medium sm:border-r xl:border-b-0 xl:last:border-r-0"
+          >
+            <Icon className="text-muted size-4" aria-hidden="true" />
+            {label}
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }
@@ -441,12 +769,11 @@ function changeSummary(view: DashboardView) {
   return `Since the start of today: ${newRisks} new risk${newRisks === 1 ? "" : "s"}, ${resolved} resolved, and ${overdue} overdue action${overdue === 1 ? "" : "s"}.`;
 }
 
-function formatDuration(hours: number) {
-  return hours < 48
-    ? `${Math.max(1, Math.round(hours))} hours`
-    : `${Math.round(hours / 24)} days`;
-}
-
-function slug(value: string) {
-  return value.toLowerCase().replaceAll(/[’\s]+/g, "-");
+function overdueLabel(dueAt: string | null, generatedAt: string) {
+  if (!dueAt) return "Due date unavailable";
+  const days = Math.max(
+    1,
+    Math.floor((Date.parse(generatedAt) - Date.parse(dueAt)) / 86_400_000),
+  );
+  return `${days} day${days === 1 ? "" : "s"} overdue`;
 }
