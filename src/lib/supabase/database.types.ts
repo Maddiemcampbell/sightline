@@ -210,6 +210,12 @@ type RiskRow = Timestamped & {
   vendor_id: string | null;
   why_it_matters: string;
   updated_by_user_id: string | null;
+  normalized_category_id?: string | null;
+  category_mapping_source?: string | null;
+  category_mapping_confidence?: number | null;
+  taxonomy_version?: string | null;
+  financial_exposure_assessed?: boolean;
+  last_assessed_at?: string | null;
 };
 
 export type Database = {
@@ -636,6 +642,18 @@ export type Database = {
         organization_id: string;
       }>;
       risks: Table<RiskRow>;
+      portfolio_risk_snapshots: Table<{
+        id: string;
+        organization_id: string;
+        snapshot_month: string;
+        analytics_payload: Json;
+        calculation_version: string;
+        taxonomy_version: string;
+        ranking_version: string;
+        data_quality: "complete" | "partial" | "not_assessed" | "unavailable";
+        calculated_at: string;
+        created_at: string;
+      }>;
       risk_evidence: Table<{
         created_at: string;
         document_id: string | null;

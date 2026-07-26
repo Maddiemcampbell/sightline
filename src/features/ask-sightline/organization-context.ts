@@ -17,6 +17,7 @@ import { formatMoney } from "@/features/daily-brief/formatters";
 import type { ActorContext } from "@/lib/auth/authorization";
 import type { AdvisorMode } from "@/features/workspace/types";
 import type { FinancialAnalyticsService } from "@/features/financial-analytics/service";
+import type { RiskAnalyticsService } from "@/features/risk-analytics/service";
 
 type RetrievedOrganization = Awaited<
   ReturnType<AskSightlineRepository["retrieveOrganization"]>
@@ -32,6 +33,7 @@ export function buildOrganizationQuestionContext({
   canViewFinancials,
   now,
   financialAnalytics = null,
+  riskAnalytics = null,
 }: {
   context: ActorContext;
   retrieved: RetrievedOrganization;
@@ -43,6 +45,9 @@ export function buildOrganizationQuestionContext({
   now: Date;
   financialAnalytics?: Awaited<
     ReturnType<FinancialAnalyticsService["getOrganizationAnalytics"]>
+  > | null;
+  riskAnalytics?: Awaited<
+    ReturnType<RiskAnalyticsService["getOrganizationAnalytics"]>
   > | null;
 }): OrganizationQuestionContext {
   const projectById = new Map(
@@ -90,6 +95,21 @@ export function buildOrganizationQuestionContext({
   });
 
   const citations: OrganizationCitation[] = [
+    ...(riskAnalytics
+      ? [{
+          id:"observation:authoritative-risk-analytics",
+          entityType:"observation" as const,
+          title:"Authoritative portfolio risk analytics",
+          excerpt:sanitizeUntrustedExcerpt([
+            `${riskAnalytics.summary.activeRisks} active risks; ${riskAnalytics.summary.highCriticalRisks} high or critical; ${riskAnalytics.summary.affectedProjects} affected projects.`,
+            ...riskAnalytics.drivers.slice(0,5).map(driver =>
+              `${driver.label}: ${driver.activeRiskCount} active, ${driver.highCriticalCount} high or critical, ${driver.affectedProjectCount} projects. Ranking reasons: ${driver.rankReasons.join("; ")}.`),
+            "Expected exposure unavailable because probability has not been assessed.",
+            `Calculation ${riskAnalytics.metadata.calculationVersion}; taxonomy ${riskAnalytics.metadata.taxonomyVersion}; quality ${riskAnalytics.metadata.quality}.`,
+          ].join(" ")),
+          href:"/reports",
+        }]
+      : []),
     ...(financialAnalytics
       ? [
           {

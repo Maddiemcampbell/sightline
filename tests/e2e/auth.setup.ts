@@ -117,46 +117,55 @@ async function ensureAuthUser(
   preferredId: string,
   userEmail: string,
 ) {
-  let resolvedId = "";
-  await expect
-    .poll(
-      async () => {
-        const { data: listed, error: listError } =
-          await admin.auth.admin.listUsers({
-            page: 1,
-            perPage: 1_000,
-          });
-        if (listError) return "";
-        const existingByEmail = listed.users.find(
-          (candidate) =>
-            candidate.email?.toLowerCase() === userEmail.toLowerCase(),
-        );
-        const existingById = listed.users.find(
-          (candidate) => candidate.id === preferredId,
-        );
-        const existing = existingByEmail ?? existingById;
-        if (existing) {
-          const updated = await admin.auth.admin.updateUserById(existing.id, {
-            email: userEmail,
-            password,
-            email_confirm: true,
-          });
-          if (updated.error) return "";
-          resolvedId = existing.id;
-          return resolvedId;
-        }
-        const created = await admin.auth.admin.createUser({
-          id: preferredId,
-          email: userEmail,
-          password,
-          email_confirm: true,
-        });
-        if (created.error || !created.data.user) return "";
-        resolvedId = created.data.user.id;
-        return resolvedId;
-      },
-      { timeout: 20_000, intervals: [250, 500, 1_000] },
-    )
-    .not.toBe("");
-  return resolvedId;
+  let lastError = "Supabase Auth did not return a user.";
+  const retryDelays = [0, 250, 500, 1_000, 2_000] as const;
+  for (const delay of retryDelays) {
+    if (delay)
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    const { data: listed, error: listError } =
+      await admin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1_000,
+      });
+    if (listError) {
+      lastError = `Unable to list Auth users: ${listError.message}`;
+      continue;
+    }
+    const existingByEmail = listed.users.find(
+      (candidate) =>
+        candidate.email?.toLowerCase() === userEmail.toLowerCase(),
+    );
+    const existingById = listed.users.find(
+      (candidate) => candidate.id === preferredId,
+    );
+    const existing = existingByEmail ?? existingById;
+    if (existing) {
+      const updated = await admin.auth.admin.updateUserById(existing.id, {
+        email: userEmail,
+        password,
+        email_confirm: true,
+      });
+      if (updated.error) {
+        lastError = `Unable to update ${userEmail}: ${updated.error.message}`;
+        continue;
+      }
+      return existing.id;
+    }
+    const created = await admin.auth.admin.createUser({
+      id: preferredId,
+      email: userEmail,
+      password,
+      email_confirm: true,
+    });
+    if (created.error) {
+      lastError = `Unable to create ${userEmail}: ${created.error.message}`;
+      continue;
+    }
+    if (!created.data.user) {
+      lastError = `Unable to create ${userEmail}: Auth returned no user.`;
+      continue;
+    }
+    return created.data.user.id;
+  }
+  throw new Error(lastError);
 }

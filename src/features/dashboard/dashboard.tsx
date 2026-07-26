@@ -25,6 +25,7 @@ import type {
 } from "@/features/dashboard/types";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import type { PortfolioObservation } from "@/features/portfolio-intelligence/types";
+import type { RiskAnalyticsOutput } from "@/features/risk-analytics/types";
 import { ProjectFilter } from "@/features/workspace/project-filter";
 import {
   AdvisorSelector,
@@ -140,7 +141,10 @@ export function Dashboard({ view }: { view: DashboardView }) {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
-            <RiskHeatmap rows={filteredView.riskHeatmap} />
+            <RiskHeatmap
+              analytics={filteredView.riskAnalytics ?? null}
+              fallbackRows={filteredView.riskHeatmap}
+            />
             <div className="space-y-4">
               <RecentIntelligence view={filteredView} />
               <OverdueActions view={filteredView} />
@@ -349,7 +353,17 @@ function RiskDrivers({
   );
 }
 
-function RiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
+function RiskHeatmap({
+  analytics,
+  fallbackRows,
+}: {
+  analytics: RiskAnalyticsOutput | null;
+  fallbackRows: readonly PortfolioRiskHeatmapRow[];
+}) {
+  const categories = analytics?.categories ?? [];
+  const rows = analytics?.heatmap ?? [];
+  if (!analytics)
+    return <LegacyRiskHeatmap rows={fallbackRows} />;
   return (
     <section className="border-border bg-surface shadow-surface overflow-hidden rounded-xl border p-5">
       <div>
@@ -357,7 +371,8 @@ function RiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
           Portfolio risk heatmap
         </h2>
         <p className="text-muted mt-1 text-xs">
-          Highest unresolved severity by project and risk group.
+          Highest active severity by project and normalized category. Select a
+          cell to inspect its contributing risks.
         </p>
       </div>
       {rows.length ? (
@@ -366,19 +381,41 @@ function RiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
             <thead>
               <tr className="text-muted">
                 <th className="pb-3 font-medium">Project</th>
-                {heatmapColumns.map((column) => (
+                {categories.map((column) => (
                   <th
-                    key={column}
+                    key={column.id}
                     className="px-3 pb-3 text-center font-medium capitalize"
                   >
-                    {column}
+                    {column.label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <HeatmapRow key={row.projectId} row={row} />
+                <tr key={row.projectId} className="border-border border-t">
+                  <th className="py-3 pr-3 font-medium">
+                    <Link href={`/projects/${row.projectId}`}>{row.projectName}</Link>
+                  </th>
+                  {row.cells.map((cell) => (
+                    <td key={cell.category} className="px-3 py-3 text-center">
+                      <Link
+                        href={cell.href}
+                        aria-label={`${row.projectName}, ${cell.category}: ${cell.explanation}`}
+                        title={cell.explanation}
+                        className={`inline-flex size-7 items-center justify-center rounded-full text-[0.62rem] font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                          cell.highestSeverity === "critical" || cell.highestSeverity === "high"
+                            ? "bg-danger"
+                            : cell.highestSeverity === "medium" ? "bg-[#ef6c19]"
+                            : cell.highestSeverity === "low" ? "bg-[#2b9348]"
+                            : "bg-border text-muted"
+                        }`}
+                      >
+                        {cell.activeRiskCount || "–"}
+                      </Link>
+                    </td>
+                  ))}
+                </tr>
               ))}
             </tbody>
           </table>
@@ -405,6 +442,17 @@ function RiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
   );
 }
 
+function LegacyRiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
+  return (
+    <section className="border-border bg-surface shadow-surface overflow-hidden rounded-xl border p-5">
+      <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">Portfolio risk heatmap</h2>
+      <p className="text-muted mt-1 text-xs">Highest unresolved severity by project and risk group.</p>
+      <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[34rem] text-left text-xs"><tbody>
+        {rows.map(row=><HeatmapRow key={row.projectId} row={row}/>)}
+      </tbody></table></div>
+    </section>
+  );
+}
 function HeatmapRow({ row }: { row: PortfolioRiskHeatmapRow }) {
   return (
     <tr className="border-border border-t first:border-t-0">
@@ -763,24 +811,14 @@ export function filterDashboardView(
   const allowedHypothesisKeys = new Set(
     rootCauseSuggestions.map((suggestion) => suggestion.key),
   );
-  const projectRiskDrivers: RiskDriver[] = heatmap.flatMap((row) =>
-    heatmapColumns.flatMap((category) => {
-      const severity = row.cells[category];
-      if (!severity) return [];
-      return [
-        {
-          category,
-          label: `${category[0]?.toUpperCase()}${category.slice(1)}`,
-          riskCount: 1,
-          exposureCents: 0,
-          level:
-            severity === "critical" || severity === "high"
-              ? ("high" as const)
-              : severity === "medium"
-                ? ("medium" as const)
-                : ("low" as const),
-        },
-      ];
+  const scopedRiskAnalytics = view.riskAnalyticsByProject?.[projectId] ?? null;
+  const projectRiskDrivers: RiskDriver[] = (scopedRiskAnalytics?.drivers ?? []).map(
+    (driver) => ({
+      category: driver.category,
+      label: driver.label,
+      riskCount: driver.activeRiskCount,
+      exposureCents: driver.assessedExposureCents ?? 0,
+      level: driver.highCriticalCount ? "high" : driver.averageAttentionScore >= 50 ? "medium" : "low",
     }),
   );
   const selectedPortfolio = portfolio[0];
@@ -792,6 +830,7 @@ export function filterDashboardView(
     priorities,
     portfolio,
     riskHeatmap: heatmap,
+    riskAnalytics: scopedRiskAnalytics,
     riskDrivers: projectRiskDrivers,
     portfolioSummary: {
       activeProjects: selectedPortfolio ? 1 : 0,

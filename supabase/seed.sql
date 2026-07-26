@@ -317,8 +317,33 @@ insert into public.portfolio_financial_snapshots (
   );
 
 update public.risks
-set assigned_user_id = '11000000-0000-4000-8000-000000000001'
+set assigned_user_id = '11000000-0000-4000-8000-000000000001',
+    financial_exposure_assessed = true,
+    last_assessed_at = updated_at,
+    normalized_category_id = case category
+      when 'insurance' then 'insurance_claims'
+      when 'schedule' then 'schedule'
+      when 'weather' then 'environmental'
+      when 'contract' then 'contractual'
+      when 'documentation' then 'documentation'
+      when 'financial' then 'financial'
+      when 'vendor' then 'vendor_subcontractor'
+      when 'safety' then 'safety'
+      else 'other'
+    end,
+    category_mapping_source = 'structured',
+    category_mapping_confidence = 100,
+    taxonomy_version = 'portfolio-taxonomy/1.0'
 where status not in ('resolved', 'dismissed');
+
+update public.risks
+set financial_exposure_assessed = true,
+    last_assessed_at = updated_at,
+    normalized_category_id = 'safety',
+    category_mapping_source = 'structured',
+    category_mapping_confidence = 100,
+    taxonomy_version = 'portfolio-taxonomy/1.0'
+where id = '60000000-0000-4000-8000-000000000008';
 
 update public.risks set detection_key = 'insurance:apex-electrical-systems:cedar-grove-medical-pavilion'
 where id = '60000000-0000-4000-8000-000000000001';

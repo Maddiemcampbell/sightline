@@ -43,7 +43,7 @@ const reports = [
 ] as const;
 
 export default async function ReportsPage() {
-  const { financialAnalytics } = await getReportsData();
+  const { financialAnalytics, riskAnalytics } = await getReportsData();
   const financialSummary = financialAnalytics
     ? `${financialAnalytics.portfolio.projectsOverBudget} over budget · ${financialAnalytics.portfolio.projectsMissingFinancialData} missing financial data · ${financialAnalytics.cashFlow.confidence} forecast confidence`
     : "Restricted for your role";
@@ -77,10 +77,31 @@ export default async function ReportsPage() {
             <span className="text-muted border-border mt-5 border-t pt-4 text-xs font-semibold">
               {title === "Financial Performance"
                 ? financialSummary
-                : "Report generation coming later"}
+                : title === "Risk Trends"
+                  ? `${riskAnalytics.summary.activeRisks} active · ${riskAnalytics.summary.highCriticalRisks} high/critical · ${riskAnalytics.metadata.quality} data`
+                  : "Report generation coming later"}
             </span>
           </Card>
         ))}
+      </section>
+      <section className="border-border bg-surface mt-6 rounded-xl border p-6" aria-labelledby="risk-driver-report">
+        <h2 id="risk-driver-report" className="text-lg font-semibold">Authoritative risk drivers</h2>
+        <p className="text-muted mt-1 text-sm">
+          Ranked with {riskAnalytics.metadata.calculationVersion}. Historical
+          trend is unavailable until the first monthly snapshot is captured.
+        </p>
+        <ol className="mt-4 grid gap-3 md:grid-cols-2">
+          {riskAnalytics.drivers.slice(0,6).map(driver=>(
+            <li key={driver.category} className="border-border rounded-lg border p-4">
+              <p className="font-semibold">{driver.label}</p>
+              <p className="text-muted mt-1 text-sm">
+                {driver.activeRiskCount} active · {driver.highCriticalCount} high/critical ·{" "}
+                {driver.affectedProjectCount} projects
+              </p>
+              <p className="text-muted mt-2 text-xs">{driver.rankReasons.join(" · ")}</p>
+            </li>
+          ))}
+        </ol>
       </section>
     </div>
   );

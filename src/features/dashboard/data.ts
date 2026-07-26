@@ -16,6 +16,7 @@ import {
 } from "@/features/portfolio-intelligence/core";
 import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
 import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
+import { calculatePortfolioRiskAnalytics } from "@/features/risk-analytics/calculations";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -35,6 +36,7 @@ export async function getDashboardView() {
     documentsResult,
     vendorsResult,
     activityPage,
+    evidenceResult,
   ] = await Promise.all([
     client
       .from("organizations")
@@ -82,6 +84,10 @@ export async function getDashboardView() {
       .select("id,name")
       .eq("organization_id", context.organizationId),
     getActivityPage({ limit: 20 }),
+    client
+      .from("risk_evidence")
+      .select("risk_id")
+      .eq("organization_id", context.organizationId),
   ]);
   const results = [
     organizationResult,
@@ -94,6 +100,7 @@ export async function getDashboardView() {
     usersResult,
     documentsResult,
     vendorsResult,
+    evidenceResult,
   ];
   for (const result of results)
     if (result.error) throw new Error(result.error.message);
@@ -143,6 +150,28 @@ export async function getDashboardView() {
     },
     timezone,
   );
+  const riskAnalytics = calculatePortfolioRiskAnalytics({
+    now: new Date(),
+    projects,
+    risks: risksResult.data ?? [],
+    actions: actionsResult.data ?? [],
+    evidence: evidenceResult.data ?? [],
+    canViewFinancials,
+  });
+  const riskAnalyticsByProject = Object.fromEntries(
+    projects.map((project) => [
+      project.id,
+      calculatePortfolioRiskAnalytics({
+        now: new Date(),
+        projects,
+        risks: risksResult.data ?? [],
+        actions: actionsResult.data ?? [],
+        evidence: evidenceResult.data ?? [],
+        canViewFinancials,
+        filters: { projectIds: [project.id] },
+      }),
+    ]),
+  );
   const financialAnalytics = canViewFinancials
     ? await new FinancialAnalyticsService(
         new FinancialAnalyticsRepository(client),
@@ -188,6 +217,20 @@ export async function getDashboardView() {
     ...view,
     canViewFinancials,
     financialAnalytics,
+    riskAnalytics,
+    riskAnalyticsByProject,
+    riskDrivers: riskAnalytics.drivers.slice(0, 5).map((driver) => ({
+      category: driver.category,
+      label: driver.label,
+      riskCount: driver.activeRiskCount,
+      exposureCents: driver.assessedExposureCents ?? 0,
+      level:
+        driver.highCriticalCount > 0
+          ? ("high" as const)
+          : driver.averageAttentionScore >= 50
+            ? ("medium" as const)
+            : ("low" as const),
+    })),
     portfolioSummary: {
       ...view.portfolioSummary,
       forecastMarginPercent:

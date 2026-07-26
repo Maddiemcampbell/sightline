@@ -17,6 +17,7 @@ import type {
   PortfolioFinancialComparison,
   PortfolioFinancialMetrics,
 } from "@/features/financial-analytics/types";
+import type { RiskAnalyticsOutput } from "@/features/risk-analytics/types";
 
 export type DashboardSource = Readonly<{
   now: Date;
@@ -123,6 +124,8 @@ export type DashboardView = Readonly<{
     cashFlow: CashFlowForecast;
     comparison: PortfolioFinancialComparison;
   }> | null;
+  riskAnalytics?: RiskAnalyticsOutput | null;
+  riskAnalyticsByProject?: Readonly<Record<string, RiskAnalyticsOutput>>;
   riskDrivers: readonly RiskDriver[];
   riskHeatmap: readonly PortfolioRiskHeatmapRow[];
   work: WorkInMotion;

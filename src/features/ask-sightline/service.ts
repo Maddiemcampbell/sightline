@@ -36,6 +36,8 @@ import type { AdvisorMode } from "@/features/workspace/types";
 import { buildOrganizationQuestionContext } from "@/features/ask-sightline/organization-context";
 import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
 import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
+import { RiskAnalyticsRepository } from "@/features/risk-analytics/repository";
+import { RiskAnalyticsService } from "@/features/risk-analytics/service";
 
 export class AskSightlineService {
   private readonly repository: AskSightlineRepository;
@@ -184,7 +186,7 @@ export class AskSightlineService {
         "Too many questions. Please wait one minute and try again.",
       );
     const canViewFinancials = canViewFinancialExposure(context);
-    const [retrieved, financialAnalytics] = await Promise.all([
+    const [retrieved, financialAnalytics, riskAnalytics] = await Promise.all([
       this.repository.retrieveOrganization(context, input.projectId),
       canViewFinancials
         ? new FinancialAnalyticsService(
@@ -194,6 +196,12 @@ export class AskSightlineService {
             projectId: input.projectId,
           })
         : Promise.resolve(null),
+      new RiskAnalyticsService(
+        new RiskAnalyticsRepository(this.client),
+      ).getOrganizationAnalytics({
+        context,
+        projectId: input.projectId,
+      }),
     ]);
     const questionContext = buildOrganizationQuestionContext({
       context,
@@ -204,6 +212,7 @@ export class AskSightlineService {
       projectId: input.projectId,
       canViewFinancials,
       financialAnalytics,
+      riskAnalytics,
       now: new Date(),
     });
     const provider =

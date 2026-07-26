@@ -485,6 +485,8 @@ export function buildDashboardView(
     timezone,
     currentUserName: source.currentUser.full_name,
     canViewFinancials: true,
+    riskAnalytics: null,
+    riskAnalyticsByProject: {},
     isEmptyOrganization:
       source.projects.length === 0 && source.risks.length === 0,
     hasActiveRisks: openRisks.length > 0,
