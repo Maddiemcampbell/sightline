@@ -16,6 +16,9 @@
   --color-warning: #765b12;
   --color-soft-blue: #edf4f7;
   --color-info: #315e6c;
+  --color-status-high: #9f3a2d;
+  --color-status-medium: #b45309;
+  --color-status-low: #237a3b;
 
   --font-sans: var(--font-geist-sans);
   --radius-sm: 0.5rem;
@@ -72,4 +75,37 @@ a {
 button:not(:disabled),
 a {
   cursor: pointer;
+}
+
+.dashboard-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-surface);
+}
+
+.signal-highlight {
+  padding-inline: 0.12em;
+  border-radius: 0.14em;
+  background: linear-gradient(
+    to bottom,
+    transparent 14%,
+    color-mix(in srgb, var(--color-accent) 88%, transparent) 14%,
+    color-mix(in srgb, var(--color-accent) 88%, transparent) 90%,
+    transparent 90%
+  );
+  color: inherit;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

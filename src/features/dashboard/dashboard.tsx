@@ -15,6 +15,7 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  XCircle,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -37,6 +38,13 @@ import {
 } from "@/features/workspace/workspace-provider";
 import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
+import {
+  formatDueUrgency,
+  formatCompactCurrency,
+  heatmapCellLabel,
+  projectScopeLabel,
+  riskStatusLabel,
+} from "@/features/dashboard/presentation";
 
 const heatmapColumns = [
   "schedule",
@@ -112,16 +120,19 @@ export function Dashboard({ view }: { view: DashboardView }) {
               : changeSummary(view)}
           </p>
           <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
-            Sightline found {filteredView.intelligence.portfolioWatch.length}{" "}
-            portfolio signal
-            {filteredView.intelligence.portfolioWatch.length === 1
-              ? ""
-              : "s"}{" "}
+            Sightline found{" "}
+            <mark className="signal-highlight">
+              {filteredView.intelligence.portfolioWatch.length} portfolio signal
+              {filteredView.intelligence.portfolioWatch.length === 1 ? "" : "s"}
+            </mark>{" "}
             that currently deserve executive attention.
+          </p>
+          <p className="bg-accent/45 text-deep-green mt-3 w-fit rounded-full px-3 py-1 text-xs font-semibold">
+            Scope: {projectScopeLabel(selectedProject?.name ?? null, projects.length)}
           </p>
           <Link
             href="/brief"
-            className="bg-deep-green mt-6 inline-flex min-h-11 items-center gap-3 rounded-md px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#0f3026]"
+            className="bg-deep-green mt-5 flex min-h-11 w-fit items-center gap-3 rounded-md px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#0f3026]"
           >
             <MessageSquareText className="size-4" aria-hidden="true" />
             Open Daily Brief
@@ -130,7 +141,7 @@ export function Dashboard({ view }: { view: DashboardView }) {
         </div>
       </section>
 
-      <div className="mt-4 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0 space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
             <PortfolioOverview view={filteredView} />
@@ -176,11 +187,11 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
   return (
     <section
       aria-label="Portfolio Watch"
-      className="border-border bg-surface shadow-surface rounded-xl border p-5"
+      className="dashboard-card p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-deep-green text-[0.68rem] font-semibold tracking-[0.09em] uppercase">
+          <p className="text-deep-green text-xs font-semibold tracking-[0.09em] uppercase">
             Portfolio Watch
           </p>
           <h2 className="mt-1 text-lg font-semibold">Portfolio overview</h2>
@@ -211,7 +222,7 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
               ? "Restricted for your role"
               : budgetVariance?.valueCents === null || !budgetVariance
                 ? "Not available"
-                : formatMoney(budgetVariance.valueCents)
+                : formatCompactCurrency(budgetVariance.valueCents)
           }
           detail={
             !view.canViewFinancials
@@ -266,7 +277,7 @@ function OverviewMetric({
         <p className="text-muted text-xs font-medium">{label}</p>
         <Icon className="text-muted size-4" aria-hidden="true" />
       </div>
-      <p className="mt-5 text-2xl font-semibold tracking-[-0.035em]">{value}</p>
+      <p className="mt-5 break-words text-2xl font-semibold tracking-[-0.035em] tabular-nums">{value}</p>
       <p
         className={`mt-2 text-xs ${
           tone === "warning"
@@ -291,13 +302,13 @@ function RiskDrivers({
 }) {
   const maxCount = Math.max(1, ...drivers.map((driver) => driver.riskCount));
   return (
-    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+    <section className="dashboard-card p-5">
       <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
         Top risk drivers
       </h2>
       {drivers.length ? (
-        <ol className="mt-5 space-y-4">
-          {drivers.map((driver) => (
+        <ol className="mt-5 space-y-3">
+          {drivers.map((driver, index) => (
             <li key={driver.category}>
               <div className="flex items-center justify-between gap-3 text-xs">
                 <Link
@@ -307,7 +318,7 @@ function RiskDrivers({
                   {driver.label}
                 </Link>
                 <span className="text-muted shrink-0">
-                  {driver.riskCount} risk
+                  #{index + 1} · {driver.riskCount} risk
                   {driver.riskCount === 1 ? "" : "s"}
                 </span>
               </div>
@@ -318,20 +329,20 @@ function RiskDrivers({
                       driver.level === "high"
                         ? "bg-danger"
                         : driver.level === "medium"
-                          ? "bg-[#dfb827]"
-                          : "bg-[#2b9348]"
+                          ? "bg-status-medium"
+                          : "bg-status-low"
                     }`}
                     style={{
                       width: `${Math.max(12, (driver.riskCount / maxCount) * 100)}%`,
                     }}
                   />
                 </div>
-                <span className="text-muted w-12 text-right text-[0.68rem] capitalize">
-                  {driver.level}
+                <span className="text-muted w-24 text-right text-xs">
+                  {riskStatusLabel(driver.level)}
                 </span>
               </div>
               {canViewFinancials && (
-                <p className="text-muted mt-1.5 text-[0.68rem]">
+                <p className="sr-only">
                   {formatMoney(driver.exposureCents)} represented exposure
                 </p>
               )}
@@ -339,9 +350,12 @@ function RiskDrivers({
           ))}
         </ol>
       ) : (
-        <p className="text-muted mt-5 text-sm">
-          No unresolved risk drivers are visible.
-        </p>
+        <div className="mt-5 rounded-lg border border-dashed p-4 text-center">
+          <XCircle className="text-muted mx-auto size-5" aria-hidden="true" />
+          <p className="mt-2 text-sm font-semibold">No active risk drivers</p>
+          <p className="text-muted mt-1 text-xs">The current accessible project scope has no unresolved risks.</p>
+          <Link href="/risks" className="text-deep-green mt-3 inline-block text-xs font-semibold">Review all risks</Link>
+        </div>
       )}
       <Link
         href="/risks"
@@ -365,7 +379,7 @@ function RiskHeatmap({
   if (!analytics)
     return <LegacyRiskHeatmap rows={fallbackRows} />;
   return (
-    <section className="border-border bg-surface shadow-surface overflow-hidden rounded-xl border p-5">
+    <section className="dashboard-card overflow-hidden p-5">
       <div>
         <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
           Portfolio risk heatmap
@@ -376,11 +390,11 @@ function RiskHeatmap({
         </p>
       </div>
       {rows.length ? (
-        <div className="mt-5 overflow-x-auto">
+        <div className="mt-5 overflow-x-auto" tabIndex={0} aria-label="Scrollable portfolio risk heatmap">
           <table className="w-full min-w-[34rem] text-left text-xs">
             <thead>
               <tr className="text-muted">
-                <th className="pb-3 font-medium">Project</th>
+                <th className="bg-surface sticky left-0 z-10 pb-3 font-medium">Project</th>
                 {categories.map((column) => (
                   <th
                     key={column.id}
@@ -394,20 +408,24 @@ function RiskHeatmap({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.projectId} className="border-border border-t">
-                  <th className="py-3 pr-3 font-medium">
+                  <th className="bg-surface sticky left-0 z-10 max-w-48 py-3 pr-3 font-medium">
                     <Link href={`/projects/${row.projectId}`}>{row.projectName}</Link>
                   </th>
                   {row.cells.map((cell) => (
                     <td key={cell.category} className="px-3 py-3 text-center">
                       <Link
                         href={cell.href}
-                        aria-label={`${row.projectName}, ${cell.category}: ${cell.explanation}`}
+                        aria-label={heatmapCellLabel(
+                          row.projectName,
+                          categories.find((category) => category.id === cell.category)?.label ?? cell.category,
+                          cell,
+                        )}
                         title={cell.explanation}
-                        className={`inline-flex size-7 items-center justify-center rounded-full text-[0.62rem] font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                        className={`inline-flex size-7 items-center justify-center rounded-full text-xs font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 ${
                           cell.highestSeverity === "critical" || cell.highestSeverity === "high"
-                            ? "bg-danger"
-                            : cell.highestSeverity === "medium" ? "bg-[#ef6c19]"
-                            : cell.highestSeverity === "low" ? "bg-[#2b9348]"
+                            ? "bg-status-high"
+                            : cell.highestSeverity === "medium" ? "bg-status-medium"
+                            : cell.highestSeverity === "low" ? "bg-status-low"
                             : "bg-border text-muted"
                         }`}
                       >
@@ -419,11 +437,11 @@ function RiskHeatmap({
               ))}
             </tbody>
           </table>
-          <div className="border-border text-muted mt-4 flex flex-wrap gap-4 border-t pt-4 text-[0.68rem]">
+          <div className="border-border text-muted mt-4 flex flex-wrap gap-4 border-t pt-4 text-xs">
             {[
-              ["High", "bg-danger"],
-              ["Medium", "bg-[#ef6c19]"],
-              ["Low", "bg-[#2b9348]"],
+              ["High priority", "bg-status-high"],
+              ["Medium priority", "bg-status-medium"],
+              ["Low priority", "bg-status-low"],
               ["No signal", "bg-[#e7e9e3]"],
             ].map(([label, color]) => (
               <span key={label} className="flex items-center gap-1.5">
@@ -434,9 +452,11 @@ function RiskHeatmap({
           </div>
         </div>
       ) : (
-        <p className="text-muted mt-5 text-sm">
-          No active projects are available for the heatmap.
-        </p>
+        <div className="mt-5 rounded-lg border border-dashed p-5 text-center">
+          <p className="text-sm font-semibold">No heatmap data for this scope</p>
+          <p className="text-muted mt-1 text-xs">Choose another accessible project or review the risk register.</p>
+          <Link href="/risks" className="text-deep-green mt-3 inline-block text-xs font-semibold">Open risk register</Link>
+        </div>
       )}
     </section>
   );
@@ -444,7 +464,7 @@ function RiskHeatmap({
 
 function LegacyRiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
   return (
-    <section className="border-border bg-surface shadow-surface overflow-hidden rounded-xl border p-5">
+    <section className="dashboard-card overflow-hidden p-5">
       <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">Portfolio risk heatmap</h2>
       <p className="text-muted mt-1 text-xs">Highest unresolved severity by project and risk group.</p>
       <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[34rem] text-left text-xs"><tbody>
@@ -473,9 +493,9 @@ function HeatmapRow({ row }: { row: PortfolioRiskHeatmapRow }) {
                 severity === "critical" || severity === "high"
                   ? "bg-danger"
                   : severity === "medium"
-                    ? "bg-[#ef6c19]"
+                    ? "bg-status-medium"
                     : severity === "low"
-                      ? "bg-[#2b9348]"
+                      ? "bg-status-low"
                       : "bg-border"
               }`}
               title={`${row.projectName}, ${column}: ${severity ?? "no signal"}`}
@@ -497,7 +517,7 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
   const historicalComparison =
     view.intelligence.historicalComparisons[0] ?? null;
   return (
-    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+    <section className="dashboard-card p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
           Recent intelligence
@@ -509,16 +529,20 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
       {observation ? (
         <Insight observation={observation} />
       ) : (
-        <p className="text-muted mt-4 text-sm">
-          No cross-project observation meets the current evidence threshold.
-        </p>
+        <div className="mt-4 rounded-lg border border-dashed p-4">
+          <p className="text-sm font-semibold">No evidence-backed insight for this scope</p>
+          <p className="text-muted mt-1 text-xs leading-5">
+            Sightline only surfaces observations that meet its deterministic evidence threshold.
+          </p>
+          <Link href="/risks" className="text-deep-green mt-2 inline-block text-xs font-semibold">Review source risks</Link>
+        </div>
       )}
       {hypothesis && (
         <div
           id={`hypothesis-${hypothesis.key}`}
           className="border-border mt-4 scroll-mt-24 border-t pt-4"
         >
-          <p className="text-warning text-[0.68rem] font-semibold uppercase">
+          <p className="text-warning text-xs font-semibold uppercase">
             Hypothesis — not a conclusion
           </p>
           <p className="mt-1 text-sm font-semibold">{hypothesis.title}</p>
@@ -550,7 +574,7 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
       )}
       {historicalComparison && (
         <div className="border-border mt-4 border-t pt-4">
-          <p className="text-deep-green text-[0.68rem] font-semibold uppercase">
+          <p className="text-deep-green text-xs font-semibold uppercase">
             Similar to previous work
           </p>
           <p className="mt-1 text-sm font-semibold">
@@ -576,10 +600,10 @@ function Insight({ observation }: { observation: PortfolioObservation }) {
         </span>
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-surface text-deep-green rounded-full px-2 py-1 text-[0.65rem] font-semibold">
+            <span className="bg-accent text-deep-green rounded-full px-2 py-1 text-xs font-semibold">
               {observation.confidence}% confidence
             </span>
-            <span className="text-muted text-[0.65rem]">
+            <span className="text-muted text-xs">
               Deterministic observation
             </span>
           </div>
@@ -603,7 +627,7 @@ function OverdueActions({ view }: { view: DashboardView }) {
   const actions = view.work.overdue.slice(0, 2);
   const representedExposure = view.work.overdueExposureCents;
   return (
-    <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
+    <section className="dashboard-card p-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
           Overdue actions
@@ -620,7 +644,7 @@ function OverdueActions({ view }: { view: DashboardView }) {
           <p className="text-danger text-3xl font-light">
             {view.work.overdue.length}
           </p>
-          <p className="text-muted text-[0.68rem]">Overdue</p>
+          <p className="text-muted text-xs">Overdue</p>
           {view.canViewFinancials && representedExposure > 0 && (
             <p className="mt-2 text-xs font-semibold">
               {formatMoney(representedExposure)} at risk
@@ -644,13 +668,20 @@ function OverdueActions({ view }: { view: DashboardView }) {
                     aria-hidden="true"
                   />
                 </Link>
-                <p className="text-danger mt-1 text-[0.65rem]">
+                <p className="text-danger mt-1 text-xs">
                   {overdueLabel(action.dueAt, view.generatedAt)}
+                </p>
+                <p className="text-muted mt-1 text-xs">
+                  {view.priorities.find((priority) => priority.id === `action:${action.id}`)?.projectName ?? "Portfolio"} ·{" "}
+                  {action.ownerName ?? "Unassigned"}
                 </p>
               </li>
             ))
           ) : (
-            <li className="text-muted text-xs">Nothing is overdue.</li>
+            <li>
+              <p className="text-deep-green text-xs font-semibold">You’re caught up</p>
+              <p className="text-muted mt-1 text-xs">No mitigation actions are overdue in this scope.</p>
+            </li>
           )}
         </ol>
       </div>
@@ -666,7 +697,7 @@ function ExecutiveRecommendations({ view }: { view: DashboardView }) {
   return (
     <section
       aria-label="Executive Recommendations"
-      className="border-border bg-surface shadow-surface rounded-xl border p-5"
+      className="dashboard-card p-5"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
@@ -720,7 +751,7 @@ function PortfolioAdvisor({
     hasRecentActivity: view.activity.length > 0,
   });
   return (
-    <aside className="border-border bg-surface shadow-surface h-fit rounded-xl border p-5 2xl:sticky 2xl:top-24">
+    <aside className="dashboard-card h-fit p-5 xl:sticky xl:top-24" aria-label="Sightline AI assistant">
       <div className="flex items-center gap-2">
         <Sparkles className="text-deep-green size-4" aria-hidden="true" />
         <p className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
@@ -730,21 +761,20 @@ function PortfolioAdvisor({
       <div className="mt-4">
         <AdvisorSelector />
       </div>
-      <div className="mt-6">
-        <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-full">
-          <Bot className="size-5" aria-hidden="true" />
+      <div className="mt-4">
+        <span className="bg-soft-green text-deep-green grid size-8 place-items-center rounded-full">
+          <Bot className="size-4" aria-hidden="true" />
         </span>
-        <h2 className="mt-4 text-lg font-semibold">
+        <h2 className="mt-3 text-base font-semibold leading-6">
           Hi {view.currentUserName.split(" ")[0]}.{" "}
           {advisorModeLabels[advisorMode]} mode is selected.
         </h2>
-        <p className="text-muted mt-2 text-sm leading-6">
-          This preference is ready for future advisor behavior. Today, Ask
-          Sightline answers grounded questions from a risk’s authorized
-          evidence, citations, and conversation history.
+        <p className="text-muted mt-1 text-xs leading-5">
+          Ask portfolio questions using your current advisor mode, accessible
+          project scope, authoritative analytics, and cited evidence.
         </p>
       </div>
-      <p className="text-muted mt-6 text-[0.68rem] font-semibold tracking-[0.08em] uppercase">
+      <p className="text-muted mt-4 text-xs font-semibold tracking-[0.08em] uppercase">
         Suggested next steps
       </p>
       <div className="mt-3 space-y-2">
@@ -754,7 +784,7 @@ function PortfolioAdvisor({
             type="button"
             disabled={pending || !canUseAi}
             onClick={() => ask(prompt)}
-            className="border-border hover:bg-background block w-full rounded-lg border p-3 text-left text-xs leading-5 font-medium disabled:opacity-60"
+            className="border-border hover:bg-background block w-full rounded-lg border px-3 py-2.5 text-left text-xs leading-5 font-medium disabled:opacity-60"
           >
             {prompt}
           </button>
@@ -777,9 +807,9 @@ function PortfolioAdvisor({
       >
         Open organization assistant
       </button>
-      <p className="text-muted mt-4 text-center text-[0.65rem] leading-4">
-        Organization-wide questions are not yet supported. Answers remain
-        bounded to authorized risk evidence.
+      <p className="text-muted mt-4 text-center text-xs leading-4">
+        AI can make mistakes. Verify important information using the supplied
+        citations and source records.
       </p>
     </aside>
   );
@@ -812,6 +842,9 @@ export function filterDashboardView(
     rootCauseSuggestions.map((suggestion) => suggestion.key),
   );
   const scopedRiskAnalytics = view.riskAnalyticsByProject?.[projectId] ?? null;
+  const scopedRiskIds = new Set(
+    scopedRiskAnalytics?.executiveRisks.map((risk) => risk.riskId) ?? [],
+  );
   const projectRiskDrivers: RiskDriver[] = (scopedRiskAnalytics?.drivers ?? []).map(
     (driver) => ({
       category: driver.category,
@@ -843,12 +876,14 @@ export function filterDashboardView(
     ),
     work: {
       ...view.work,
-      overdue: view.work.overdue.filter((action) =>
-        priorities.some(
-          (priority) =>
-            priority.kind === "action" && priority.id === `action:${action.id}`,
-        ),
-      ),
+      dueToday: view.work.dueToday.filter((action) => scopedRiskIds.has(action.riskId)),
+      overdue: view.work.overdue.filter((action) => scopedRiskIds.has(action.riskId)),
+      overdueExposureCents: priorities
+        .filter((priority) => priority.kind === "action")
+        .reduce((sum, priority) => sum + (priority.exposureCents ?? 0), 0),
+      waitingExternal: view.work.waitingExternal.filter((action) => scopedRiskIds.has(action.riskId)),
+      recentlyCompleted: view.work.recentlyCompleted.filter((action) => scopedRiskIds.has(action.riskId)),
+      unownedRisks: view.work.unownedRisks.filter((risk) => scopedRiskIds.has(risk.id)),
     },
     intelligence: {
       ...view.intelligence,
@@ -914,7 +949,7 @@ function QuickPaths({
           Continue into real Sightline workflows using your current organization
           and project permissions.
         </p>
-        <span className="text-muted ml-auto hidden text-[0.65rem] sm:block">
+        <span className="text-muted ml-auto hidden text-xs sm:block">
           {view.portfolioSummary.activeProjects} active projects
         </span>
       </div>
@@ -942,10 +977,5 @@ function changeSummary(view: DashboardView) {
 }
 
 function overdueLabel(dueAt: string | null, generatedAt: string) {
-  if (!dueAt) return "Due date unavailable";
-  const days = Math.max(
-    1,
-    Math.floor((Date.parse(generatedAt) - Date.parse(dueAt)) / 86_400_000),
-  );
-  return `${days} day${days === 1 ? "" : "s"} overdue`;
+  return formatDueUrgency(dueAt, generatedAt);
 }

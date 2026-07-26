@@ -2,14 +2,13 @@ import { Building2, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 import { switchOrganizationAction } from "@/app/organization/actions";
-import { primaryNavigation } from "@/domain/navigation";
 import { SightlineMark } from "@/components/sightline-mark";
 import {
   getCurrentMembership,
   getCurrentMemberships,
   getCurrentUser,
 } from "@/lib/auth/session";
-import { WatchlistShortcut } from "@/features/workspace/watchlist-shortcut";
+import { SidebarNavigation } from "@/components/sidebar-navigation";
 
 export async function AppSidebar() {
   const [principal, currentMembership, memberships] = await Promise.all([
@@ -84,27 +83,7 @@ export async function AppSidebar() {
         )}
       </div>
 
-      <nav
-        aria-label="Primary navigation"
-        className="overflow-x-auto border-b border-white/10 px-3 py-3 lg:flex-1 lg:overflow-visible lg:border-b-0 lg:px-4 lg:py-4"
-      >
-        <ul className="flex min-w-max gap-1 lg:min-w-0 lg:flex-col">
-          {primaryNavigation.map(({ href, icon: Icon, label }) => (
-            <li key={href}>
-              <Link
-                href={href}
-                className="focus-visible:outline-accent-strong flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <Icon aria-hidden="true" className="size-[1.125rem]" />
-                {label}
-              </Link>
-            </li>
-          ))}
-          <li>
-            <WatchlistShortcut />
-          </li>
-        </ul>
-      </nav>
+      <SidebarNavigation />
 
       {currentMembership ? (
         <div className="flex flex-col gap-2 px-4 pb-3">

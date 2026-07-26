@@ -77,6 +77,7 @@ export type HeatmapCell = Readonly<{
   highestSeverity: Severity | null; attentionScore: number | null;
   assessedExposureCents: number | null; expectedExposureCents: null;
   overdueActionCount: number; unassignedCount: number; withoutEvidenceCount: number;
+  trendState: "improving" | "worsening" | "stable" | "unavailable";
   contributingRiskIds: readonly string[]; href: string; explanation: string;
   quality: DataState;
 }>;

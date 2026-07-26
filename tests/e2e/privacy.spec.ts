@@ -8,12 +8,14 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
     page.getByRole("heading", { name: "Your organization controls its data." }),
   ).toBeVisible();
   await expect(
-    page.getByText(
+    page.locator("#main-content").getByText(
       "Customer data is never used to train foundation models without explicit permission.",
-    ),
+    ).first(),
   ).toBeVisible();
   await expect(
-    page.getByText("Customers retain ownership of their uploaded documents."),
+    page.locator("#main-content").getByText(
+      "Customers retain ownership of their uploaded documents.",
+    ).first(),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Current AI processing policy" }),

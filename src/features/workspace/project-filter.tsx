@@ -44,11 +44,15 @@ export function ProjectFilter() {
         disabled={!stateReady}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="border-border bg-surface flex min-h-9 min-w-40 items-center justify-between gap-3 rounded-md border px-3 text-xs font-semibold"
+        className={`flex min-h-9 min-w-40 items-center justify-between gap-3 rounded-md border px-3 text-xs font-semibold ${
+          selected
+            ? "border-accent-strong bg-accent/35 text-deep-green"
+            : "border-border bg-surface"
+        }`}
       >
         <span className="max-w-44 truncate">
           {stateReady
-            ? (selected?.name ?? "All Projects")
+            ? (selected?.name ?? `All accessible projects (${projects.length})`)
             : "Loading projects…"}
         </span>
         <ChevronDown className="text-muted size-3.5" aria-hidden="true" />
@@ -73,7 +77,7 @@ export function ProjectFilter() {
           >
             <ProjectOption
               id="all"
-              name="All Projects"
+              name={`All accessible projects (${projects.length})`}
               selected={selectedProjectId === "all"}
               select={() => {
                 setSelectedProjectId("all");
@@ -122,7 +126,11 @@ function ProjectOption({
       role="option"
       aria-selected={selected}
       onClick={select}
-      className="hover:bg-background flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs"
+      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs ${
+        selected
+          ? "bg-accent/35 text-deep-green font-semibold"
+          : "hover:bg-background"
+      }`}
     >
       <span className="truncate">{name}</span>
       {selected && <Check className="text-deep-green size-4 shrink-0" />}

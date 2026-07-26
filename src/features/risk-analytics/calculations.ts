@@ -90,6 +90,7 @@ export function calculatePortfolioRiskAnalytics(input:RiskAnalyticsInput):RiskAn
         attentionScore:rows.length?Math.max(...rows.map(r=>facts.get(r.id)!.attention.score)):null,
         assessedExposureCents:assessed.length?assessed.reduce((a,b)=>a+b,0):null,expectedExposureCents:null,
         overdueActionCount:overdue,unassignedCount:rows.filter(r=>!r.assigned_user_id).length,
+        trendState:"unavailable" as const,
         withoutEvidenceCount:rows.filter(r=>!facts.get(r.id)!.evidence).length,
         contributingRiskIds:rows.map(r=>r.id),href:`/risks?project=${p.id}&category=${c.id}&origin=heatmap`,
         explanation:rows.length?`${rows.length} active ${categoryLabel(c.id).toLowerCase()} risk${rows.length===1?"":"s"}; highest severity ${highest}; ${overdue} overdue actions.`:"No active risks in this category.",

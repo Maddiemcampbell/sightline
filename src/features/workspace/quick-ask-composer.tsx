@@ -18,7 +18,7 @@ export function QuickAskComposer() {
   return (
     <section
       aria-label="Quick Ask Sightline"
-      className="border-border bg-soft-green/95 sticky bottom-0 z-30 border-t px-[var(--page-gutter)] py-3 backdrop-blur"
+      className="border-border bg-soft-green/95 sticky bottom-0 z-30 border-t px-[var(--page-gutter)] pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur"
     >
       <form
         className="mx-auto flex max-w-[96rem] flex-col gap-2 lg:flex-row lg:items-center"
@@ -61,7 +61,8 @@ export function QuickAskComposer() {
       </form>
       <p
         id="quick-ask-status"
-        className="text-muted mx-auto mt-1 max-w-[96rem] text-right text-[0.62rem]"
+        className="text-muted mx-auto mt-1 max-w-[96rem] text-right text-xs"
+        aria-live="polite"
       >
         {canUseAi
           ? pending

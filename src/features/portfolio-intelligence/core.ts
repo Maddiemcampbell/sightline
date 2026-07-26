@@ -612,15 +612,23 @@ function deriveExecutiveRecommendations(
   observations: readonly PortfolioObservation[],
   hypotheses: readonly RootCauseSuggestion[],
 ): ExecutiveRecommendation[] {
-  const hypothesisRecommendations = hypotheses.map((hypothesis, index) => ({
-    key: `hypothesis:${hypothesis.key}`,
-    priority: index + 1,
-    title: `Investigate: ${hypothesis.title.replace(/^Possible (root cause|contributing factor): /, "")}`,
-    rationale: `${hypothesis.confidence}% hypothesis confidence based on ${hypothesis.supportingObservations.length} supporting observations.`,
-    nextStep: hypothesis.recommendedInvestigationSteps[0]!,
-    href: `#hypothesis-${hypothesis.key}`,
-    source: "hypothesis" as const,
-  }));
+  const hypothesisRecommendations = hypotheses.map((hypothesis, index) => {
+    const supportingKeys = new Set(
+      hypothesis.supportingObservations.map((observation) => observation.key),
+    );
+    const affectedProjectId = observations.find((observation) =>
+      supportingKeys.has(observation.key),
+    )?.affectedProjectIds[0];
+    return {
+      key: `hypothesis:${hypothesis.key}`,
+      priority: index + 1,
+      title: `Investigate: ${hypothesis.title.replace(/^Possible (root cause|contributing factor): /, "")}`,
+      rationale: `${hypothesis.confidence}% hypothesis confidence based on ${hypothesis.supportingObservations.length} supporting observations.`,
+      nextStep: hypothesis.recommendedInvestigationSteps[0]!,
+      href: affectedProjectId ? `/projects/${affectedProjectId}` : "/risks",
+      source: "hypothesis" as const,
+    };
+  });
   const observationRecommendations = observations.map((observation, index) => ({
     key: `observation:${observation.key}`,
     priority: hypothesisRecommendations.length + index + 1,

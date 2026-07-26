@@ -15,14 +15,14 @@ const labels: Record<AdvisorMode, string> = {
 export function AdvisorSelector() {
   const { advisorMode, setAdvisorMode, stateReady } = useDashboardState();
   return (
-    <label className="border-border bg-surface flex min-h-10 items-center gap-2 rounded-md border px-3">
+    <label className="border-accent-strong bg-accent/25 flex min-h-10 items-center gap-2 rounded-md border px-3">
       <Sparkles className="text-deep-green size-4" aria-hidden="true" />
       <span className="sr-only">Advisor mode</span>
       <select
         value={advisorMode}
         disabled={!stateReady}
         onChange={(event) => setAdvisorMode(event.target.value as AdvisorMode)}
-        className="bg-surface min-w-36 text-xs font-semibold outline-none"
+        className="min-w-36 bg-transparent text-xs font-semibold outline-none"
       >
         {Object.entries(labels).map(([value, label]) => (
           <option key={value} value={value}>

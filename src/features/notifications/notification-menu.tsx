@@ -43,7 +43,7 @@ export function NotificationMenu({
       >
         <Bell aria-hidden="true" className="size-5" />
         {unread > 0 && (
-          <span className="bg-accent-strong ring-surface absolute top-1 right-1 min-w-4 rounded-full px-1 text-center text-[10px] font-bold text-white ring-2">
+          <span className="bg-accent ring-surface text-deep-green absolute top-1 right-1 min-w-4 rounded-full px-1 text-center text-[10px] font-bold ring-2">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
@@ -82,7 +82,7 @@ export function NotificationMenu({
                         await markNotificationReadAction(item.id);
                       });
                   }}
-                  className={`block rounded-md p-3 text-sm ${item.readAt ? "text-muted" : "bg-soft-green text-ink"}`}
+                  className={`block rounded-md p-3 text-sm ${item.readAt ? "text-muted" : "bg-accent/25 text-ink"}`}
                 >
                   <span className="font-semibold">{item.title}</span>
                   {item.body && <span className="mt-1 block">{item.body}</span>}

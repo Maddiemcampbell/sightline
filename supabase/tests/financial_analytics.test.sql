@@ -52,13 +52,27 @@ select ok(
   'monthly snapshot creation is tenant-scoped and idempotent'
 );
 
-select is(
-  (
-    select count(*)::integer
-    from public.project_financials
+select ok(
+  exists (
+    select 1 from public.project_financials
     where organization_id = '10000000-0000-4000-8000-000000000001'
+      and forecast_cost_to_complete_cents is not null
+  )
+  and exists (
+    select 1 from public.project_financials
+    where organization_id = '10000000-0000-4000-8000-000000000001'
+      and forecast_cost_to_complete_cents is null
+  )
+  and exists (
+    select 1
+    from public.projects project
+    where project.organization_id = '10000000-0000-4000-8000-000000000001'
+      and not exists (
+        select 1 from public.project_financials financial
+        where financial.organization_id = project.organization_id
+          and financial.project_id = project.id
+      )
   ),
-  3,
   'demo organization includes complete, partial, and missing financial cases'
 );
 

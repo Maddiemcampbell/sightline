@@ -3,6 +3,13 @@
 insert into public.organizations (id, name, slug, timezone)
 values ('10000000-0000-4000-8000-000000000001', 'BuildCo Construction', 'buildco-construction', 'America/Los_Angeles');
 
+update public.organizations
+set industry = 'Commercial construction',
+    company_size = '201-500',
+    default_currency = 'USD',
+    brand_color = '#173f32'
+where id = '10000000-0000-4000-8000-000000000001';
+
 insert into public.users (id, organization_id, email, full_name, title, role)
 values (
   '11000000-0000-4000-8000-000000000001',
@@ -28,7 +35,13 @@ values
   ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'Cedar Grove Medical Pavilion', 'BC-24017', 'active', '1800 Cedar Grove Way', 'Sacramento', 'CA', '95814', 2850000000, '2026-01-12', '2027-03-26'),
   ('20000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', 'Riverfront Distribution Center', 'BC-24022', 'active', '450 Harbor Industrial Road', 'Stockton', 'CA', '95203', 4180000000, '2025-11-03', '2026-12-18'),
   ('20000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', 'Northgate Civic Center', 'BC-25004', 'active', '900 Northgate Plaza', 'Roseville', 'CA', '95678', 1975000000, '2026-03-02', '2027-01-29'),
-  ('20000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Sierra Vista High School Modernization', 'BC-25009', 'active', '72 Falcon Drive', 'Folsom', 'CA', '95630', 1260000000, '2026-05-18', '2027-06-11');
+  ('20000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', 'Sierra Vista High School Modernization', 'BC-25009', 'active', '72 Falcon Drive', 'Folsom', 'CA', '95630', 1260000000, '2026-05-18', '2027-06-11'),
+  ('20000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', 'Juniper Row Apartments', 'BC-25011', 'active', '410 Juniper Street', 'Oakland', 'CA', '94607', 2340000000, '2026-02-09', '2027-08-20'),
+  ('20000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', 'Granite Peak Data Center', 'BC-25014', 'active', '8800 Logic Loop', 'Reno', 'NV', '89521', 5620000000, '2026-04-06', '2027-11-12'),
+  ('20000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', 'Mercer University Residence Hall', 'BC-25016', 'active', '60 College Avenue', 'Davis', 'CA', '95616', 1890000000, '2026-06-01', '2027-07-30'),
+  ('20000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', 'Market Square Mixed-Use Tower', 'BC-25018', 'active', '120 Market Square', 'San Jose', 'CA', '95113', 6850000000, '2025-09-15', '2028-02-18'),
+  ('20000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', 'Harbor Point Office Renewal', 'BC-24008', 'complete', '22 Embarcadero', 'San Francisco', 'CA', '94111', 980000000, '2025-01-13', '2026-06-26'),
+  ('20000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', 'Clearwater Pump Station', 'BC-25020', 'planning', '300 River Service Road', 'Modesto', 'CA', '95354', 1480000000, '2026-09-08', '2027-12-17');
 
 insert into public.vendors (id, organization_id, name, trade, contact_name, contact_email)
 values
@@ -73,11 +86,23 @@ values
   ('60000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000003', 'Mechanical coordination drawings have unresolved clashes', 'Nine ceiling-space clashes remain open ahead of corridor framing release.', 'documentation', 'medium', 'in_progress', 7800000, 2900000, 82, 'Framing before coordination closes could create rework across multiple trades.', '2026-07-15T15:00:00Z', '2026-07-23T17:00:00Z'),
   ('60000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002', '30000000-0000-4000-8000-000000000004', 'Steel crew overtime is exceeding the recovery plan', 'Reported overtime is 18 percent above the approved recovery assumption for the second week.', 'financial', 'medium', 'monitoring', 6100000, 2600000, 76, 'Sustained overtime without production gains will erode the recovery budget before the structure is topped out.', '2026-07-17T13:00:00Z', '2026-07-22T17:00:00Z'),
   ('60000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000005', 'Drywall manpower is below the committed plan', 'The subcontractor averaged 21 workers against a committed crew of 30 over the last four shifts.', 'vendor', 'low', 'monitoring', 4200000, 1500000, 73, 'If the crew does not recover this week, above-ceiling inspections and finishes will begin losing float.', '2026-07-17T14:00:00Z', '2026-07-25T17:00:00Z'),
-  ('60000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000004', null, 'Open excavation lacks documented daily inspection', 'The last two excavation shifts do not include a competent-person inspection record.', 'safety', 'high', 'monitoring', 5000000, 1000000, 90, 'Missing inspection records expose the project to preventable safety and compliance risk.', '2026-07-14T14:00:00Z', '2026-07-15T15:00:00Z');
+  ('60000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000004', null, 'Open excavation lacks documented daily inspection', 'The last two excavation shifts do not include a competent-person inspection record.', 'safety', 'high', 'monitoring', 5000000, 1000000, 90, 'Missing inspection records expose the project to preventable safety and compliance risk.', '2026-07-14T14:00:00Z', '2026-07-15T15:00:00Z'),
+  ('60000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000005', 'Window mockup requires corrective testing', 'Air and water testing found one perimeter seal outside the approved assembly.', 'other', 'high', 'in_progress', 12800000, 4200000, 92, 'Unresolved envelope quality can multiply rework across repeated apartment units.', '2026-07-23T16:00:00Z', '2026-07-28T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '30000000-0000-4000-8000-000000000001', 'Generator package release is behind procurement plan', 'Final generator controls have not been released against the fabrication milestone.', 'other', 'critical', 'action_needed', 41000000, 15500000, 94, 'Late equipment release threatens commissioning and contracted energization.', '2026-07-24T13:00:00Z', '2026-07-26T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000007', null, 'Residence hall framing crew is below plan', 'Weekly staffing averaged 34 carpenters against the committed 46-person crew.', 'vendor', 'medium', 'monitoring', 9600000, 3300000, 81, 'Sustained labor underperformance may consume dry-in float before fall weather.', '2026-07-22T15:00:00Z', '2026-07-31T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000012', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000008', null, 'Fire alarm permit comments remain open', 'The current life-safety resubmittal retains six authority comments.', 'other', 'high', 'action_needed', 17000000, 5800000, 89, 'Open authority comments can delay inspections and phased occupancy.', '2026-07-21T18:00:00Z', '2026-07-27T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000013', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000003', 'Mechanical change directive lacks final pricing', 'Field work is proceeding under a signed directive while final labor pricing remains pending.', 'contract', 'medium', 'monitoring', 11200000, 4400000, 84, 'Delayed pricing reduces cost visibility and weakens timely change management.', '2026-07-20T17:00:00Z', '2026-08-01T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000014', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '30000000-0000-4000-8000-000000000002', 'Concrete washout controls need environmental review', 'The logistics revision relocates washout near an active storm drain.', 'other', 'low', 'monitoring', 0, 0, 78, 'Controls should be reviewed before the next foundation placement.', '2026-07-19T14:00:00Z', '2026-07-30T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000015', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000009', null, 'Closeout warranty index was incomplete', 'The initial owner handoff omitted two equipment warranty records.', 'documentation', 'low', 'monitoring', 1800000, 400000, 87, 'Incomplete closeout records delay final acceptance and operational handoff.', '2026-06-04T14:00:00Z', '2026-06-12T17:00:00Z'),
+  ('60000000-0000-4000-8000-000000000016', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000010', null, 'Utility easement language needs owner confirmation', 'Planning documents contain conflicting limits for the permanent access easement.', 'contract', 'medium', 'monitoring', 0, 0, 72, 'Resolving easement limits before procurement avoids redesign and delayed access.', '2026-07-24T19:00:00Z', null);
 
 update public.risks
 set status = 'resolved', resolved_at = '2026-07-15T14:30:00Z'
 where id = '60000000-0000-4000-8000-000000000008';
+
+update public.risks
+set status = 'resolved', resolved_at = '2026-06-12T17:00:00Z'
+where id = '60000000-0000-4000-8000-000000000015';
 
 insert into public.risk_resolutions (
   id, organization_id, risk_id, resolved_by_user_id, final_owner_user_id,
@@ -130,7 +155,16 @@ insert into public.recommended_actions (
 values
   ('80000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000001', 'Obtain renewed insurance certificate', 'Require Apex to provide a compliant renewal certificate before its current policy expires.', 'request_document', 'suggested', 'urgent', '2026-07-20T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
   ('80000000-0000-4000-8000-000000000002', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000002', '11000000-0000-4000-8000-000000000001', 'Approve a weather contingency plan', 'Confirm an alternate pour window or protected placement plan before releasing Friday labor and pump reservations.', 'update_schedule', 'suggested', 'high', '2026-07-20T16:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
-  ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'email', 'suggested', 'urgent', '2026-07-21T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule');
+  ('80000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000003', '11000000-0000-4000-8000-000000000001', 'Issue written notice and price the added scope', 'Send contractual notice, preserve daily records, and submit a ROM before further owner-directed backing proceeds.', 'email', 'suggested', 'urgent', '2026-07-21T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'deterministic_rule'),
+  ('80000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', '11000000-0000-4000-8000-000000000002', 'Retest corrected window mockup', 'Complete the witnessed retest before releasing repeated envelope installation.', 'request_document', 'accepted', 'high', '2026-07-25T20:00:00Z', '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000010', '11000000-0000-4000-8000-000000000001', 'Release generator controls package', 'Resolve final controls and authorize the vendor fabrication release.', 'contact_vendor', 'suggested', 'urgent', '2026-07-24T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000011', null, 'Confirm framing manpower recovery', 'Obtain a dated staffing plan and verify daily crew counts.', 'contact_vendor', 'suggested', 'high', '2026-07-30T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000012', '11000000-0000-4000-8000-000000000002', 'Close life-safety permit comments', 'Coordinate responses and submit the complete fire-alarm revision.', 'request_document', 'in_progress', 'urgent', '2026-07-23T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000013', '11000000-0000-4000-8000-000000000001', 'Finalize mechanical directive pricing', 'Reconcile labor backup and submit final change pricing.', 'email', 'in_progress', 'normal', '2026-07-22T17:00:00Z', '11000000-0000-4000-8000-000000000001', 'human');
+
+update public.recommended_actions
+set status = 'completed', completed_at = '2026-07-24T18:00:00Z'
+where id = '80000000-0000-4000-8000-000000000008';
 
 insert into public.risk_email_drafts (
   id, organization_id, risk_id, recommended_action_id, created_by_user_id,
@@ -209,6 +243,12 @@ set projected_margin_cents = case id
   when '20000000-0000-4000-8000-000000000002' then 334400000
   when '20000000-0000-4000-8000-000000000003' then 187625000
   when '20000000-0000-4000-8000-000000000004' then 100800000
+  when '20000000-0000-4000-8000-000000000005' then 198900000
+  when '20000000-0000-4000-8000-000000000006' then 505800000
+  when '20000000-0000-4000-8000-000000000007' then 160650000
+  when '20000000-0000-4000-8000-000000000008' then 548000000
+  when '20000000-0000-4000-8000-000000000009' then 107800000
+  when '20000000-0000-4000-8000-000000000010' then 118400000
   else 0
 end;
 
@@ -233,6 +273,21 @@ insert into public.project_financials (
     '20000000-0000-4000-8000-000000000003',
     '10000000-0000-4000-8000-000000000001',
     'USD', 1700000000, 980000000, 760000000, null, '2026-07-24'
+  ),
+  (
+    '20000000-0000-4000-8000-000000000005',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 2100000000, 1460000000, 930000000, 1100000000, '2026-07-24'
+  ),
+  (
+    '20000000-0000-4000-8000-000000000006',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 5100000000, 3260000000, 1740000000, 3500000000, '2026-07-24'
+  ),
+  (
+    '20000000-0000-4000-8000-000000000008',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 6200000000, 5350000000, 2810000000, 3700000000, '2026-07-24'
   );
 
 insert into public.financial_change_orders (
@@ -344,6 +399,50 @@ set financial_exposure_assessed = true,
     category_mapping_confidence = 100,
     taxonomy_version = 'portfolio-taxonomy/1.0'
 where id = '60000000-0000-4000-8000-000000000008';
+
+update public.risks
+set normalized_category_id = case id
+      when '60000000-0000-4000-8000-000000000009' then 'quality'
+      when '60000000-0000-4000-8000-000000000010' then 'procurement'
+      when '60000000-0000-4000-8000-000000000011' then 'labor'
+      when '60000000-0000-4000-8000-000000000012' then 'compliance'
+      when '60000000-0000-4000-8000-000000000013' then 'change_orders'
+      when '60000000-0000-4000-8000-000000000014' then 'environmental'
+      when '60000000-0000-4000-8000-000000000016' then 'contractual'
+    end,
+    category_mapping_source = 'manual',
+    category_mapping_confidence = 100,
+    taxonomy_version = 'portfolio-taxonomy/1.0'
+where id between '60000000-0000-4000-8000-000000000009'
+             and '60000000-0000-4000-8000-000000000016';
+
+-- Deliberate quality scenarios: one unowned risk and two risks whose financial
+-- exposure has not been assessed. Zero defaults must not render as $0 exposure.
+update public.risks set assigned_user_id = null
+where id = '60000000-0000-4000-8000-000000000011';
+update public.risks
+set financial_exposure_assessed = false, last_assessed_at = null
+where id in (
+  '60000000-0000-4000-8000-000000000014',
+  '60000000-0000-4000-8000-000000000016'
+);
+
+insert into public.portfolio_risk_snapshots (
+  organization_id, snapshot_month, analytics_payload, calculation_version,
+  taxonomy_version, ranking_version, data_quality, calculated_at
+) values
+  (
+    '10000000-0000-4000-8000-000000000001', '2026-05-01',
+    '{"drivers":[{"category":"schedule","activeRiskCount":2},{"category":"documentation","activeRiskCount":3},{"category":"financial","activeRiskCount":1}]}'::jsonb,
+    'risk-analytics/1.0', 'portfolio-taxonomy/1.0',
+    'executive-attention/1.0', 'partial', '2026-05-31T23:59:59Z'
+  ),
+  (
+    '10000000-0000-4000-8000-000000000001', '2026-06-01',
+    '{"drivers":[{"category":"schedule","activeRiskCount":3},{"category":"documentation","activeRiskCount":2},{"category":"financial","activeRiskCount":2},{"category":"vendor_subcontractor","activeRiskCount":1}]}'::jsonb,
+    'risk-analytics/1.0', 'portfolio-taxonomy/1.0',
+    'executive-attention/1.0', 'partial', '2026-06-30T23:59:59Z'
+  );
 
 update public.risks set detection_key = 'insurance:apex-electrical-systems:cedar-grove-medical-pavilion'
 where id = '60000000-0000-4000-8000-000000000001';
