@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { getReportsData } from "@/features/reports/data";
 
 const reports = [
   {
@@ -41,7 +42,11 @@ const reports = [
   },
 ] as const;
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const { financialAnalytics } = await getReportsData();
+  const financialSummary = financialAnalytics
+    ? `${financialAnalytics.portfolio.projectsOverBudget} over budget · ${financialAnalytics.portfolio.projectsMissingFinancialData} missing financial data · ${financialAnalytics.cashFlow.confidence} forecast confidence`
+    : "Restricted for your role";
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
@@ -70,7 +75,9 @@ export default function ReportsPage() {
               {description}
             </p>
             <span className="text-muted border-border mt-5 border-t pt-4 text-xs font-semibold">
-              Report generation coming later
+              {title === "Financial Performance"
+                ? financialSummary
+                : "Report generation coming later"}
             </span>
           </Card>
         ))}

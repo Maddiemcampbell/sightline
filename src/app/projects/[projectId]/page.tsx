@@ -38,10 +38,6 @@ export default async function ProjectPage({ params }: Props) {
     (risk) => !["resolved", "dismissed"].includes(risk.status),
   );
   const canSeeFinancials = canViewFinancialExposure(context);
-  const profitAtRisk = openRisks.reduce(
-    (sum, risk) => sum + risk.estimated_margin_impact_cents,
-    0,
-  );
   const location = [
     detail.project.address_line_1,
     detail.project.city,
@@ -72,7 +68,9 @@ export default async function ProjectPage({ params }: Props) {
               Estimated project profit at risk
             </p>
             <p className="mt-1 text-3xl font-semibold">
-              {canSeeFinancials ? formatMoney(profitAtRisk) : "Restricted"}
+              {canSeeFinancials
+                ? formatMoney(detail.profitAtRiskCents)
+                : "Restricted"}
             </p>
           </div>
         </div>

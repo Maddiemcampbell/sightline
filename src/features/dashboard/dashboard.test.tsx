@@ -31,6 +31,7 @@ const view: DashboardView = {
   timezone: "America/Los_Angeles",
   currentUserName: "Matt Anderson",
   canViewFinancials: true,
+  financialAnalytics: null,
   isEmptyOrganization: false,
   hasActiveRisks: true,
   observations: [],
@@ -110,6 +111,7 @@ const view: DashboardView = {
   work: {
     dueToday: [],
     overdue: [],
+    overdueExposureCents: 0,
     unownedRisks: [],
     waitingExternal: [],
     recentlyCompleted: [],

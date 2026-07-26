@@ -34,6 +34,8 @@ import { getServerEnv } from "@/lib/env";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import type { AdvisorMode } from "@/features/workspace/types";
 import { buildOrganizationQuestionContext } from "@/features/ask-sightline/organization-context";
+import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
+import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
 
 export class AskSightlineService {
   private readonly repository: AskSightlineRepository;
@@ -181,10 +183,18 @@ export class AskSightlineService {
       throw new Error(
         "Too many questions. Please wait one minute and try again.",
       );
-    const retrieved = await this.repository.retrieveOrganization(
-      context,
-      input.projectId,
-    );
+    const canViewFinancials = canViewFinancialExposure(context);
+    const [retrieved, financialAnalytics] = await Promise.all([
+      this.repository.retrieveOrganization(context, input.projectId),
+      canViewFinancials
+        ? new FinancialAnalyticsService(
+            new FinancialAnalyticsRepository(this.client),
+          ).getOrganizationAnalytics({
+            context,
+            projectId: input.projectId,
+          })
+        : Promise.resolve(null),
+    ]);
     const questionContext = buildOrganizationQuestionContext({
       context,
       retrieved,
@@ -192,7 +202,8 @@ export class AskSightlineService {
       advisorMode: input.advisorMode,
       history: input.history,
       projectId: input.projectId,
-      canViewFinancials: canViewFinancialExposure(context),
+      canViewFinancials,
+      financialAnalytics,
       now: new Date(),
     });
     const provider =

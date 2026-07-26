@@ -6,6 +6,7 @@ import type {
   PortfolioHealthRow,
   PriorityItem,
 } from "@/features/dashboard/types";
+import { sumMoneyCents } from "@/features/financial-analytics/calculations";
 
 const DAY_MS = 86_400_000;
 const terminalRiskStatuses = new Set(["resolved", "dismissed"]);
@@ -152,14 +153,6 @@ export function buildDashboardView(
   const projectsAtRisk = new Set(
     openRisks.flatMap((risk) => (risk.project_id ? [risk.project_id] : [])),
   ).size;
-  const totalContractValueCents = activeProjects.reduce(
-    (sum, project) => sum + (project.contract_value_cents ?? 0),
-    0,
-  );
-  const totalProjectedMarginCents = activeProjects.reduce(
-    (sum, project) => sum + project.projected_margin_cents,
-    0,
-  );
   const driverGroups = new Map<
     string,
     { riskCount: number; exposureCents: number; maxSeverity: number }
@@ -456,6 +449,16 @@ export function buildDashboardView(
   const overdue = openActions
     .filter((action) => action.due_at && Date.parse(action.due_at) < today)
     .flatMap((action) => actionViewById.get(action.id) ?? []);
+  const overdueIds = new Set(overdue.map((action) => `action:${action.id}`));
+  const overdueExposureCents = sumMoneyCents(
+    priorities.flatMap((priority) =>
+      priority.kind === "action" &&
+      overdueIds.has(priority.id) &&
+      priority.exposureCents !== null
+        ? [priority.exposureCents]
+        : [],
+    ),
+  );
   const waitingExternal = openActions
     .filter((action) =>
       ["contact_vendor", "request_document", "open_rfi"].includes(
@@ -527,20 +530,15 @@ export function buildDashboardView(
         (sum, risk) => sum + risk.potential_exposure_cents,
         0,
       ),
-      forecastMarginPercent: totalContractValueCents
-        ? Number(
-            (
-              (totalProjectedMarginCents / totalContractValueCents) *
-              100
-            ).toFixed(1),
-          )
-        : null,
+      forecastMarginPercent: null,
     },
+    financialAnalytics: null,
     riskDrivers,
     riskHeatmap,
     work: {
       dueToday,
       overdue,
+      overdueExposureCents,
       unownedRisks: openRisks
         .filter((risk) => !risk.assigned_user_id)
         .map((risk) => ({

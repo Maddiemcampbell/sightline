@@ -14,6 +14,8 @@ import {
   deriveHomepageIntelligence,
   derivePortfolioObservations,
 } from "@/features/portfolio-intelligence/core";
+import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
+import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -141,6 +143,11 @@ export async function getDashboardView() {
     },
     timezone,
   );
+  const financialAnalytics = canViewFinancials
+    ? await new FinancialAnalyticsService(
+        new FinancialAnalyticsRepository(client),
+      ).getOrganizationAnalytics({ context })
+    : null;
   const meaningfulActivityTypes = new Set([
     "risk_detected",
     "risk_acknowledged",
@@ -180,6 +187,12 @@ export async function getDashboardView() {
   return {
     ...view,
     canViewFinancials,
+    financialAnalytics,
+    portfolioSummary: {
+      ...view.portfolioSummary,
+      forecastMarginPercent:
+        financialAnalytics?.portfolio.forecastMarginPercent ?? null,
+    },
     observations,
     intelligence: deriveHomepageIntelligence({
       observations,

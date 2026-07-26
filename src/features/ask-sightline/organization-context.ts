@@ -16,6 +16,7 @@ import {
 import { formatMoney } from "@/features/daily-brief/formatters";
 import type { ActorContext } from "@/lib/auth/authorization";
 import type { AdvisorMode } from "@/features/workspace/types";
+import type { FinancialAnalyticsService } from "@/features/financial-analytics/service";
 
 type RetrievedOrganization = Awaited<
   ReturnType<AskSightlineRepository["retrieveOrganization"]>
@@ -30,6 +31,7 @@ export function buildOrganizationQuestionContext({
   projectId,
   canViewFinancials,
   now,
+  financialAnalytics = null,
 }: {
   context: ActorContext;
   retrieved: RetrievedOrganization;
@@ -39,6 +41,9 @@ export function buildOrganizationQuestionContext({
   projectId: string | null;
   canViewFinancials: boolean;
   now: Date;
+  financialAnalytics?: Awaited<
+    ReturnType<FinancialAnalyticsService["getOrganizationAnalytics"]>
+  > | null;
 }): OrganizationQuestionContext {
   const projectById = new Map(
     retrieved.projects.map((project) => [project.id, project]),
@@ -85,6 +90,71 @@ export function buildOrganizationQuestionContext({
   });
 
   const citations: OrganizationCitation[] = [
+    ...(financialAnalytics
+      ? [
+          {
+            id: "project:portfolio-financial-summary",
+            entityType: "project" as const,
+            title: "Authoritative portfolio financial summary",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                financialAnalytics.portfolio.totalPortfolioBudget.valueCents !==
+                null
+                  ? `Approved portfolio budget ${formatMoney(financialAnalytics.portfolio.totalPortfolioBudget.valueCents)}.`
+                  : "Approved portfolio budget unavailable.",
+                financialAnalytics.portfolio.totalForecastCost.valueCents !==
+                null
+                  ? `Estimate at completion ${formatMoney(financialAnalytics.portfolio.totalForecastCost.valueCents)}.`
+                  : "Estimate at completion unavailable.",
+                financialAnalytics.portfolio.netBudgetVariance.valueCents !==
+                null
+                  ? `Net budget variance ${formatMoney(financialAnalytics.portfolio.netBudgetVariance.valueCents)}; positive means under budget and negative means over budget.`
+                  : "Net budget variance unavailable.",
+                `${financialAnalytics.portfolio.projectsOverBudget} projects over budget; ${financialAnalytics.portfolio.projectsUnderBudget} under budget; ${financialAnalytics.portfolio.projectsMissingFinancialData} missing required financial data.`,
+                `Data quality ${financialAnalytics.portfolio.quality}. Calculation ${financialAnalytics.portfolio.metadata.calculationVersion} at ${financialAnalytics.portfolio.metadata.calculatedAt}.`,
+              ].join(" "),
+            ),
+            href: "/reports",
+          },
+          ...financialAnalytics.portfolio.projects.map(
+            (project): OrganizationCitation => ({
+              id: `project:financial:${project.projectId}`,
+              entityType: "project",
+              title: `${project.projectName} financial analytics`,
+              excerpt: sanitizeUntrustedExcerpt(
+                [
+                  project.approvedBudget.valueCents !== null
+                    ? `Approved budget ${formatMoney(project.approvedBudget.valueCents)}.`
+                    : "Approved budget unavailable.",
+                  project.estimateAtCompletion.valueCents !== null
+                    ? `Estimate at completion ${formatMoney(project.estimateAtCompletion.valueCents)}.`
+                    : "Estimate at completion unavailable.",
+                  project.budgetVariance.valueCents !== null
+                    ? `Budget variance ${formatMoney(project.budgetVariance.valueCents)} (${project.budgetVariancePercent ?? "unavailable"}%); ${project.varianceDirection.replaceAll("_", " ")}.`
+                    : "Budget variance unavailable.",
+                  `Quality ${project.quality}. Missing inputs ${project.budgetVariance.metadata.missingInputs.join(", ") || "none"}.`,
+                ].join(" "),
+              ),
+              href: `/projects/${project.projectId}`,
+            }),
+          ),
+          {
+            id: "project:cash-flow-forecast",
+            entityType: "project" as const,
+            title: "Authoritative cash flow forecast",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                `Forecast confidence ${financialAnalytics.cashFlow.confidence}.`,
+                ...financialAnalytics.cashFlow.buckets.map(
+                  (bucket) =>
+                    `${bucket.startsOn} through ${bucket.endsOn}: expected inflows ${formatMoney(bucket.expectedInflows.valueCents ?? 0)}, expected outflows ${formatMoney(bucket.expectedOutflows.valueCents ?? 0)}, net ${formatMoney(bucket.netCashFlow.valueCents ?? 0)}; ${bucket.isEstimated ? "estimated fallback" : "scheduled data"}.`,
+                ),
+              ].join(" "),
+            ),
+            href: "/reports",
+          },
+        ]
+      : []),
     ...observations.map((observation): OrganizationCitation => ({
       id: `observation:${observation.key}`,
       entityType: "observation",
@@ -136,14 +206,6 @@ export function buildOrganizationQuestionContext({
           `Project ${project.name}.`,
           `Project number ${project.project_number}.`,
           `Status ${project.status}.`,
-          canViewFinancials && project.contract_value_cents != null
-            ? `Contract value ${formatMoney(project.contract_value_cents)}.`
-            : "",
-          canViewFinancials && project.projected_margin_cents != null
-            ? `Estimated projected margin ${formatMoney(
-                project.projected_margin_cents,
-              )}.`
-            : "",
         ]
           .filter(Boolean)
           .join(" "),

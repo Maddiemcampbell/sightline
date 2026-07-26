@@ -159,6 +159,16 @@ export function Dashboard({ view }: { view: DashboardView }) {
 
 function PortfolioOverview({ view }: { view: DashboardView }) {
   const summary = view.portfolioSummary;
+  const selectedProjectFinancial =
+    view.portfolio.length === 1
+      ? view.financialAnalytics?.portfolio.projects.find(
+          (project) => project.projectId === view.portfolio[0]?.id,
+        )
+      : null;
+  const budgetVariance =
+    selectedProjectFinancial?.budgetVariance ??
+    view.financialAnalytics?.portfolio.netBudgetVariance ??
+    null;
   return (
     <section
       aria-label="Portfolio Watch"
@@ -191,19 +201,29 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
           tone={summary.projectsAtRisk ? "warning" : "positive"}
         />
         <OverviewMetric
-          label="Potential exposure"
+          label="Budget variance"
           value={
-            view.canViewFinancials
-              ? formatMoney(summary.totalExposureCents)
-              : "Restricted for your role"
+            !view.canViewFinancials
+              ? "Restricted for your role"
+              : budgetVariance?.valueCents === null || !budgetVariance
+                ? "Not available"
+                : formatMoney(budgetVariance.valueCents)
           }
           detail={
-            view.canViewFinancials
-              ? "Across unresolved risks"
-              : "Not available for your role"
+            !view.canViewFinancials
+              ? "Not available for your role"
+              : budgetVariance
+                ? `${budgetVariance.quality} data · positive is under budget`
+                : "Financial inputs are missing"
           }
           icon={CircleDollarSign}
-          tone="neutral"
+          tone={
+            budgetVariance?.valueCents !== null &&
+            budgetVariance &&
+            budgetVariance.valueCents < 0
+              ? "warning"
+              : "positive"
+          }
         />
         <OverviewMetric
           label="Forecasted margin"
@@ -533,15 +553,7 @@ function Insight({ observation }: { observation: PortfolioObservation }) {
 
 function OverdueActions({ view }: { view: DashboardView }) {
   const actions = view.work.overdue.slice(0, 2);
-  const representedExposure = view.priorities
-    .filter(
-      (priority) =>
-        priority.kind === "action" &&
-        view.work.overdue.some(
-          (action) => `action:${action.id}` === priority.id,
-        ),
-    )
-    .reduce((sum, priority) => sum + (priority.exposureCents ?? 0), 0);
+  const representedExposure = view.work.overdueExposureCents;
   return (
     <section className="border-border bg-surface shadow-surface rounded-xl border p-5">
       <div className="flex items-center justify-between gap-3">
@@ -772,6 +784,9 @@ export function filterDashboardView(
     }),
   );
   const selectedPortfolio = portfolio[0];
+  const selectedFinancial = view.financialAnalytics?.portfolio.projects.find(
+    (project) => project.projectId === projectId,
+  );
   return {
     ...view,
     priorities,
@@ -782,17 +797,7 @@ export function filterDashboardView(
       activeProjects: selectedPortfolio ? 1 : 0,
       projectsAtRisk: selectedPortfolio?.openRiskCount ? 1 : 0,
       totalExposureCents: selectedPortfolio?.exposureCents ?? 0,
-      forecastMarginPercent:
-        selectedPortfolio?.projectedMarginCents != null &&
-        selectedPortfolio.contractValueCents
-          ? Number(
-              (
-                (selectedPortfolio.projectedMarginCents /
-                  selectedPortfolio.contractValueCents) *
-                100
-              ).toFixed(1),
-            )
-          : null,
+      forecastMarginPercent: selectedFinancial?.forecastMarginPercent ?? null,
     },
     observations: view.observations.filter((observation) =>
       allowedObservationKeys.has(observation.key),

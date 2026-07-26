@@ -11,6 +11,11 @@ export type DocumentActivityRow = Tables["document_activities"]["Row"];
 export type IntegrationSourceRow = Tables["integration_sources"]["Row"];
 export type OrganizationRow = Tables["organizations"]["Row"];
 export type ProjectRow = Tables["projects"]["Row"];
+export type ProjectFinancialRow = Tables["project_financials"]["Row"];
+export type FinancialChangeOrderRow = Tables["financial_change_orders"]["Row"];
+export type FinancialCashEventRow = Tables["financial_cash_events"]["Row"];
+export type PortfolioFinancialSnapshotRow =
+  Tables["portfolio_financial_snapshots"]["Row"];
 export type RecommendedActionRow = Tables["recommended_actions"]["Row"];
 export type RiskActivityRow = Tables["risk_activities"]["Row"];
 export type RiskEvidenceRow = Tables["risk_evidence"]["Row"];

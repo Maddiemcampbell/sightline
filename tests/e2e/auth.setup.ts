@@ -31,10 +31,14 @@ setup(
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: UnusedWebSocketTransport as never },
     });
-    await ensureAuthUser(admin, authUserId, email);
+    const resolvedOwnerAuthUserId = await ensureAuthUser(
+      admin,
+      authUserId,
+      email,
+    );
     const { error: userError } = await admin
       .from("users")
-      .update({ auth_user_id: authUserId, email })
+      .update({ auth_user_id: resolvedOwnerAuthUserId, email })
       .eq("organization_id", organizationId)
       .eq("id", applicationUserId);
     if (userError) throw new Error(userError.message);
@@ -43,18 +47,22 @@ setup(
       .upsert(
         {
           organization_id: organizationId,
-          auth_user_id: authUserId,
+          auth_user_id: resolvedOwnerAuthUserId,
           application_user_id: applicationUserId,
           role: "owner",
         },
-        { onConflict: "organization_id,auth_user_id" },
+        { onConflict: "organization_id,application_user_id" },
       );
     if (membershipError) throw new Error(membershipError.message);
-    await ensureAuthUser(admin, alexAuthUserId, "alex-rivera@sightline.local");
+    const resolvedAlexAuthUserId = await ensureAuthUser(
+      admin,
+      alexAuthUserId,
+      "alex-rivera@sightline.local",
+    );
     const { error: alexUserError } = await admin
       .from("users")
       .update({
-        auth_user_id: alexAuthUserId,
+        auth_user_id: resolvedAlexAuthUserId,
         email: "alex-rivera@sightline.local",
       })
       .eq("organization_id", organizationId)
@@ -65,7 +73,7 @@ setup(
       .upsert(
         {
           organization_id: organizationId,
-          auth_user_id: alexAuthUserId,
+          auth_user_id: resolvedAlexAuthUserId,
           application_user_id: alexApplicationUserId,
           role: "contributor",
         },
@@ -106,29 +114,49 @@ setup(
 
 async function ensureAuthUser(
   admin: ReturnType<typeof createClient>,
-  id: string,
+  preferredId: string,
   userEmail: string,
 ) {
+  let resolvedId = "";
   await expect
     .poll(
       async () => {
+        const { data: listed, error: listError } =
+          await admin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1_000,
+          });
+        if (listError) return "";
+        const existingByEmail = listed.users.find(
+          (candidate) =>
+            candidate.email?.toLowerCase() === userEmail.toLowerCase(),
+        );
+        const existingById = listed.users.find(
+          (candidate) => candidate.id === preferredId,
+        );
+        const existing = existingByEmail ?? existingById;
+        if (existing) {
+          const updated = await admin.auth.admin.updateUserById(existing.id, {
+            email: userEmail,
+            password,
+            email_confirm: true,
+          });
+          if (updated.error) return "";
+          resolvedId = existing.id;
+          return resolvedId;
+        }
         const created = await admin.auth.admin.createUser({
-          id,
+          id: preferredId,
           email: userEmail,
           password,
           email_confirm: true,
         });
-        if (!created.error) return true;
-        const existing = await admin.auth.admin.getUserById(id);
-        if (existing.data.user?.email !== userEmail) return false;
-        const updated = await admin.auth.admin.updateUserById(id, {
-          email: userEmail,
-          password,
-          email_confirm: true,
-        });
-        return !updated.error;
+        if (created.error || !created.data.user) return "";
+        resolvedId = created.data.user.id;
+        return resolvedId;
       },
       { timeout: 20_000, intervals: [250, 500, 1_000] },
     )
-    .toBe(true);
+    .not.toBe("");
+  return resolvedId;
 }

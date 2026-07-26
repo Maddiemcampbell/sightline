@@ -212,6 +212,110 @@ set projected_margin_cents = case id
   else 0
 end;
 
+-- Synthetic, deterministic financial analytics demo data. These records belong
+-- only to the local seeded organization and are never created for customers.
+insert into public.project_financials (
+  project_id, organization_id, currency_code, original_budget_cents,
+  committed_cost_cents, actual_cost_cents,
+  forecast_cost_to_complete_cents, data_as_of_date
+) values
+  (
+    '20000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 2500000000, 2140000000, 1100000000, 1400000000, '2026-07-24'
+  ),
+  (
+    '20000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 3700000000, 3480000000, 2200000000, 1750000000, '2026-07-24'
+  ),
+  (
+    '20000000-0000-4000-8000-000000000003',
+    '10000000-0000-4000-8000-000000000001',
+    'USD', 1700000000, 980000000, 760000000, null, '2026-07-24'
+  );
+
+insert into public.financial_change_orders (
+  id, organization_id, project_id, title, status, amount_cents, effective_date
+) values
+  (
+    'c1000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001',
+    'Approved imaging suite revisions', 'approved', 100000000, '2026-06-18'
+  ),
+  (
+    'c1000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001',
+    'Pending utility relocation', 'pending', 24000000, null
+  ),
+  (
+    'c1000000-0000-4000-8000-000000000003',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000002',
+    'Approved dock equipment package', 'approved', 50000000, '2026-05-29'
+  ),
+  (
+    'c1000000-0000-4000-8000-000000000004',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000002',
+    'Pending acceleration directive', 'pending', 85000000, null
+  );
+
+insert into public.financial_cash_events (
+  id, organization_id, project_id, direction, amount_cents, expected_date,
+  source_type, confidence, description
+) values
+  (
+    'c2000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001',
+    'inflow', 185000000, '2026-08-10', 'payment_schedule', 'high',
+    'Scheduled owner progress payment'
+  ),
+  (
+    'c2000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000001',
+    'outflow', 132000000, '2026-08-18', 'commitment', 'medium',
+    'Committed trade partner payments'
+  ),
+  (
+    'c2000000-0000-4000-8000-000000000003',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000002',
+    'inflow', 260000000, '2026-08-14', 'invoice', 'high',
+    'Certified July progress billing'
+  ),
+  (
+    'c2000000-0000-4000-8000-000000000004',
+    '10000000-0000-4000-8000-000000000001',
+    '20000000-0000-4000-8000-000000000002',
+    'outflow', 318000000, '2026-08-21', 'commitment', 'medium',
+    'Concrete and steel commitments'
+  );
+
+insert into public.portfolio_financial_snapshots (
+  organization_id, snapshot_month, currency_code, active_projects,
+  portfolio_budget_cents, forecast_cost_cents, net_budget_variance_cents,
+  projects_over_budget, projects_under_budget,
+  projects_missing_financial_data, completeness, project_metrics,
+  calculation_version, calculated_at
+) values
+  (
+    '10000000-0000-4000-8000-000000000001', '2026-05-01', 'USD', 4,
+    6300000000, 6250000000, 50000000, 1, 1, 2, 'partial',
+    '[{"projectId":"20000000-0000-4000-8000-000000000001","projectName":"Cedar Grove Medical Pavilion","varianceCents":80000000},{"projectId":"20000000-0000-4000-8000-000000000002","projectName":"Riverfront Distribution Center","varianceCents":-30000000}]'::jsonb,
+    'financial-analytics-v1', '2026-05-31T23:59:59Z'
+  ),
+  (
+    '10000000-0000-4000-8000-000000000001', '2026-06-01', 'USD', 4,
+    6350000000, 6420000000, -70000000, 1, 1, 2, 'partial',
+    '[{"projectId":"20000000-0000-4000-8000-000000000001","projectName":"Cedar Grove Medical Pavilion","varianceCents":90000000},{"projectId":"20000000-0000-4000-8000-000000000002","projectName":"Riverfront Distribution Center","varianceCents":-160000000}]'::jsonb,
+    'financial-analytics-v1', '2026-06-30T23:59:59Z'
+  );
+
 update public.risks
 set assigned_user_id = '11000000-0000-4000-8000-000000000001'
 where status not in ('resolved', 'dismissed');

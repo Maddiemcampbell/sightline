@@ -6,6 +6,7 @@ import {
   runOrganizationJobsSequentially,
   uniqueOrganizationJobTargets,
 } from "@/lib/tenancy/organization-jobs";
+import { FinancialSnapshotService } from "@/features/financial-analytics/snapshot-service";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,15 @@ export async function GET(request: Request) {
     if (error) throw new Error(error.message);
     const organizations = await runOrganizationJobsSequentially(
       uniqueOrganizationJobTargets(data ?? []),
-      (target) => refreshPortfolioIntelligence(target.organizationId),
+      async (target) => {
+        const [intelligence, financialSnapshot] = await Promise.all([
+          refreshPortfolioIntelligence(target.organizationId),
+          new FinancialSnapshotService().createMonthlySnapshot(
+            target.organizationId,
+          ),
+        ]);
+        return { ...intelligence, financialSnapshot };
+      },
     );
     return Response.json({ ok: true, organizations });
   } catch {

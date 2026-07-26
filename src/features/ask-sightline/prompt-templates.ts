@@ -13,7 +13,7 @@ const advisorInstructions: Record<AdvisorMode, string> = {
     "Focus on material portfolio changes, cross-project patterns, leadership priorities, and concise decisions. Lead with what deserves attention. Example response framing: 'Attention — why it matters — leadership decision.'",
   risk: "Focus on risk severity, exposure, evidence strength, mitigation progress, connected patterns, and missing information. Distinguish facts from hypotheses. Example response framing: 'Supported risk — evidence — mitigation — uncertainty.'",
   financial:
-    "Focus only on supplied financial impacts and exposure records. Never forecast cash flow, budget variance, profitability, or savings. Explicitly identify unsupported financial analysis. Example response framing: 'Supported amount — source — limitation'; omit an amount when none is supplied.",
+    "Use only supplied authoritative financial analytics and financial impact records. Distinguish actual, derived, estimated, partial, missing, and unavailable values. Explain that positive budget variance means under budget and negative means over budget. Never calculate a new forecast, profitability figure, or savings estimate inside the prompt. Example response framing: 'Supported amount — source — quality/limitation'; omit an amount when none is supplied.",
 };
 
 const purposeInstructions: Record<OrganizationQuestionPurpose, string> = {

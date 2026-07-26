@@ -13,6 +13,7 @@ import {
   canViewProject,
   canViewRisk,
 } from "@/lib/auth/authorization";
+import { sumMoneyCents } from "@/features/financial-analytics/calculations";
 
 function rows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -244,12 +245,18 @@ export async function getProjectDetail(projectId: string) {
   if (projectResult.error) throw new Error(projectResult.error.message);
   if (!projectResult.data) return null;
   const risks = rows(risksResult.data, risksResult.error);
+  const profitAtRiskCents = sumMoneyCents(
+    risks
+      .filter((risk) => !["resolved", "dismissed"].includes(risk.status))
+      .map((risk) => risk.estimated_margin_impact_cents),
+  );
   const riskIds = new Set(risks.map((risk) => risk.id));
   const links = rows(linksResult.data, linksResult.error);
   const vendorIds = new Set(links.map((link) => link.vendor_id));
   return {
     project: projectResult.data,
     risks,
+    profitAtRiskCents,
     documents: rows(documentsResult.data, documentsResult.error),
     vendors: rows(vendorsResult.data, vendorsResult.error).filter((vendor) =>
       vendorIds.has(vendor.id),

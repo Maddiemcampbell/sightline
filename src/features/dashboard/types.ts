@@ -12,6 +12,11 @@ import type {
   HomepageIntelligence,
   PortfolioObservation,
 } from "@/features/portfolio-intelligence/types";
+import type {
+  CashFlowForecast,
+  PortfolioFinancialComparison,
+  PortfolioFinancialMetrics,
+} from "@/features/financial-analytics/types";
 
 export type DashboardSource = Readonly<{
   now: Date;
@@ -81,6 +86,7 @@ export type PortfolioRiskHeatmapRow = Readonly<{
 export type WorkInMotion = Readonly<{
   dueToday: readonly ActionView[];
   overdue: readonly ActionView[];
+  overdueExposureCents: number;
   unownedRisks: readonly {
     id: string;
     title: string;
@@ -112,6 +118,11 @@ export type DashboardView = Readonly<{
     totalExposureCents: number;
     forecastMarginPercent: number | null;
   };
+  financialAnalytics: Readonly<{
+    portfolio: PortfolioFinancialMetrics;
+    cashFlow: CashFlowForecast;
+    comparison: PortfolioFinancialComparison;
+  }> | null;
   riskDrivers: readonly RiskDriver[];
   riskHeatmap: readonly PortfolioRiskHeatmapRow[];
   work: WorkInMotion;

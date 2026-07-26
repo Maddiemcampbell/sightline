@@ -111,7 +111,7 @@ describe("organization-wide Ask Sightline", () => {
         advisorMode: "financial",
         purpose: "cost_saving",
       }),
-    ).toContain("Never forecast cash flow");
+    ).toContain("Never calculate a new forecast");
     expect(
       classifyOrganizationQuestion("Prepare for a leadership meeting"),
     ).toBe("leadership_prep");

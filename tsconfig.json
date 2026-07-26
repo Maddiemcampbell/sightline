@@ -36,6 +36,7 @@
   "exclude": [
     "node_modules",
     "src/lib/supabase/database.generated.types.ts",
+    ".next/**/* 2.ts",
     "supabase/.branches",
     "supabase/.temp"
   ]

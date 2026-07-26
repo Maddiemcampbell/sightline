@@ -125,7 +125,8 @@ type Timestamped = {
 
 type OrganizationRow = Timestamped & {
   brand_color: string;
-  company_size: "1-10" | "11-50" | "51-200" | "201-500" | "501-1000" | "1001+" | null;
+  company_size:
+    "1-10" | "11-50" | "51-200" | "201-500" | "501-1000" | "1001+" | null;
   created_by_auth_user_id: string | null;
   default_currency: string;
   default_document_permissions: "project_members" | "managers" | "organization";
@@ -383,7 +384,8 @@ export type Database = {
         requested_by_user_id: string | null;
         scheduled_for: string;
         scope: "user_only" | "organization_only" | "organization_all_data";
-        status: "scheduled" | "processing" | "completed" | "cancelled" | "failed";
+        status:
+          "scheduled" | "processing" | "completed" | "cancelled" | "failed";
         target_auth_user_id: string | null;
         target_user_id: string | null;
         updated_at: string;
@@ -447,6 +449,62 @@ export type Database = {
       }>;
       users: Table<UserRow>;
       projects: Table<ProjectRow>;
+      project_financials: Table<{
+        actual_cost_cents: number | null;
+        committed_cost_cents: number | null;
+        created_at: string;
+        currency_code: string;
+        data_as_of_date: string | null;
+        forecast_cost_to_complete_cents: number | null;
+        organization_id: string;
+        original_budget_cents: number | null;
+        project_id: string;
+        updated_at: string;
+      }>;
+      financial_change_orders: Table<{
+        amount_cents: number;
+        created_at: string;
+        effective_date: string | null;
+        id: string;
+        organization_id: string;
+        project_id: string;
+        status: "approved" | "pending" | "rejected";
+        title: string;
+        updated_at: string;
+      }>;
+      financial_cash_events: Table<{
+        amount_cents: number;
+        confidence: "high" | "medium" | "low";
+        created_at: string;
+        description: string;
+        direction: "inflow" | "outflow";
+        expected_date: string;
+        id: string;
+        organization_id: string;
+        project_id: string;
+        source_type:
+          "payment_schedule" | "invoice" | "commitment" | "forecast" | "manual";
+        updated_at: string;
+      }>;
+      portfolio_financial_snapshots: Table<{
+        active_projects: number;
+        calculated_at: string;
+        calculation_version: string;
+        completeness:
+          "complete" | "partial" | "estimated" | "missing" | "unavailable";
+        created_at: string;
+        currency_code: string;
+        forecast_cost_cents: number | null;
+        id: string;
+        net_budget_variance_cents: number | null;
+        organization_id: string;
+        portfolio_budget_cents: number | null;
+        project_metrics: Json;
+        projects_missing_financial_data: number;
+        projects_over_budget: number;
+        projects_under_budget: number;
+        snapshot_month: string;
+      }>;
       vendors: Table<VendorRow>;
       project_vendors: Table<{
         created_at: string;

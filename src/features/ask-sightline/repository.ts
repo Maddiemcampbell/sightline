@@ -126,9 +126,7 @@ export class AskSightlineRepository {
   async retrieveOrganization(context: ActorContext, projectId: string | null) {
     const projectQuery = this.client
       .from("projects")
-      .select(
-        "id,name,project_number,status,contract_value_cents,projected_margin_cents",
-      )
+      .select("id,name,project_number,status")
       .eq("organization_id", context.organizationId)
       .order("name")
       .limit(100);

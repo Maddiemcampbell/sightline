@@ -189,7 +189,7 @@ describe("dashboard aggregation", () => {
       activeProjects: 1,
       projectsAtRisk: 1,
       totalExposureCents: 5_000_000,
-      forecastMarginPercent: 10,
+      forecastMarginPercent: null,
     });
     expect(view.riskDrivers[0]).toMatchObject({
       category: "financial",
