@@ -8,7 +8,11 @@ import {
   SystemHealthSection,
 } from "@/features/platform-admin/overview-sections";
 import { requirePlatformPermission } from "@/features/platform-admin/authorization";
+import { platformCan } from "@/features/platform-admin/capabilities";
+import { CustomerDirectoryRepository } from "@/features/platform-admin/customer-directory-repository";
+import { ProductionOrganizationService } from "@/features/platform-admin/customer-directory-service";
 import { platformServices } from "@/features/platform-admin/services";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +22,25 @@ export default async function PlatformAdminOverviewPage() {
     "admin_dashboard",
     "overview",
   );
-  const [health, activity, organizations, errors, aiUsage, jobs] =
+  const [health, activity, organizationPage, errors, aiUsage, jobs] =
     await Promise.all([
       platformServices.health.status(),
       platformServices.audit.recent(),
-      platformServices.organizations.recent(),
+      platformCan(operator, "platform.organizations.read")
+        ? new ProductionOrganizationService(
+            new CustomerDirectoryRepository(createAdminSupabaseClient()),
+          ).list(operator, {
+            query: "",
+            status: "all",
+            members: "all",
+            issues: "all",
+            recentDays: "all",
+            createdDays: "all",
+            sort: "activity",
+            page: 1,
+            pageSize: 10,
+          })
+        : Promise.resolve(null),
       platformServices.support.recent(),
       platformServices.aiUsage.summary(),
       platformServices.jobs.summary(),
@@ -44,7 +62,14 @@ export default async function PlatformAdminOverviewPage() {
           metrics={[...health.slice(0, 2), ...jobs.slice(0, 1)]}
         />
         <RecentActivitySection items={activity} />
-        <RecentOrganizationsSection items={organizations} />
+        <RecentOrganizationsSection
+          items={(organizationPage?.items ?? []).slice(0, 3).map((item) => ({
+            id: item.id,
+            title: item.name,
+            subtitle: `${item.memberCount} members · ${item.lastActivityAt ? new Date(item.lastActivityAt).toLocaleDateString() : "activity unavailable"}`,
+            status: item.hasOperationalIssues ? "warning" : "healthy",
+          }))}
+        />
         <RecentErrorsSection items={errors} />
         <SystemHealthSection metrics={health} />
         <AIUsageSection metrics={aiUsage} />

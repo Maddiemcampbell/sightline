@@ -32,6 +32,12 @@ export async function recordPlatformAuditEvent(input: {
     requestHeaders.get("x-request-id") ??
     requestHeaders.get("x-correlation-id") ??
     randomUUID();
+  const suppliedMetadata =
+    input.metadata &&
+    typeof input.metadata === "object" &&
+    !Array.isArray(input.metadata)
+      ? input.metadata
+      : {};
   const { error } = await createAdminSupabaseClient()
     .from("platform_audit_logs")
     .insert({
@@ -45,7 +51,14 @@ export async function recordPlatformAuditEvent(input: {
       user_agent: requestHeaders.get("user-agent")?.slice(0, 1000) ?? null,
       request_id: requestId.slice(0, 240),
       outcome: input.outcome ?? "success",
-      metadata: input.metadata ?? {},
+      metadata: {
+        ...suppliedMetadata,
+        environment:
+          process.env.VERCEL_ENV ??
+          (process.env.NODE_ENV === "production"
+            ? "production"
+            : "development"),
+      },
     });
   if (error) throw new Error(error.message);
 }

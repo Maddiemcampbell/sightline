@@ -118,6 +118,11 @@ type Table<Row> = {
   Relationships: [];
 };
 
+type View<Row> = {
+  Row: Row;
+  Relationships: [];
+};
+
 type Timestamped = {
   created_at: string;
   updated_at: string;
@@ -933,7 +938,38 @@ export type Database = {
         to_status: DatabaseEnums["risk_status"] | null;
       }>;
     };
-    Views: Record<never, never>;
+    Views: {
+      platform_organization_directory: View<{
+        account_status: "active" | "pending_deletion" | "archived";
+        active_project_count: number;
+        created_at: string;
+        failed_ai_count: number;
+        failed_delivery_count: number;
+        failed_export_count: number;
+        failed_job_count: number;
+        id: string;
+        last_activity_at: string | null;
+        member_count: number;
+        name: string;
+        slug: string;
+        storage_bytes: number;
+        timezone: string;
+      }>;
+      platform_user_directory: View<{
+        account_status: "active" | "unverified" | "suspended" | "deleted";
+        auth_provider: string;
+        created_at: string;
+        email: string | null;
+        email_confirmed_at: string | null;
+        full_name: string;
+        id: string;
+        last_activity_at: string | null;
+        last_sign_in_at: string | null;
+        membership_count: number;
+        mfa_enabled: boolean;
+        organization_names: string[];
+      }>;
+    };
     Functions: {
       create_organization_for_user: {
         Args: {

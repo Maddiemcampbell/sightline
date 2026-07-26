@@ -41,10 +41,66 @@ and affected user, IP address, user agent, request ID, outcome, and metadata.
 Authentication, route views, directory searches, and refresh actions use the
 same reusable audit writer.
 
-## Foundation scope
+## Customer directories
 
-Overview values, directory search results, and service outputs are explicitly
-mocked in this milestone. Service interfaces define the future production
-boundaries for organizations, users, auditing, jobs, AI usage, health, and
-support. Future implementations must preserve capability checks, data
-redaction, and platform auditing when replacing mocks.
+Organizations and customer Auth accounts are connected to production data
+through two purpose-built, minimized read models:
+
+- `platform_organization_directory` exposes account identity, safe aggregate
+  counts, storage totals, activity recency, and operational failure counts.
+- `platform_user_directory` exposes safe Auth account metadata and membership
+  aggregates. Staff platform operators are explicitly excluded.
+
+Both views are selectable only by `service_role`. Browser sessions, including
+authenticated customer sessions, have no direct grants. The server repository
+uses stable secondary ID ordering, bounded page sizes, indexed name/email
+search, and field-specific selection for secondary detail sections.
+
+The `/internal/admin/organizations` and `/internal/admin/users` routes support
+server-side filtering, sorting, pagination, refresh, and read-only detail
+pages. Cross-links are capability gated: organization members require
+`platform.users.read`, user memberships require
+`platform.organizations.read`, and safe activity requires
+`platform.audit.read`.
+
+Global search accepts exact IDs and email addresses plus partial names and
+emails. It requires at least two characters unless the value is a UUID,
+neutralizes PostgREST structural characters, debounces browser requests, ranks
+exact matches first, and returns at most ten results.
+
+## Data minimization and unavailable fields
+
+The directory does not expose customer documents, evidence, risk content,
+financial details, AI prompts/responses, credentials, tokens, cookies, or raw
+audit metadata. Search audit records contain only a normalized SHA-256 query
+hash, search type, query length, and result count—not the raw query.
+
+Plan/billing state, support-case counts, AI token usage, active session counts,
+recent failed-login aggregates, privacy-cleanup failure aggregates, and generic
+data-processing failure aggregates do not have authoritative application data
+sources yet. Those fields are shown as unavailable rather than inferred or
+fabricated. Invitation status is displayed on account detail pages because
+pending invitations are not Auth users and therefore do not belong in the user
+directory.
+
+## Audit behavior and failure policy
+
+Directory list views, record views, membership sections, invitation sections,
+safe activity sections, and global searches create platform audit records.
+Denied access and repository failures are also recorded. Failure records use a
+non-sensitive reason code and never copy exception text into metadata.
+
+For a sensitive staff read, audit persistence is fail-closed: if the platform
+audit writer cannot persist its event, the request fails rather than returning
+the customer record without a trace. Detail-page secondary sections fail
+independently, so a job or audit-source outage does not falsely make the core
+customer account appear missing.
+
+## Remaining platform scope
+
+Jobs, AI observability, health, support, feature flags, releases, and some
+overview values remain Phase 1 placeholders. Future production services must
+preserve capability checks, minimized DTOs, and platform auditing when
+replacing them. No impersonation, membership mutation, organization mutation,
+password reset, session termination, or other support write is available from
+the directories.

@@ -14,15 +14,6 @@ export type PlatformMetric = Readonly<{
   status: "healthy" | "warning" | "critical" | "info";
 }>;
 
-export interface OrganizationService {
-  recent(): Promise<readonly AdminListItem[]>;
-  search(query: string): Promise<readonly AdminListItem[]>;
-}
-
-export interface UserService {
-  search(query: string): Promise<readonly AdminListItem[]>;
-}
-
 export interface AuditService {
   recent(): Promise<readonly AdminListItem[]>;
 }
@@ -41,66 +32,6 @@ export interface HealthService {
 
 export interface SupportService {
   recent(): Promise<readonly AdminListItem[]>;
-}
-
-const organizations: readonly AdminListItem[] = [
-  {
-    id: "organization-1",
-    title: "BuildCo Construction",
-    subtitle: "24 projects · Active design partner",
-    status: "healthy",
-  },
-  {
-    id: "organization-2",
-    title: "Northstar Builders",
-    subtitle: "Invited today · Onboarding",
-    status: "info",
-  },
-  {
-    id: "organization-3",
-    title: "Atlas Commercial",
-    subtitle: "Export job needs review",
-    status: "warning",
-  },
-];
-
-const users: readonly AdminListItem[] = [
-  {
-    id: "user-1",
-    title: "Matt Anderson",
-    subtitle: "matt@example.test · BuildCo Construction",
-    status: "healthy",
-  },
-  {
-    id: "user-2",
-    title: "Alex Rivera",
-    subtitle: "alex@example.test · BuildCo Construction",
-    status: "healthy",
-  },
-];
-
-function matches(item: AdminListItem, query: string) {
-  const normalized = query.trim().toLowerCase();
-  return (
-    normalized.length > 0 &&
-    `${item.title} ${item.subtitle}`.toLowerCase().includes(normalized)
-  );
-}
-
-export class MockOrganizationService implements OrganizationService {
-  async recent() {
-    return organizations;
-  }
-
-  async search(query: string) {
-    return organizations.filter((item) => matches(item, query));
-  }
-}
-
-export class MockUserService implements UserService {
-  async search(query: string) {
-    return users.filter((item) => matches(item, query));
-  }
 }
 
 export class MockAuditService implements AuditService {
@@ -190,8 +121,6 @@ function metric(
 }
 
 export const platformServices = {
-  organizations: new MockOrganizationService(),
-  users: new MockUserService(),
   audit: new MockAuditService(),
   jobs: new MockJobService(),
   aiUsage: new MockAIUsageService(),

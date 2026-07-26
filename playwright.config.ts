@@ -4,6 +4,7 @@ import { loadEnvConfig } from "@next/env";
 loadEnvConfig(process.cwd());
 
 const authState = "test-results/e2e-auth.json";
+const platformAuthState = "test-results/e2e-platform-auth.json";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -24,13 +25,31 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      name: "platform-setup",
+      testMatch: /platform-admin\.setup\.ts/,
+    },
+    {
       name: "chromium",
       dependencies: ["setup"],
-      testIgnore: /auth\.setup\.ts/,
+      testIgnore: [
+        /auth\.setup\.ts/,
+        /platform-admin\.setup\.ts/,
+        /platform-admin\.spec\.ts/,
+      ],
       use: {
         ...devices["Desktop Chrome"],
         channel: "chromium",
         storageState: authState,
+      },
+    },
+    {
+      name: "platform-chromium",
+      dependencies: ["setup", "platform-setup"],
+      testMatch: /platform-admin\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: "chromium",
+        storageState: platformAuthState,
       },
     },
   ],
