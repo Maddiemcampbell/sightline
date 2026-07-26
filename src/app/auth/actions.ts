@@ -16,6 +16,7 @@ import {
   recordPrincipalAuditEvent,
 } from "@/features/audit/service";
 import { getServerEnv } from "@/lib/env";
+import { recordPlatformAuthenticationEvent } from "@/features/platform-admin/audit";
 
 export type AuthActionState = Readonly<{
   error?: boolean;
@@ -92,6 +93,7 @@ export async function login(
     resourceType: "session",
     metadata: { authenticationMethod: "password" },
   });
+  await recordPlatformAuthenticationEvent(data.user.id, "platform.auth.login");
 
   return completeAuthentication(
     safeRedirectPath(formData.get("next")?.toString()),
@@ -256,6 +258,10 @@ export async function logout(formData?: FormData): Promise<void> {
       action: "auth.logout",
       resourceType: "session",
     });
+    await recordPlatformAuthenticationEvent(
+      data.user.id,
+      "platform.auth.logout",
+    );
   }
   await client.auth.signOut();
   const next = safeRedirectPath(formData?.get("next")?.toString(), "");

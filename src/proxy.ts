@@ -147,6 +147,20 @@ export async function proxy(request: NextRequest) {
     return verification;
   }
 
+  if (user && request.nextUrl.pathname.startsWith("/internal/admin")) {
+    const { data: operator, error } = await client
+      .from("platform_operators")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+    if (error || !operator) {
+      const hidden = new NextResponse("Not Found", { status: 404 });
+      applySecurityHeaders(hidden.headers, csp, production);
+      return hidden;
+    }
+  }
+
   return response;
 }
 

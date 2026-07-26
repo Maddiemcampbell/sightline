@@ -226,6 +226,52 @@ export type Database = {
       organization_memberships: Table<OrganizationMembershipRow>;
       invitations: Table<InvitationRow>;
       audit_logs: Table<AuditLogRow>;
+      platform_operators: Table<
+        Timestamped & {
+          auth_user_id: string;
+          display_name: string;
+          email: string;
+          id: string;
+          last_login_at: string | null;
+          mfa_required: boolean;
+          status: "active" | "suspended";
+        }
+      >;
+      platform_operator_permissions: Table<{
+        granted_at: string;
+        granted_by_operator_id: string | null;
+        operator_id: string;
+        permission:
+          | "platform.dashboard.read"
+          | "platform.organizations.read"
+          | "platform.users.read"
+          | "platform.audit.read"
+          | "platform.jobs.read"
+          | "platform.jobs.retry"
+          | "platform.ai.read"
+          | "platform.health.read"
+          | "platform.support.read"
+          | "platform.support.write"
+          | "platform.flags.manage"
+          | "platform.releases.read"
+          | "platform.admin.manage";
+      }>;
+      platform_audit_logs: Table<{
+        action: string;
+        affected_auth_user_id: string | null;
+        created_at: string;
+        id: string;
+        ip_address: string | null;
+        metadata: Json;
+        occurred_at: string;
+        operator_id: string;
+        organization_id: string | null;
+        outcome: "success" | "denied" | "failed";
+        request_id: string;
+        resource_id: string | null;
+        resource_type: string;
+        user_agent: string | null;
+      }>;
       organization_job_schedules: Table<
         Timestamped & {
           daily_brief_enabled: boolean;

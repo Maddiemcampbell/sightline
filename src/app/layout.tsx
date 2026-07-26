@@ -30,6 +30,7 @@ export default async function RootLayout({
 }>) {
   const pathname = (await headers()).get("x-sightline-pathname") ?? "/";
   const isPublic = PUBLIC_ROUTES.has(pathname);
+  const isPlatformAdmin = pathname.startsWith("/internal/admin");
   const user = await getCurrentUser();
 
   if (!isPublic && !user) {
@@ -43,6 +44,7 @@ export default async function RootLayout({
     pathname === "/organizations/new" || pathname.startsWith("/invitations/");
   if (
     !isPublic &&
+    !isPlatformAdmin &&
     user &&
     !permitsMembershipOnboarding &&
     !(await getCurrentMembership())
@@ -59,7 +61,11 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        {isPublic ? children : <AppShell>{children}</AppShell>}
+        {isPublic || isPlatformAdmin ? (
+          children
+        ) : (
+          <AppShell>{children}</AppShell>
+        )}
       </body>
     </html>
   );

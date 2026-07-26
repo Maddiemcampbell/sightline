@@ -32,7 +32,8 @@ export async function resolveOnboardingDestination(
   const requested = onboardingNext(options.next);
   if (
     requested === "/reset-password" ||
-    requested?.startsWith("/invitations/")
+    requested?.startsWith("/invitations/") ||
+    requested?.startsWith("/internal/admin")
   ) {
     return { destination: requested, organizationId: null };
   }
