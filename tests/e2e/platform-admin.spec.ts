@@ -163,6 +163,29 @@ test("denies and audits an active operator without directory capabilities", asyn
   await expect(page.getByText("BuildCo Construction")).toHaveCount(0);
 });
 
+test("views and filters centralized background-job execution history", async ({
+  page,
+}) => {
+  await page.goto("/internal/admin/jobs");
+  await expect(
+    page.getByRole("heading", { name: "Background jobs" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Execution history", exact: true }),
+  ).toBeVisible();
+  const filters = page.getByRole("form", {
+    name: "Execution history filters",
+  });
+  await filters.getByLabel("Trigger source").selectOption("retry");
+  await filters.getByLabel("Execution status").selectOption("dead_lettered");
+  await filters.getByRole("button", { name: "Apply" }).click();
+  await expect(page).toHaveURL(/historyTrigger=retry/);
+  await expect(page).toHaveURL(/historyStatus=dead_lettered/);
+  await expect(
+    page.getByText(/executions|No execution history found/).last(),
+  ).toBeVisible();
+});
+
 function adminClient(url: string, key: string) {
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },

@@ -11,7 +11,11 @@ const validJob = (key = "valid-job"): RegisteredJob => ({
   cron: "*/5 * * * *",
   enabled: true,
   timeoutMs: 1_000,
-  retry: { maximumRetries: 1, backoffMs: 1_000 },
+  retry: {
+    maximumRetries: 1,
+    backoffMs: 1_000,
+    maximumBackoffMs: 10_000,
+  },
   concurrency: "forbid",
   handler: async () => ({}),
 });
@@ -42,6 +46,22 @@ describe("SchedulerRegistry", () => {
           { ...validJob(), handler: undefined } as unknown as RegisteredJob,
         ]),
     ).toThrow(/no handler/);
+  });
+
+  it("rejects retry policies whose cap is below the initial backoff", () => {
+    expect(
+      () =>
+        new SchedulerRegistry([
+          {
+            ...validJob(),
+            retry: {
+              maximumRetries: 1,
+              backoffMs: 5_000,
+              maximumBackoffMs: 1_000,
+            },
+          },
+        ]),
+    ).toThrow(/invalid configuration/);
   });
 
   it("validates supported five-field cron syntax", () => {

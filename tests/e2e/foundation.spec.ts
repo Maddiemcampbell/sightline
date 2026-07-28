@@ -337,7 +337,7 @@ test("adds a risk comment with an organization-user mention", async ({
   test.setTimeout(60_000);
   await page.goto("/risks/60000000-0000-4000-8000-000000000001");
   const main = page.locator("#main-content");
-  const comment = main.getByLabel("Comment");
+  const comment = main.getByLabel("Comment", { exact: true });
   await comment.fill("@al");
   await main
     .getByRole("option", { name: /Alex Rivera.*@alex\.rivera/ })

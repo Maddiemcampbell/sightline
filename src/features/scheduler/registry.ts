@@ -17,7 +17,12 @@ export class SchedulerRegistry {
       );
     if (this.#jobs.has(job.key))
       throw new Error(`Duplicate scheduler job key "${job.key}".`);
-    if (job.timeoutMs < 1_000 || job.retry.maximumRetries < 0)
+    if (
+      job.timeoutMs < 1_000 ||
+      job.retry.maximumRetries < 0 ||
+      job.retry.backoffMs < 1_000 ||
+      job.retry.maximumBackoffMs < job.retry.backoffMs
+    )
       throw new Error(`Scheduler job "${job.key}" has invalid configuration.`);
     this.#jobs.set(job.key, job);
   }

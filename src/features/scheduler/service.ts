@@ -103,15 +103,18 @@ export class SchedulerService {
       const timeout = caught instanceof SchedulerTimeoutError;
       const retryable = !(caught instanceof NonRetryableSchedulerError);
       const hasRetry = retryable && attemptNumber <= job.retry.maximumRetries;
-      const status: SchedulerStatus = timeout
-        ? "timed_out"
-        : hasRetry
-          ? "retrying"
+      const retriesExhausted =
+        retryable && attemptNumber > job.retry.maximumRetries;
+      const status: SchedulerStatus = hasRetry
+        ? timeout
+          ? "timed_out"
+          : "retrying"
+        : retriesExhausted
+          ? "dead_lettered"
           : "failed";
       const nextRetryAt = hasRetry
         ? new Date(
-            completedAt.getTime() +
-              job.retry.backoffMs * Math.pow(2, attemptNumber - 1),
+            completedAt.getTime() + retryBackoffMs(job.retry, attemptNumber),
           ).toISOString()
         : null;
       const error =
@@ -140,11 +143,21 @@ export class SchedulerService {
           status,
         },
       });
-      safeLog("failed", execution.correlationId, {
-        jobKey: job.key,
-        executionId: execution.id,
-        status,
-      });
+      safeLog(
+        hasRetry
+          ? "retry_scheduled"
+          : status === "dead_lettered"
+            ? "dead_lettered"
+            : "failed",
+        execution.correlationId,
+        {
+          jobKey: job.key,
+          executionId: execution.id,
+          status,
+          attemptNumber,
+          nextRetryAt,
+        },
+      );
       return { ...execution, status };
     } finally {
       if (timer) clearTimeout(timer);
@@ -206,6 +219,19 @@ export class SchedulerService {
     }
     return results;
   }
+}
+
+export function retryBackoffMs(
+  policy: Readonly<{
+    backoffMs: number;
+    maximumBackoffMs: number;
+  }>,
+  failedAttemptNumber: number,
+) {
+  return Math.min(
+    policy.maximumBackoffMs,
+    policy.backoffMs * Math.pow(2, Math.max(0, failedAttemptNumber - 1)),
+  );
 }
 
 function safeLog(

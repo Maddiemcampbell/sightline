@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { SchedulerRegistry } from "./registry";
-import { SchedulerService } from "./service";
+import { retryBackoffMs, SchedulerService } from "./service";
 import type {
   ExecutionRecord,
   PersistedJobDefinition,
@@ -95,7 +95,11 @@ function job(
     cron: "0 7 * * *",
     enabled: true,
     timeoutMs: 1_000,
-    retry: { maximumRetries: 1, backoffMs: 5_000 },
+    retry: {
+      maximumRetries: 1,
+      backoffMs: 5_000,
+      maximumBackoffMs: 20_000,
+    },
     concurrency: "forbid",
     handler,
     ...overrides,
@@ -239,7 +243,15 @@ describe("SchedulerService execution lifecycle", () => {
       attemptNumber: 2,
       rootExecutionId: "root",
     });
-    expect(store.finishes.at(-1)?.status).toBe("failed");
+    expect(store.finishes.at(-1)?.status).toBe("dead_lettered");
+  });
+
+  it("calculates capped exponential backoff deterministically", () => {
+    const policy = { backoffMs: 5_000, maximumBackoffMs: 20_000 };
+    expect(retryBackoffMs(policy, 1)).toBe(5_000);
+    expect(retryBackoffMs(policy, 2)).toBe(10_000);
+    expect(retryBackoffMs(policy, 3)).toBe(20_000);
+    expect(retryBackoffMs(policy, 4)).toBe(20_000);
   });
 
   it("triggers due enabled jobs but not disabled or early jobs", async () => {

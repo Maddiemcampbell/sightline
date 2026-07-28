@@ -1,5 +1,5 @@
 begin;
-select plan(15);
+select plan(19);
 
 select has_table('public', 'scheduler_job_definitions', 'scheduler definitions exist');
 select has_table('public', 'scheduler_job_executions', 'scheduler executions exist');
@@ -16,6 +16,26 @@ select has_function(
 select has_index(
   'public', 'scheduler_job_executions', 'scheduler_executions_retry_idx',
   'persisted retries are indexed'
+);
+select has_column(
+  'public', 'scheduler_job_definitions', 'maximum_backoff_ms',
+  'retry policies persist a maximum backoff'
+);
+select has_index(
+  'public', 'scheduler_job_executions', 'scheduler_executions_status_created_idx',
+  'status history filtering is indexed'
+);
+select has_index(
+  'public', 'scheduler_job_executions', 'scheduler_executions_trigger_created_idx',
+  'trigger history filtering is indexed'
+);
+select lives_ok(
+  $$ insert into public.scheduler_job_executions (
+       job_key, trigger_type, status, attempt_number, safe_error_summary
+     ) values (
+       'risk-detection', 'retry', 'dead_lettered', 3, 'Retries exhausted'
+     ) $$,
+  'exhausted retries can be retained in the dead letter'
 );
 select is(
   (select count(*)::integer from public.scheduler_job_definitions),

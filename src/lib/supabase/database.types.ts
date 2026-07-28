@@ -319,6 +319,7 @@ export type Database = {
           timeout_ms: number;
           max_retries: number;
           backoff_ms: number;
+          maximum_backoff_ms: number;
           concurrency_policy: "forbid";
         }
       >;
@@ -334,7 +335,8 @@ export type Database = {
             | "failed"
             | "retrying"
             | "timed_out"
-            | "skipped";
+            | "skipped"
+            | "dead_lettered";
           scheduled_for: string | null;
           started_at: string | null;
           completed_at: string | null;

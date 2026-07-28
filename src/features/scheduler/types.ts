@@ -8,7 +8,8 @@ export type SchedulerStatus =
   | "failed"
   | "retrying"
   | "timed_out"
-  | "skipped";
+  | "skipped"
+  | "dead_lettered";
 
 export type SchedulerContext = Readonly<{
   executionId: string;
@@ -28,7 +29,11 @@ export type RegisteredJob = Readonly<{
   cron: string;
   enabled: boolean;
   timeoutMs: number;
-  retry: Readonly<{ maximumRetries: number; backoffMs: number }>;
+  retry: Readonly<{
+    maximumRetries: number;
+    backoffMs: number;
+    maximumBackoffMs: number;
+  }>;
   concurrency: "forbid";
   handler: SchedulerHandler;
 }>;
