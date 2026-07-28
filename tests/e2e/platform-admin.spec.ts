@@ -3,6 +3,16 @@ import { createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 
+test("redirects the legacy platform admin path to the protected console", async ({
+  page,
+}) => {
+  await page.goto("/platform-admin");
+  await expect(page).toHaveURL("/internal/admin");
+  await expect(
+    page.getByRole("heading", { name: "Overview", exact: true }),
+  ).toBeVisible();
+});
+
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const limitedEmail = "e2e-limited-platform-operator@sightline.local";
 const limitedPassword = "Sightline-Limited-Platform-E2E-2026!";
