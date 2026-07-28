@@ -6,6 +6,7 @@ import {
   CircleAlert,
   ClipboardList,
   Gauge,
+  PackageCheck,
   RefreshCw,
   ScrollText,
   Settings,
@@ -37,6 +38,12 @@ const navigation = [
   ["/internal/admin/ai", "AI Usage", Bot, "platform.ai.read"],
   ["/internal/admin/system", "System Health", Activity, "platform.health.read"],
   ["/internal/admin/audit", "Audit Log", ScrollText, "platform.audit.read"],
+  [
+    "/internal/admin/releases",
+    "Releases",
+    PackageCheck,
+    "platform.releases.read",
+  ],
   [
     "/internal/admin/operators",
     "Platform Operators",

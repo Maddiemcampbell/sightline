@@ -65,6 +65,8 @@ function pageAuditAction(permission: PlatformPermission) {
     "platform.ai.read": "platform.ai_usage.viewed",
     "platform.health.read": "platform.health.viewed",
     "platform.support.read": "platform.support.viewed",
+    "platform.flags.manage": "platform.feature_flags.viewed",
+    "platform.releases.read": "platform.releases.viewed",
   };
   return actions[permission] ?? "platform.page.viewed";
 }

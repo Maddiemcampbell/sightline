@@ -4,41 +4,48 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
   page,
 }) => {
   await page.goto("/settings/privacy");
+  const main = page.locator("#main-content");
   await expect(
-    page.getByRole("heading", { name: "Your organization controls its data." }),
+    main.getByRole("heading", {
+      name: "Your organization controls its data.",
+    }),
   ).toBeVisible();
   await expect(
-    page.locator("#main-content").getByText(
+    main.getByText(
       "Customer data is never used to train foundation models without explicit permission.",
-    ).first(),
+    ),
   ).toBeVisible();
   await expect(
-    page.locator("#main-content").getByText(
+    main.getByText(
       "Customers retain ownership of their uploaded documents.",
-    ).first(),
+    ),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Current AI processing policy" }),
+    main.getByRole("heading", { name: "Current AI processing policy" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Organization export history" }),
+    main.getByRole("heading", { name: "Organization export history" }),
+  ).toBeVisible();
+  const privacyPolicyResource = main
+    .getByText("Privacy Policy", { exact: true })
+    .locator("..");
+  await expect(privacyPolicyResource).toContainText(
+    "Placeholder · Counsel review required",
+  );
+  await expect(
+    main.getByRole("heading", { name: "Data retention", exact: true }),
+  ).toBeVisible();
+  await expect(main.getByLabel("Deletion grace period")).toHaveValue("30");
+  await expect(
+    main.getByRole("heading", { name: "Legal hold" }),
   ).toBeVisible();
   await expect(
-    page.locator("#main-content").getByText("Privacy Policy", { exact: true }).first(),
-  ).toBeVisible();
-  await expect(page.getByText("Counsel review required").first()).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Data retention", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByLabel("Deletion grace period")).toHaveValue("30");
-  await expect(page.getByRole("heading", { name: "Legal hold" })).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Delete organization" }),
+    main.getByRole("heading", { name: "Delete organization" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Schedule organization deletion" }),
+    main.getByRole("button", { name: "Schedule organization deletion" }),
   ).toBeDisabled();
   await expect(
-    page.getByRole("heading", { name: "Delete your account" }),
+    main.getByRole("heading", { name: "Delete your account" }),
   ).toBeVisible();
 });

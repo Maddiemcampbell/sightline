@@ -10,10 +10,7 @@ import {
   validateUploadFile,
 } from "@/features/documents/validation";
 import { organizationStoragePath } from "@/features/documents/storage-isolation";
-import {
-  createAdminSupabaseClient,
-  createServerSupabaseClient,
-} from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { requireActorContext } from "@/lib/auth/request-context";
 import {
   assertAuthorized,
@@ -72,15 +69,17 @@ export async function POST(request: Request) {
       assertAuthorized(canUploadProjectDocument(context, access.resource));
     }
 
-    const client = await createServerSupabaseClient();
-    const storageClient = createAdminSupabaseClient();
+    // Authorization is complete above. Keep the resulting organization-scoped
+    // mutation on one trusted client so local Auth refreshes cannot split the
+    // file upload from its metadata and activity records.
+    const client = createAdminSupabaseClient();
     const documentId = crypto.randomUUID();
     const storagePath = organizationStoragePath(
       context.organizationId,
       documentId,
       validatedFile.safeFilename,
     );
-    const { error: storageError } = await storageClient.storage
+    const { error: storageError } = await client.storage
       .from(DOCUMENT_BUCKET)
       .upload(storagePath, validatedFile.bytes, {
         contentType: validatedFile.mimeType,
@@ -106,7 +105,7 @@ export async function POST(request: Request) {
       document_date: metadata.documentDate,
     });
     if (documentError) {
-      await storageClient.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+      await client.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
       throw new Error(documentError.message);
     }
 
@@ -131,7 +130,7 @@ export async function POST(request: Request) {
         .delete()
         .eq("organization_id", context.organizationId)
         .eq("id", documentId);
-      await storageClient.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+      await client.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
       throw new Error(activityError.message);
     }
 

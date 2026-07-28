@@ -357,6 +357,73 @@ export type Database = {
         lease_expires_at: string;
         execution_id: string;
       }>;
+      feature_flags: Table<
+        Timestamped & {
+          id: string;
+          flag_key: string;
+          name: string;
+          description: string;
+          enabled: boolean;
+          default_enabled: boolean;
+          environments: string[];
+          organization_ids: string[];
+          user_ids: string[];
+          rollout_percentage: number;
+          created_by_operator_id: string | null;
+          updated_by_operator_id: string | null;
+        }
+      >;
+      feature_flag_changes: Table<{
+        id: string;
+        feature_flag_id: string;
+        operator_id: string;
+        change_type: "created" | "updated" | "enabled" | "disabled";
+        previous_state: Json | null;
+        new_state: Json;
+        created_at: string;
+      }>;
+      feature_flag_evaluation_logs: Table<{
+        id: string;
+        feature_flag_id: string | null;
+        flag_key: string;
+        environment: string;
+        organization_id: string | null;
+        user_id: string | null;
+        result: boolean;
+        reason: string;
+        correlation_id: string | null;
+        created_at: string;
+      }>;
+      releases: Table<
+        Timestamped & {
+          id: string;
+          release_identifier: string;
+          application_version: string;
+          environment: string;
+          status:
+            | "planned"
+            | "deploying"
+            | "deployed"
+            | "failed"
+            | "rolled_back";
+          deployed_at: string | null;
+          commit_sha: string | null;
+          source_reference: string | null;
+          deployed_by: string | null;
+          release_notes: string;
+          rollback_status:
+            | "not_rolled_back"
+            | "rollback_pending"
+            | "rolled_back";
+          created_by_operator_id: string | null;
+          updated_by_operator_id: string | null;
+        }
+      >;
+      release_feature_flags: Table<{
+        release_id: string;
+        feature_flag_id: string;
+        created_at: string;
+      }>;
       application_error_reports: Table<{
         application_user_id: string | null;
         application_version: string;

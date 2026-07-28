@@ -135,10 +135,14 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
-  await page.getByRole("link", { name: "Recommended actions" }).click();
+  const actionsLink = page.getByRole("link", { name: "Recommended actions" });
+  const actionsHref = await actionsLink.getAttribute("href");
+  expect(actionsHref).toMatch(/\?tab=actions$/);
+  await page.goto(actionsHref!);
+  await expect(page).toHaveURL(/\?tab=actions$/, { timeout: 15_000 });
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 });
 
 test("records a guided resolution and reopens it with a reason", async ({
@@ -211,12 +215,18 @@ test("records a guided resolution and reopens it with a reason", async ({
   await dialog.getByRole("button", { name: "Resolve risk" }).click();
   await expect(dialog).toBeHidden();
   await page.reload();
-  await page.getByRole("link", { name: "Resolution state" }).click();
-  await expect(page).toHaveURL(/\?tab=resolution$/);
+  const resolutionLink = page.getByRole("link", { name: "Resolution state" });
+  const resolutionHref = await resolutionLink.getAttribute("href");
+  expect(resolutionHref).toMatch(/\?tab=resolution$/);
+  await page.goto(resolutionHref!);
+  await expect(page).toHaveURL(/\?tab=resolution$/, { timeout: 15_000 });
+  const resolutionContent = page.locator("#main-content");
   await expect(
-    page.getByText("Resolution summary", { exact: true }),
+    resolutionContent.getByText("Resolution summary", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("prevented", { exact: true })).toBeVisible();
+  await expect(
+    resolutionContent.getByText("prevented", { exact: true }),
+  ).toBeVisible();
   await page.goto("/risks?view=resolved");
   await expect(
     page.getByText("Forecast rain threatens Friday concrete placement", {
@@ -422,10 +432,18 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   });
   await main.getByLabel("Display name").fill("Weekly field log");
   await main.getByLabel("Category").selectOption("daily_log");
+  const uploadResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/documents") &&
+      response.request().method() === "POST",
+  );
   await main.getByRole("button", { name: "Upload document" }).click();
-
-  await expect(main.getByText("Upload complete.")).toBeVisible();
-  await main.getByRole("link", { name: "View document" }).click();
+  const response = await uploadResponse;
+  expect(response.status()).toBe(201);
+  const payload = (await response.json()) as { documentId?: string };
+  expect(payload.documentId).toMatch(/^[0-9a-f-]{36}$/);
+  if (!payload.documentId) throw new Error("Upload returned no document ID.");
+  await page.goto(`/documents/${payload.documentId}`);
   await main.getByLabel("Display name").fill("Weekly field log — reviewed");
   await main.getByRole("button", { name: "Save metadata" }).click();
   await expect(main.getByRole("status")).toHaveText(

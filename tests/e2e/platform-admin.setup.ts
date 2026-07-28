@@ -15,6 +15,8 @@ const permissions = [
   "platform.jobs.read",
   "platform.ai.read",
   "platform.health.read",
+  "platform.flags.manage",
+  "platform.releases.read",
 ] as const;
 
 class UnusedWebSocketTransport {
@@ -75,29 +77,49 @@ setup(
 );
 
 async function ensureAuthUser(admin: ReturnType<typeof createClient>) {
-  const { data: listed, error: listError } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1_000,
-  });
-  if (listError) throw new Error(listError.message);
-  const existing = listed.users.find(
-    (candidate) => candidate.email?.toLowerCase() === email,
-  );
-  if (existing) {
-    const { error } = await admin.auth.admin.updateUserById(existing.id, {
+  let lastError = "Supabase Auth did not return a platform operator.";
+  const retryDelays = [0, 250, 500, 1_000, 2_000, 4_000, 4_000] as const;
+  for (const delay of retryDelays) {
+    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
+    const { data: listed, error: listError } =
+      await admin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1_000,
+      });
+    if (listError) {
+      lastError = `Unable to list Auth users: ${listError.message || listError.name || "Auth service unavailable"}`;
+      continue;
+    }
+    const existing = listed.users.find(
+      (candidate) => candidate.email?.toLowerCase() === email,
+    );
+    if (existing) {
+      const { error } = await admin.auth.admin.updateUserById(existing.id, {
+        email,
+        password,
+        email_confirm: true,
+      });
+      if (error) {
+        lastError = `Unable to update the platform operator: ${error.message}`;
+        continue;
+      }
+      return existing.id;
+    }
+    const { data, error } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     });
-    if (error) throw new Error(error.message);
-    return existing.id;
+    if (error) {
+      lastError = `Unable to create the platform operator: ${error.message}`;
+      continue;
+    }
+    if (!data.user) {
+      lastError =
+        "Unable to create the platform operator: Auth returned no user.";
+      continue;
+    }
+    return data.user.id;
   }
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (error || !data.user)
-    throw new Error(error?.message ?? "Platform E2E user was not created.");
-  return data.user.id;
+  throw new Error(lastError);
 }

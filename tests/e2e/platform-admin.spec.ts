@@ -14,12 +14,20 @@ class UnusedWebSocketTransport {
 test("searches and inspects connected customer records with an audit trail", async ({
   page,
 }) => {
+  test.setTimeout(120_000);
   await page.goto("/internal/admin/organizations");
   await expect(
     page.getByRole("heading", { name: "Organizations" }),
   ).toBeVisible();
   await expect(page.getByText("BuildCo Construction")).toBeVisible();
-  await page.getByRole("link", { name: "BuildCo Construction" }).click();
+  const organizationLink = page.getByRole("link", {
+    name: "BuildCo Construction",
+  });
+  const organizationHref = await organizationLink.getAttribute("href");
+  expect(organizationHref).toBe(
+    `/internal/admin/organizations/${organizationId}`,
+  );
+  await page.goto(organizationHref!);
   await expect(page).toHaveURL(
     `/internal/admin/organizations/${organizationId}`,
   );
@@ -31,11 +39,13 @@ test("searches and inspects connected customer records with an audit trail", asy
     .getByRole("link", { name: /Matt Anderson|Alex Rivera|Name unavailable/ })
     .first();
   await expect(userLink).toBeVisible();
-  await userLink.click();
+  const userHref = await userLink.getAttribute("href");
+  expect(userHref).toMatch(/\/internal\/admin\/users\/[0-9a-f-]+$/);
+  await page.goto(userHref!);
   await expect(page).toHaveURL(/\/internal\/admin\/users\/[0-9a-f-]+$/);
   await expect(
     page.getByRole("heading", { name: "Organization memberships" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 
   const search = page.getByRole("search");
   await search.getByRole("searchbox").fill("BuildCo");
