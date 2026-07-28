@@ -309,6 +309,60 @@ export type Database = {
           trigger_source: "scheduled" | "manual" | "retry";
         }
       >;
+      application_error_reports: Table<{
+        application_user_id: string | null;
+        application_version: string;
+        auth_user_id: string | null;
+        browser_context: Json;
+        correlation_id: string;
+        created_at: string;
+        environment: string;
+        error_message: string;
+        error_name: string;
+        id: string;
+        occurred_at: string;
+        organization_id: string | null;
+        request_id: string;
+        request_method: string | null;
+        request_path: string | null;
+        safe_metadata: Json;
+        severity: "warning" | "error" | "fatal";
+        source: "client" | "server" | "api" | "background_job";
+        stack_trace: string | null;
+        user_agent: string | null;
+      }>;
+      job_monitoring_alerts: Table<
+        Timestamped & {
+          alert_type: "execution_failed" | "repeated_failures" | "long_running";
+          details: Json;
+          first_detected_at: string;
+          id: string;
+          job_run_id: string | null;
+          job_type: "portfolio_refresh" | "daily_executive_brief";
+          last_detected_at: string;
+          occurrence_count: number;
+          organization_id: string;
+          recovered_at: string | null;
+          severity: "warning" | "critical";
+          status: "open" | "recovered";
+          summary: string;
+        }
+      >;
+      job_monitoring_alert_events: Table<{
+        alert_id: string;
+        channel: string | null;
+        created_at: string;
+        details: Json;
+        event_type:
+          | "opened"
+          | "repeated"
+          | "recovered"
+          | "channel_dispatched"
+          | "channel_failed";
+        id: string;
+        occurred_at: string;
+        organization_id: string;
+      }>;
       organization_data_exports: Table<{
         artifact_mime_type: string | null;
         artifact_name: string | null;

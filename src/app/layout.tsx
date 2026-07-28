@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { ClientObservability } from "@/features/observability/client-observability";
 import { getCurrentMembership, getCurrentUser } from "@/lib/auth/session";
 import "./globals.css";
 
@@ -55,6 +56,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full">
+        <ClientObservability />
         <a
           href="#main-content"
           className="bg-deep-green sr-only z-50 rounded-md px-4 py-2 text-white focus:not-sr-only focus:fixed focus:top-4 focus:left-4"

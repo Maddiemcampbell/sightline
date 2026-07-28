@@ -1,6 +1,7 @@
 import "server-only";
 
-import { NotificationRepository } from "@/features/notifications/repository";
+import { evaluateCompletedJobRun } from "@/features/job-monitoring/alerts";
+import { reportError } from "@/features/observability/service";
 import { organizationJobRetryAt } from "@/features/background-jobs/schedule";
 import type {
   ExecuteOrganizationJobInput,
@@ -116,6 +117,7 @@ export async function executeOrganizationJob(
       .eq("id", run.id)
       .eq("organization_id", input.organizationId);
     if (completed.error) throw new Error(completed.error.message);
+    await monitorRunSafely(run.id, input.organizationId);
     return {
       id: run.id,
       organizationId: input.organizationId,
@@ -125,11 +127,7 @@ export async function executeOrganizationJob(
     };
   } catch (caught) {
     const durationMs = Math.max(0, Date.now() - startedAt.getTime());
-    const retryAt = organizationJobRetryAt(
-      now,
-      attemptCount,
-      run.max_attempts,
-    );
+    const retryAt = organizationJobRetryAt(now, attemptCount, run.max_attempts);
     const message =
       caught instanceof Error ? caught.message.slice(0, 1000) : "Unknown error";
     const failed = await client
@@ -144,14 +142,17 @@ export async function executeOrganizationJob(
       .eq("id", run.id)
       .eq("organization_id", input.organizationId);
     if (failed.error) throw new Error(failed.error.message);
-    await notifyJobFailure({
+    await reportError({
+      error: caught,
+      source: "background_job",
       organizationId: input.organizationId,
-      jobType: input.jobType,
-      runId: run.id,
-      attemptCount,
-      maxAttempts: run.max_attempts,
-      retryAt,
+      metadata: {
+        runId: run.id,
+        jobType: input.jobType,
+        attemptCount,
+      },
     });
+    await monitorRunSafely(run.id, input.organizationId);
     return {
       id: run.id,
       organizationId: input.organizationId,
@@ -159,6 +160,19 @@ export async function executeOrganizationJob(
       attemptCount,
       metrics: EMPTY_METRICS,
     };
+  }
+}
+
+async function monitorRunSafely(runId: string, organizationId: string) {
+  try {
+    await evaluateCompletedJobRun(runId);
+  } catch (error) {
+    await reportError({
+      error,
+      source: "background_job",
+      organizationId,
+      metadata: { runId, operation: "evaluate_job_health" },
+    });
   }
 }
 
@@ -174,43 +188,4 @@ export async function listRetryableJobRuns(jobType: OrganizationJobType) {
     .limit(50);
   if (error) throw new Error(error.message);
   return data;
-}
-
-async function notifyJobFailure(input: {
-  organizationId: string;
-  jobType: OrganizationJobType;
-  runId: string;
-  attemptCount: number;
-  maxAttempts: number;
-  retryAt: string | null;
-}) {
-  const client = createAdminSupabaseClient();
-  const { data, error } = await client
-    .from("organization_memberships")
-    .select("id")
-    .eq("organization_id", input.organizationId)
-    .in("role", ["owner", "administrator"]);
-  if (error) throw new Error(error.message);
-  const repository = new NotificationRepository(client);
-  await Promise.all(
-    (data ?? []).map((membership) =>
-      repository.create({
-        organizationId: input.organizationId,
-        recipientMembershipId: membership.id,
-        type: "background_job_failed",
-        title: `${jobLabel(input.jobType)} failed`,
-        body: input.retryAt
-          ? `Attempt ${input.attemptCount} of ${input.maxAttempts} failed. Sightline will retry automatically.`
-          : `All ${input.maxAttempts} attempts failed. Manual intervention is required.`,
-        href: "/settings/automation",
-        payload: { runId: input.runId },
-      }),
-    ),
-  );
-}
-
-function jobLabel(jobType: OrganizationJobType) {
-  return jobType === "portfolio_refresh"
-    ? "Portfolio Intelligence refresh"
-    : "Daily Executive Brief";
 }

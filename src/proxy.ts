@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = new Set([
   "/verify-email",
   "/auth/callback",
   "/api/health",
+  "/api/observability/errors",
 ]);
 
 function cookieName(key: string, index: number): string {
@@ -35,6 +36,18 @@ export async function proxy(request: NextRequest) {
   const production = process.env.NODE_ENV === "production";
   const csp = contentSecurityPolicy(nonce, !production);
   const requestHeaders = new Headers(request.headers);
+  const incomingRequestId = request.headers.get("x-request-id");
+  const requestId =
+    incomingRequestId && /^[0-9a-f-]{36}$/i.test(incomingRequestId)
+      ? incomingRequestId
+      : crypto.randomUUID();
+  const correlationId =
+    request.headers.get("x-correlation-id") &&
+    /^[0-9a-f-]{36}$/i.test(request.headers.get("x-correlation-id") ?? "")
+      ? (request.headers.get("x-correlation-id") as string)
+      : requestId;
+  requestHeaders.set("x-request-id", requestId);
+  requestHeaders.set("x-correlation-id", correlationId);
   requestHeaders.set("x-sightline-pathname", request.nextUrl.pathname);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
@@ -43,6 +56,8 @@ export async function proxy(request: NextRequest) {
     request: { headers: requestHeaders },
   });
   applySecurityHeaders(response.headers, csp, production);
+  response.headers.set("x-request-id", requestId);
+  response.headers.set("x-correlation-id", correlationId);
 
   const client = createClient<AppDatabase>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
