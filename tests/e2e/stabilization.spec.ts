@@ -71,6 +71,54 @@ test("coordinates header dropdowns and closes them from outside", async ({
   ).toBeHidden();
 });
 
+test("preserves a customer bug report while showing inline validation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help and support" }).click();
+  await page.getByRole("menuitem", { name: /Report a problem/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Report a problem" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Title").fill("Daily brief does not refresh");
+  await dialog.getByLabel("What happened?").fill("short");
+  await dialog.getByLabel("Steps to reproduce").fill("Open the daily brief.");
+  await dialog.getByRole("button", { name: "Send report" }).click();
+  await expect(
+    dialog.getByText("Describe what happened in at least 10 characters."),
+  ).toBeVisible();
+  await expect(dialog.getByLabel("Title")).toHaveValue(
+    "Daily brief does not refresh",
+  );
+  await expect(dialog.getByLabel("Steps to reproduce")).toHaveValue(
+    "Open the daily brief.",
+  );
+  await expect(dialog.getByLabel("What happened?")).toBeFocused();
+});
+
+test("shows a clear confirmation after a bug report is accepted", async ({
+  page,
+}) => {
+  await page.route("**/api/bug-reports", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ accepted: true }),
+    }),
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help and support" }).click();
+  await page.getByRole("menuitem", { name: /Report a problem/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Report a problem" });
+  await dialog.getByLabel("Title").fill("Evidence panel is not loading");
+  await dialog
+    .getByLabel("What happened?")
+    .fill("The evidence panel remained empty after opening the selected risk.");
+  await dialog.getByRole("button", { name: "Send report" }).click();
+  await expect(dialog.getByRole("status")).toHaveText(
+    "Thanks — your report was sent to the Sightline team.",
+  );
+});
+
 test("closes search only from its X button or backdrop", async ({ page }) => {
   await page.goto("/");
 

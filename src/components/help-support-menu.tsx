@@ -9,9 +9,10 @@ import {
   ScrollText,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useHeaderDropdown } from "@/components/header-dropdown-context";
+import { BugReportDialog } from "@/components/bug-report-dialog";
 
 export const helpMenuItems = [
   {
@@ -52,8 +53,9 @@ export const helpMenuItems = [
 ] as const;
 
 export function HelpSupportMenu() {
+  const [reportOpen, setReportOpen] = useState(false);
   const { rootRef, open, close, toggle } = useHeaderDropdown("help");
-  const firstItemRef = useRef<HTMLAnchorElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -105,10 +107,30 @@ export function HelpSupportMenu() {
           className="border-border bg-surface shadow-surface absolute top-12 right-0 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-lg border p-2 shadow-xl"
         >
           <p className="px-3 py-2 text-sm font-semibold">Help &amp; Support</p>
+          <button
+            ref={firstItemRef}
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              close();
+              setReportOpen(true);
+            }}
+            className="hover:bg-background flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left"
+          >
+            <Headphones
+              className="text-deep-green mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="block text-sm font-semibold">Report a problem</span>
+              <span className="text-muted mt-0.5 block text-xs">
+                Send a privacy-safe report to the Sightline team.
+              </span>
+            </span>
+          </button>
           {helpMenuItems.map(
-            ({ label, detail, href, icon: Icon, placeholder }, index) => (
+            ({ label, detail, href, icon: Icon, placeholder }) => (
               <Link
-                ref={index === 0 ? firstItemRef : undefined}
                 key={label}
                 role="menuitem"
                 href={href}
@@ -145,6 +167,7 @@ export function HelpSupportMenu() {
           </Link>
         </div>
       )}
+      <BugReportDialog open={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );
 }

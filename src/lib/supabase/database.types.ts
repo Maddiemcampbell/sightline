@@ -424,6 +424,65 @@ export type Database = {
         feature_flag_id: string;
         created_at: string;
       }>;
+      bug_reports: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          reporting_user_id: string;
+          title: string;
+          description: string;
+          steps_to_reproduce: string | null;
+          expected_behavior: string | null;
+          actual_behavior: string | null;
+          customer_severity:
+            | "blocking"
+            | "major"
+            | "minor"
+            | "cosmetic"
+            | null;
+          relevant_route: string | null;
+          relevant_feature: string | null;
+          diagnostic_consent: boolean;
+          application_version: string;
+          environment: string;
+          browser_os: string | null;
+          viewport_width: number | null;
+          viewport_height: number | null;
+          correlation_id: string;
+          client_error_reference: string | null;
+          idempotency_key: string;
+          status:
+            | "new"
+            | "triaged"
+            | "in_progress"
+            | "resolved"
+            | "closed"
+            | "duplicate"
+            | "cannot_reproduce";
+          assigned_operator_id: string | null;
+          resolution_notes: string | null;
+          related_release_id: string | null;
+          external_issue_reference: string | null;
+          resolved_at: string | null;
+        }
+      >;
+      bug_report_attachments: Table<{
+        id: string;
+        bug_report_id: string;
+        organization_id: string;
+        storage_path: string;
+        original_filename: string;
+        mime_type: "image/jpeg" | "image/png" | "image/webp";
+        size_bytes: number;
+        created_at: string;
+      }>;
+      bug_report_internal_notes: Table<{
+        id: string;
+        bug_report_id: string;
+        operator_id: string;
+        body: string;
+        created_at: string;
+      }>;
       application_error_reports: Table<{
         application_user_id: string | null;
         application_version: string;

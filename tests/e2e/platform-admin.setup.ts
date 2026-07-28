@@ -15,6 +15,8 @@ const permissions = [
   "platform.jobs.read",
   "platform.ai.read",
   "platform.health.read",
+  "platform.support.read",
+  "platform.support.write",
   "platform.flags.manage",
   "platform.releases.read",
 ] as const;

@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Bug,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -34,6 +35,7 @@ const navigation = [
   ],
   ["/internal/admin/users", "Users", Users, "platform.users.read"],
   ["/internal/admin/errors", "Errors", CircleAlert, "platform.support.read"],
+  ["/internal/admin/bugs", "Bug Reports", Bug, "platform.support.read"],
   ["/internal/admin/jobs", "Jobs", ClipboardList, "platform.jobs.read"],
   ["/internal/admin/ai", "AI Usage", Bot, "platform.ai.read"],
   ["/internal/admin/system", "System Health", Activity, "platform.health.read"],
