@@ -24,7 +24,9 @@ test("loads the application shell and morning brief", async ({ page }) => {
     page.getByRole("heading", { name: "Good morning, Matt." }),
   ).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("article")).toHaveCount(3);
-  await expect(page.getByText("Total profit at risk")).toBeVisible();
+  await expect(
+    page.locator("#main-content").getByText("Total profit at risk"),
+  ).toBeVisible();
 });
 
 test("filters the organization action register with shareable URL parameters", async ({

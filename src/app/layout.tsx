@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = new Set([
   "/reset-password",
   "/verify-email",
   "/auth/callback",
+  "/platform-auth/mfa",
 ]);
 
 export default async function RootLayout({

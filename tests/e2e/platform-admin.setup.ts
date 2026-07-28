@@ -19,6 +19,7 @@ const permissions = [
   "platform.support.write",
   "platform.flags.manage",
   "platform.releases.read",
+  "platform.admin.manage",
 ] as const;
 
 class UnusedWebSocketTransport {

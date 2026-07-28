@@ -1,7 +1,8 @@
 import "server-only";
 
 import { cache } from "react";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
 import { recordPlatformAuditEvent } from "@/features/platform-admin/audit";
 import { platformCan } from "@/features/platform-admin/capabilities";
@@ -12,6 +13,7 @@ import type {
 } from "@/features/platform-admin/types";
 import { requireAuthenticatedUser } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const getCurrentPlatformOperator = cache(
   async (): Promise<PlatformOperator | null> => {
@@ -24,9 +26,13 @@ export const getCurrentPlatformOperator = cache(
   },
 );
 
-export async function requirePlatformOperator() {
+export async function requirePlatformOperator(
+  options: Readonly<{ enforceMfa?: boolean }> = {},
+) {
   const operator = await getCurrentPlatformOperator();
   if (!operator) notFound();
+  if (options.enforceMfa !== false && operator.mfaRequired)
+    await requirePlatformMfa();
   return operator;
 }
 
@@ -69,4 +75,33 @@ function pageAuditAction(permission: PlatformPermission) {
     "platform.releases.read": "platform.releases.viewed",
   };
   return actions[permission] ?? "platform.page.viewed";
+}
+
+async function requirePlatformMfa() {
+  const client = await createServerSupabaseClient();
+  const { data, error } =
+    await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  const decision = platformMfaDecision(
+    true,
+    error ? null : data.currentLevel,
+    error ? null : data.nextLevel,
+  );
+  if (decision === "pass") return;
+  const pathname =
+    (await headers()).get("x-sightline-pathname") ?? "/internal/admin";
+  const next = pathname.startsWith("/internal/admin")
+    ? pathname
+    : "/internal/admin";
+  redirect(
+    `/platform-auth/mfa?next=${encodeURIComponent(next)}&mode=${decision}`,
+  );
+}
+
+export function platformMfaDecision(
+  required: boolean,
+  currentLevel: string | null,
+  nextLevel: string | null,
+): "pass" | "enroll" | "verify" {
+  if (!required || currentLevel === "aal2") return "pass";
+  return nextLevel === "aal2" ? "verify" : "enroll";
 }

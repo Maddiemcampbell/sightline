@@ -16,10 +16,16 @@ export const onRequestError: Instrumentation.onRequestError = async (
     requestPath: request.path,
     requestMethod: request.method,
     headers: new Headers(
-      Object.entries(request.headers).flatMap(([key, value]) =>
-        value === undefined
-          ? []
-          : [[key, Array.isArray(value) ? value.join(", ") : value]],
+      Object.entries(request.headers).reduce<[string, string][]>(
+        (entries, [key, value]) => {
+          if (value !== undefined)
+            entries.push([
+              key,
+              Array.isArray(value) ? value.join(", ") : value,
+            ]);
+          return entries;
+        },
+        [],
       ),
     ),
   });

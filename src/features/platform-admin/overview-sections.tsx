@@ -15,7 +15,7 @@ export function PlatformStatusSection({
   return (
     <AdminSection
       title="Platform Status"
-      description="Current operational posture. Placeholder data is clearly labeled."
+      description="Current operational posture from platform health and execution records."
     >
       <MetricGrid metrics={metrics} />
     </AdminSection>
@@ -181,6 +181,9 @@ function ListSection({
   return (
     <AdminSection title={title}>
       <ul className="divide-y divide-slate-100">
+        {!items.length ? (
+          <li className="py-3 text-sm text-slate-500">No recent records.</li>
+        ) : null}
         {items.map((item) => (
           <li
             key={item.id}
