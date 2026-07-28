@@ -23,7 +23,9 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
   await expect(
     page.getByRole("heading", { name: "Organization export history" }),
   ).toBeVisible();
-  await expect(page.getByText("Privacy Policy", { exact: true })).toBeVisible();
+  await expect(
+    page.locator("#main-content").getByText("Privacy Policy", { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText("Counsel review required").first()).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Data retention", exact: true }),

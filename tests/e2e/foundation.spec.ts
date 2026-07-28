@@ -212,6 +212,7 @@ test("records a guided resolution and reopens it with a reason", async ({
   await expect(dialog).toBeHidden();
   await page.reload();
   await page.getByRole("link", { name: "Resolution state" }).click();
+  await expect(page).toHaveURL(/\?tab=resolution$/);
   await expect(
     page.getByText("Resolution summary", { exact: true }),
   ).toBeVisible();

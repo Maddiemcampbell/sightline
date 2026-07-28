@@ -1,5 +1,10 @@
 import type { Instrumentation } from "next";
 
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs")
+    await import("@/features/scheduler/jobs");
+}
+
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
   request,

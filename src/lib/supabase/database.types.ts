@@ -309,6 +309,54 @@ export type Database = {
           trigger_source: "scheduled" | "manual" | "retry";
         }
       >;
+      scheduler_job_definitions: Table<
+        Timestamped & {
+          job_key: string;
+          display_name: string;
+          description: string;
+          cron_schedule: string;
+          enabled: boolean;
+          timeout_ms: number;
+          max_retries: number;
+          backoff_ms: number;
+          concurrency_policy: "forbid";
+        }
+      >;
+      scheduler_job_executions: Table<
+        Timestamped & {
+          id: string;
+          job_key: string;
+          trigger_type: "scheduled" | "manual" | "retry";
+          status:
+            | "queued"
+            | "running"
+            | "succeeded"
+            | "failed"
+            | "retrying"
+            | "timed_out"
+            | "skipped";
+          scheduled_for: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          duration_ms: number | null;
+          attempt_number: number;
+          parent_execution_id: string | null;
+          root_execution_id: string | null;
+          next_retry_at: string | null;
+          correlation_id: string;
+          safe_error_code: string | null;
+          safe_error_summary: string | null;
+          initiating_operator_id: string | null;
+          safe_metadata: Json;
+        }
+      >;
+      scheduler_job_locks: Table<{
+        job_key: string;
+        lease_token: string;
+        acquired_at: string;
+        lease_expires_at: string;
+        execution_id: string;
+      }>;
       application_error_reports: Table<{
         application_user_id: string | null;
         application_version: string;
@@ -1070,6 +1118,23 @@ export type Database = {
       claim_organization_data_exports: {
         Args: { batch_size?: number };
         Returns: Database["public"]["Tables"]["organization_data_exports"]["Row"][];
+      };
+      acquire_scheduler_job_lock: {
+        Args: {
+          requested_job_key: string;
+          requested_execution_id: string;
+          requested_lease_token: string;
+          requested_now: string;
+          requested_lease_expires_at: string;
+        };
+        Returns: boolean;
+      };
+      release_scheduler_job_lock: {
+        Args: {
+          requested_job_key: string;
+          requested_lease_token: string;
+        };
+        Returns: boolean;
       };
     };
     Enums: DatabaseEnums;

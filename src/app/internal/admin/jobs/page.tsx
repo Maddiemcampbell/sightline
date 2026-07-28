@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requirePlatformPermission } from "@/features/platform-admin/authorization";
 import { JobDashboardAutoRefresh } from "@/features/job-monitoring/auto-refresh";
 import { getJobDashboard } from "@/features/job-monitoring/dashboard";
+import { triggerSchedulerJobAction } from "./actions";
 
 export default async function PlatformJobsPage({
   searchParams,
@@ -66,6 +67,33 @@ export default async function PlatformJobsPage({
           Apply
         </button>
       </form>
+      <section
+        className="mt-5 rounded-lg border bg-white p-4"
+        aria-labelledby="manual-jobs-title"
+      >
+        <h2 id="manual-jobs-title" className="text-sm font-semibold">
+          Manual execution
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
+          Manual runs use the scheduled execution path and concurrency locks.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {[
+            ["risk-detection", "Risk detection"],
+            ["portfolio-refresh", "Portfolio refresh"],
+            ["daily-brief", "Daily Brief"],
+            ["privacy-cleanup", "Privacy cleanup"],
+            ["customer-data-exports", "Data exports"],
+          ].map(([key, label]) => (
+            <form key={key} action={triggerSchedulerJobAction}>
+              <input type="hidden" name="jobKey" value={key} />
+              <button className="rounded-md border px-3 py-2 text-xs font-semibold hover:bg-slate-50">
+                Run {label}
+              </button>
+            </form>
+          ))}
+        </div>
+      </section>
       <section
         className="mt-5 overflow-x-auto rounded-lg border bg-white"
         aria-label="Job monitoring results"

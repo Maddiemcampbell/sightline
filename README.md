@@ -32,19 +32,20 @@ autonomous workflows.
    Supabase project settings.
 
    Set `CRON_SECRET` to a random value of at least 32 characters before enabling
-   scheduled detection. A scheduler can call `GET /api/cron/detect-risks` with
-   `Authorization: Bearer <CRON_SECRET>`. Development also exposes the
-   internal-only `/internal/detection` manual-run page.
+   scheduled detection. In production, call `GET /api/cron/scheduler` once per
+   minute with
+   `Authorization: Bearer $CRON_SECRET`. The centralized scheduler runs all due
+   jobs and persisted retries. Existing job-specific cron URLs remain supported
+   as compatibility entry points. See `docs/BACKGROUND_JOB_SCHEDULER.md`.
+   Development also exposes the internal-only `/internal/detection` manual-run
+   page.
 
    Morning email uses Resend through its HTTPS API. Configure `RESEND_API_KEY`,
-   a verified `EMAIL_FROM` sender, and the public `APP_URL`. Run the email cron
-   on a regular interval with `GET /api/cron/send-briefs` and the same Bearer
-   secret; Sightline evaluates each recipient's preferred local delivery time.
+   a verified `EMAIL_FROM` sender, and the public `APP_URL`. Sightline evaluates
+   each recipient's preferred local delivery time.
    Development exposes `/internal/email-preview` for HTML and plain-text review.
 
-   Schedule `GET /api/cron/privacy-cleanup` at least daily and
-   `GET /api/cron/data-exports` at least every five minutes with the same
-   bearer secret. Configure `INTERNAL_ADMIN_AUTH_USER_IDS` with a comma-separated
+   Configure `INTERNAL_ADMIN_AUTH_USER_IDS` with a comma-separated
    list of Supabase Auth UUIDs for Sightline platform operators. Organization
    Owner status alone does not grant access to `/internal` tools.
 

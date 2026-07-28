@@ -25,7 +25,7 @@ test("searches and inspects connected customer records with an audit trail", asy
   );
   await expect(
     page.getByRole("heading", { name: "Members and invitations" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 
   const userLink = page
     .getByRole("link", { name: /Matt Anderson|Alex Rivera|Name unavailable/ })

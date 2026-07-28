@@ -1,26 +1,5 @@
-import { cronSecretMatches } from "@/features/detection/cron-auth";
-import { runScheduledOrganizationJobs } from "@/features/background-jobs/runners";
-import { getServerEnv } from "@/lib/env";
+import { runRegisteredCronJob } from "@/features/scheduler/cron-route";
 
 export const runtime = "nodejs";
-
-export async function GET(request: Request) {
-  const secret = getServerEnv().CRON_SECRET;
-  const supplied = request.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "");
-  if (!secret)
-    return Response.json({ error: "Cron is not configured." }, { status: 503 });
-  if (!supplied || !cronSecretMatches(secret, supplied)) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 });
-  }
-  try {
-    const summary = await runScheduledOrganizationJobs("daily_executive_brief");
-    return Response.json({ ok: summary.failed === 0, ...summary });
-  } catch {
-    return Response.json(
-      { error: "Morning email delivery failed." },
-      { status: 500 },
-    );
-  }
-}
+export const GET = (request: Request) =>
+  runRegisteredCronJob(request, "daily-brief");
