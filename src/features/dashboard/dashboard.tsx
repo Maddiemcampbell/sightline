@@ -119,16 +119,30 @@ export function Dashboard({ view }: { view: DashboardView }) {
               ? `Dashboard intelligence is scoped to ${selectedProject.name}.`
               : changeSummary(view)}
           </p>
-          <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
-            Sightline found{" "}
-            <mark className="signal-highlight">
-              {filteredView.intelligence.portfolioWatch.length} portfolio signal
-              {filteredView.intelligence.portfolioWatch.length === 1 ? "" : "s"}
-            </mark>{" "}
-            that currently deserve executive attention.
-          </p>
+          {filteredView.intelligence.portfolioWatch.length ? (
+            <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
+              Sightline found{" "}
+              <mark className="signal-highlight">
+                {filteredView.intelligence.portfolioWatch.length} portfolio
+                signal
+                {filteredView.intelligence.portfolioWatch.length === 1
+                  ? ""
+                  : "s"}
+              </mark>{" "}
+              that currently{" "}
+              {filteredView.intelligence.portfolioWatch.length === 1
+                ? "deserves"
+                : "deserve"}{" "}
+              executive attention.
+            </p>
+          ) : (
+            <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
+              No portfolio signals currently require executive attention.
+            </p>
+          )}
           <p className="bg-accent/45 text-deep-green mt-3 w-fit rounded-full px-3 py-1 text-xs font-semibold">
-            Scope: {projectScopeLabel(selectedProject?.name ?? null, projects.length)}
+            Scope:{" "}
+            {projectScopeLabel(selectedProject?.name ?? null, projects.length)}
           </p>
           <Link
             href="/brief"
@@ -185,10 +199,7 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
     view.financialAnalytics?.portfolio.netBudgetVariance ??
     null;
   return (
-    <section
-      aria-label="Portfolio Watch"
-      className="dashboard-card p-5"
-    >
+    <section aria-label="Portfolio Watch" className="dashboard-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-deep-green text-xs font-semibold tracking-[0.09em] uppercase">
@@ -244,14 +255,24 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
           label="Forecasted margin"
           value={
             !view.canViewFinancials
-              ? "Restricted for your role"
+              ? "—"
               : summary.forecastMarginPercent === null
-                ? "Not available"
+                ? "—"
                 : `${summary.forecastMarginPercent}%`
           }
-          detail="Projected active-project margin"
+          detail={
+            !view.canViewFinancials
+              ? "Restricted for your role"
+              : summary.forecastMarginPercent === null
+                ? "No active-project forecast for this scope"
+                : "Projected active-project margin"
+          }
           icon={TrendingUp}
-          tone="positive"
+          tone={
+            view.canViewFinancials && summary.forecastMarginPercent !== null
+              ? "positive"
+              : "neutral"
+          }
         />
       </div>
     </section>
@@ -277,7 +298,9 @@ function OverviewMetric({
         <p className="text-muted text-xs font-medium">{label}</p>
         <Icon className="text-muted size-4" aria-hidden="true" />
       </div>
-      <p className="mt-5 break-words text-2xl font-semibold tracking-[-0.035em] tabular-nums">{value}</p>
+      <p className="mt-5 text-2xl font-semibold tracking-[-0.035em] whitespace-nowrap tabular-nums">
+        {value}
+      </p>
       <p
         className={`mt-2 text-xs ${
           tone === "warning"
@@ -353,8 +376,15 @@ function RiskDrivers({
         <div className="mt-5 rounded-lg border border-dashed p-4 text-center">
           <XCircle className="text-muted mx-auto size-5" aria-hidden="true" />
           <p className="mt-2 text-sm font-semibold">No active risk drivers</p>
-          <p className="text-muted mt-1 text-xs">The current accessible project scope has no unresolved risks.</p>
-          <Link href="/risks" className="text-deep-green mt-3 inline-block text-xs font-semibold">Review all risks</Link>
+          <p className="text-muted mt-1 text-xs">
+            The current accessible project scope has no unresolved risks.
+          </p>
+          <Link
+            href="/risks"
+            className="text-deep-green mt-3 inline-block text-xs font-semibold"
+          >
+            Review all risks
+          </Link>
         </div>
       )}
       <Link
@@ -376,8 +406,7 @@ function RiskHeatmap({
 }) {
   const categories = analytics?.categories ?? [];
   const rows = analytics?.heatmap ?? [];
-  if (!analytics)
-    return <LegacyRiskHeatmap rows={fallbackRows} />;
+  if (!analytics) return <LegacyRiskHeatmap rows={fallbackRows} />;
   return (
     <section className="dashboard-card overflow-hidden p-5">
       <div>
@@ -390,11 +419,17 @@ function RiskHeatmap({
         </p>
       </div>
       {rows.length ? (
-        <div className="mt-5 overflow-x-auto" tabIndex={0} aria-label="Scrollable portfolio risk heatmap">
+        <div
+          className="mt-5 overflow-x-auto"
+          tabIndex={0}
+          aria-label="Scrollable portfolio risk heatmap"
+        >
           <table className="w-full min-w-[34rem] text-left text-xs">
             <thead>
               <tr className="text-muted">
-                <th className="bg-surface sticky left-0 z-10 pb-3 font-medium">Project</th>
+                <th className="bg-surface sticky left-0 z-10 pb-3 font-medium">
+                  Project
+                </th>
                 {categories.map((column) => (
                   <th
                     key={column.id}
@@ -409,7 +444,9 @@ function RiskHeatmap({
               {rows.map((row) => (
                 <tr key={row.projectId} className="border-border border-t">
                   <th className="bg-surface sticky left-0 z-10 max-w-48 py-3 pr-3 font-medium">
-                    <Link href={`/projects/${row.projectId}`}>{row.projectName}</Link>
+                    <Link href={`/projects/${row.projectId}`}>
+                      {row.projectName}
+                    </Link>
                   </th>
                   {row.cells.map((cell) => (
                     <td key={cell.category} className="px-3 py-3 text-center">
@@ -417,16 +454,21 @@ function RiskHeatmap({
                         href={cell.href}
                         aria-label={heatmapCellLabel(
                           row.projectName,
-                          categories.find((category) => category.id === cell.category)?.label ?? cell.category,
+                          categories.find(
+                            (category) => category.id === cell.category,
+                          )?.label ?? cell.category,
                           cell,
                         )}
                         title={cell.explanation}
                         className={`inline-flex size-7 items-center justify-center rounded-full text-xs font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                          cell.highestSeverity === "critical" || cell.highestSeverity === "high"
+                          cell.highestSeverity === "critical" ||
+                          cell.highestSeverity === "high"
                             ? "bg-status-high"
-                            : cell.highestSeverity === "medium" ? "bg-status-medium"
-                            : cell.highestSeverity === "low" ? "bg-status-low"
-                            : "bg-border text-muted"
+                            : cell.highestSeverity === "medium"
+                              ? "bg-status-medium"
+                              : cell.highestSeverity === "low"
+                                ? "bg-status-low"
+                                : "bg-border text-muted"
                         }`}
                       >
                         {cell.activeRiskCount || "–"}
@@ -453,23 +495,46 @@ function RiskHeatmap({
         </div>
       ) : (
         <div className="mt-5 rounded-lg border border-dashed p-5 text-center">
-          <p className="text-sm font-semibold">No heatmap data for this scope</p>
-          <p className="text-muted mt-1 text-xs">Choose another accessible project or review the risk register.</p>
-          <Link href="/risks" className="text-deep-green mt-3 inline-block text-xs font-semibold">Open risk register</Link>
+          <p className="text-sm font-semibold">
+            No heatmap data for this scope
+          </p>
+          <p className="text-muted mt-1 text-xs">
+            Choose another accessible project or review the risk register.
+          </p>
+          <Link
+            href="/risks"
+            className="text-deep-green mt-3 inline-block text-xs font-semibold"
+          >
+            Open risk register
+          </Link>
         </div>
       )}
     </section>
   );
 }
 
-function LegacyRiskHeatmap({ rows }: { rows: readonly PortfolioRiskHeatmapRow[] }) {
+function LegacyRiskHeatmap({
+  rows,
+}: {
+  rows: readonly PortfolioRiskHeatmapRow[];
+}) {
   return (
     <section className="dashboard-card overflow-hidden p-5">
-      <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">Portfolio risk heatmap</h2>
-      <p className="text-muted mt-1 text-xs">Highest unresolved severity by project and risk group.</p>
-      <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[34rem] text-left text-xs"><tbody>
-        {rows.map(row=><HeatmapRow key={row.projectId} row={row}/>)}
-      </tbody></table></div>
+      <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+        Portfolio risk heatmap
+      </h2>
+      <p className="text-muted mt-1 text-xs">
+        Highest unresolved severity by project and risk group.
+      </p>
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full min-w-[34rem] text-left text-xs">
+          <tbody>
+            {rows.map((row) => (
+              <HeatmapRow key={row.projectId} row={row} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -530,11 +595,19 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
         <Insight observation={observation} />
       ) : (
         <div className="mt-4 rounded-lg border border-dashed p-4">
-          <p className="text-sm font-semibold">No evidence-backed insight for this scope</p>
-          <p className="text-muted mt-1 text-xs leading-5">
-            Sightline only surfaces observations that meet its deterministic evidence threshold.
+          <p className="text-sm font-semibold">
+            No evidence-backed insight for this scope
           </p>
-          <Link href="/risks" className="text-deep-green mt-2 inline-block text-xs font-semibold">Review source risks</Link>
+          <p className="text-muted mt-1 text-xs leading-5">
+            Sightline only surfaces observations that meet its deterministic
+            evidence threshold.
+          </p>
+          <Link
+            href="/risks"
+            className="text-deep-green mt-2 inline-block text-xs font-semibold"
+          >
+            Review source risks
+          </Link>
         </div>
       )}
       {hypothesis && (
@@ -672,15 +745,21 @@ function OverdueActions({ view }: { view: DashboardView }) {
                   {overdueLabel(action.dueAt, view.generatedAt)}
                 </p>
                 <p className="text-muted mt-1 text-xs">
-                  {view.priorities.find((priority) => priority.id === `action:${action.id}`)?.projectName ?? "Portfolio"} ·{" "}
-                  {action.ownerName ?? "Unassigned"}
+                  {view.priorities.find(
+                    (priority) => priority.id === `action:${action.id}`,
+                  )?.projectName ?? "Portfolio"}{" "}
+                  · {action.ownerName ?? "Unassigned"}
                 </p>
               </li>
             ))
           ) : (
             <li>
-              <p className="text-deep-green text-xs font-semibold">You’re caught up</p>
-              <p className="text-muted mt-1 text-xs">No mitigation actions are overdue in this scope.</p>
+              <p className="text-deep-green text-xs font-semibold">
+                You’re caught up
+              </p>
+              <p className="text-muted mt-1 text-xs">
+                No mitigation actions are overdue in this scope.
+              </p>
             </li>
           )}
         </ol>
@@ -751,7 +830,10 @@ function PortfolioAdvisor({
     hasRecentActivity: view.activity.length > 0,
   });
   return (
-    <aside className="dashboard-card h-fit p-5 xl:sticky xl:top-24" aria-label="Sightline AI assistant">
+    <aside
+      className="dashboard-card h-fit p-5 xl:sticky xl:top-24"
+      aria-label="Sightline AI assistant"
+    >
       <div className="flex items-center gap-2">
         <Sparkles className="text-deep-green size-4" aria-hidden="true" />
         <p className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
@@ -765,7 +847,7 @@ function PortfolioAdvisor({
         <span className="bg-soft-green text-deep-green grid size-8 place-items-center rounded-full">
           <Bot className="size-4" aria-hidden="true" />
         </span>
-        <h2 className="mt-3 text-base font-semibold leading-6">
+        <h2 className="mt-3 text-base leading-6 font-semibold">
           Hi {view.currentUserName.split(" ")[0]}.{" "}
           {advisorModeLabels[advisorMode]} mode is selected.
         </h2>
@@ -845,15 +927,19 @@ export function filterDashboardView(
   const scopedRiskIds = new Set(
     scopedRiskAnalytics?.executiveRisks.map((risk) => risk.riskId) ?? [],
   );
-  const projectRiskDrivers: RiskDriver[] = (scopedRiskAnalytics?.drivers ?? []).map(
-    (driver) => ({
-      category: driver.category,
-      label: driver.label,
-      riskCount: driver.activeRiskCount,
-      exposureCents: driver.assessedExposureCents ?? 0,
-      level: driver.highCriticalCount ? "high" : driver.averageAttentionScore >= 50 ? "medium" : "low",
-    }),
-  );
+  const projectRiskDrivers: RiskDriver[] = (
+    scopedRiskAnalytics?.drivers ?? []
+  ).map((driver) => ({
+    category: driver.category,
+    label: driver.label,
+    riskCount: driver.activeRiskCount,
+    exposureCents: driver.assessedExposureCents ?? 0,
+    level: driver.highCriticalCount
+      ? "high"
+      : driver.averageAttentionScore >= 50
+        ? "medium"
+        : "low",
+  }));
   const selectedPortfolio = portfolio[0];
   const selectedFinancial = view.financialAnalytics?.portfolio.projects.find(
     (project) => project.projectId === projectId,
@@ -876,14 +962,24 @@ export function filterDashboardView(
     ),
     work: {
       ...view.work,
-      dueToday: view.work.dueToday.filter((action) => scopedRiskIds.has(action.riskId)),
-      overdue: view.work.overdue.filter((action) => scopedRiskIds.has(action.riskId)),
+      dueToday: view.work.dueToday.filter((action) =>
+        scopedRiskIds.has(action.riskId),
+      ),
+      overdue: view.work.overdue.filter((action) =>
+        scopedRiskIds.has(action.riskId),
+      ),
       overdueExposureCents: priorities
         .filter((priority) => priority.kind === "action")
         .reduce((sum, priority) => sum + (priority.exposureCents ?? 0), 0),
-      waitingExternal: view.work.waitingExternal.filter((action) => scopedRiskIds.has(action.riskId)),
-      recentlyCompleted: view.work.recentlyCompleted.filter((action) => scopedRiskIds.has(action.riskId)),
-      unownedRisks: view.work.unownedRisks.filter((risk) => scopedRiskIds.has(risk.id)),
+      waitingExternal: view.work.waitingExternal.filter((action) =>
+        scopedRiskIds.has(action.riskId),
+      ),
+      recentlyCompleted: view.work.recentlyCompleted.filter((action) =>
+        scopedRiskIds.has(action.riskId),
+      ),
+      unownedRisks: view.work.unownedRisks.filter((risk) =>
+        scopedRiskIds.has(risk.id),
+      ),
     },
     intelligence: {
       ...view.intelligence,

@@ -178,6 +178,31 @@ describe("company dashboard", () => {
     expect(markup).toContain("Financial");
   });
 
+  it("presents zero signals and unavailable margin without visual emphasis", () => {
+    const markup = renderToStaticMarkup(
+      <TestDashboard
+        view={{
+          ...view,
+          portfolioSummary: {
+            ...view.portfolioSummary,
+            forecastMarginPercent: null,
+          },
+        }}
+      />,
+    );
+
+    expect(markup).toContain(
+      "No portfolio signals currently require executive attention.",
+    );
+    expect(markup).not.toContain("0 portfolio signals");
+    const forecastMetric = markup.slice(
+      markup.indexOf("Forecasted margin"),
+      markup.indexOf("Forecasted margin") + 800,
+    );
+    expect(forecastMetric).not.toContain("Not available");
+    expect(markup).toContain("No active-project forecast for this scope");
+  });
+
   it("labels root-cause suggestions as hypotheses rather than conclusions", () => {
     const markup = renderToStaticMarkup(
       <TestDashboard

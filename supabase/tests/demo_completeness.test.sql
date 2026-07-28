@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(20);
 
 select is((select count(*)::integer from public.organizations
   where id='10000000-0000-4000-8000-000000000001'),1,'one designated demo organization exists');
@@ -36,6 +36,18 @@ select is((select count(*)::integer from public.projects
 select is((select count(*)::integer from public.projects
   where organization_id='10000000-0000-4000-8000-000000000001'
     and image_url is null),7,'seven demo projects exercise fallback cover artwork');
+select cmp_ok((select count(*)::integer from public.vendors
+  where organization_id='10000000-0000-4000-8000-000000000001'),'>=',8,'demo includes a varied specialist vendor directory');
+select cmp_ok((select count(*)::integer from public.documents
+  where organization_id='10000000-0000-4000-8000-000000000001'),'>=',12,'demo includes source documents across active and resolved risks');
+select cmp_ok((select count(*)::integer from public.risk_evidence
+  where organization_id='10000000-0000-4000-8000-000000000001'),'>=',12,'demo includes grounded evidence for exploration');
+select is((select count(distinct status)::integer from public.recommended_actions
+  where organization_id='10000000-0000-4000-8000-000000000001'),5,'demo exercises every action status');
+select is((select count(distinct actor_type)::integer from public.risk_activities
+  where organization_id='10000000-0000-4000-8000-000000000001'),4,'demo distinguishes user, system, AI, and integration activity');
+select cmp_ok((select count(*)::integer from public.daily_briefs
+  where organization_id='10000000-0000-4000-8000-000000000001'),'>=',2,'demo includes a prior brief for change comparison');
 
 select * from finish();
 rollback;

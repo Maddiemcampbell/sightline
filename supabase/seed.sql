@@ -196,7 +196,7 @@ values (
   'system', null, 'email_drafted',
   'Seed email draft created for human review.',
   '{"draftId":"a0000000-0000-4000-8000-000000000001","generationSource":"deterministic_fallback"}'::jsonb,
-  '2026-07-18T12:45:00Z'
+  '2026-07-25T12:45:00Z'
 );
 
 insert into public.risk_activities (
@@ -502,3 +502,127 @@ where risk_id in (
   '60000000-0000-4000-8000-000000000002',
   '60000000-0000-4000-8000-000000000003'
 );
+
+-- Exploration data for the broader V2/V3 product experience. These records
+-- deepen existing scenarios without changing the canonical current brief.
+insert into public.vendors (
+  id, organization_id, name, trade, contact_name, contact_email
+)
+values
+  ('30000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', 'Westline Building Envelope', 'Glazing and waterproofing', 'Tasha Brooks', 'tasha@westline-envelope.example'),
+  ('30000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', 'High Desert Power & Controls', 'Generators and controls', 'Owen Reed', 'owen@high-desert-power.example'),
+  ('30000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', 'Red Oak Life Safety', 'Fire alarm and life safety', 'Priya Shah', 'priya@red-oak-safety.example');
+
+insert into public.project_vendors (
+  organization_id, project_id, vendor_id, scope_of_work
+)
+values
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000006', 'Unit glazing and perimeter waterproofing'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000003', 'Mechanical systems and controls'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '30000000-0000-4000-8000-000000000007', 'Emergency generation and sequence controls'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '30000000-0000-4000-8000-000000000002', 'Foundations and equipment pads'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000007', '30000000-0000-4000-8000-000000000005', 'Framing, drywall, and finishes'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000008', '30000000-0000-4000-8000-000000000008', 'Fire alarm and phased life-safety systems'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000008', '30000000-0000-4000-8000-000000000004', 'Structural steel and miscellaneous metals'),
+  ('10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000010', '30000000-0000-4000-8000-000000000003', 'Preconstruction mechanical coordination');
+
+update public.risks
+set vendor_id = case id
+  when '60000000-0000-4000-8000-000000000009' then '30000000-0000-4000-8000-000000000006'::uuid
+  when '60000000-0000-4000-8000-000000000010' then '30000000-0000-4000-8000-000000000007'::uuid
+  when '60000000-0000-4000-8000-000000000012' then '30000000-0000-4000-8000-000000000008'::uuid
+  else vendor_id
+end
+where id in (
+  '60000000-0000-4000-8000-000000000009',
+  '60000000-0000-4000-8000-000000000010',
+  '60000000-0000-4000-8000-000000000012'
+);
+
+insert into public.documents (
+  id, organization_id, project_id, vendor_id, integration_source_id, name,
+  document_type, document_date, processing_status
+)
+values
+  ('50000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000006', '40000000-0000-4000-8000-000000000001', 'Juniper Row window mockup test report', 'incident_report', '2026-07-22', 'ready'),
+  ('50000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000006', '30000000-0000-4000-8000-000000000007', '40000000-0000-4000-8000-000000000001', 'Granite Peak generator controls submittal log', 'schedule', '2026-07-23', 'ready'),
+  ('50000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000008', '30000000-0000-4000-8000-000000000008', '40000000-0000-4000-8000-000000000001', 'Market Square fire alarm plan review comments', 'rfi', '2026-07-21', 'ready'),
+  ('50000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000007', '30000000-0000-4000-8000-000000000005', '40000000-0000-4000-8000-000000000001', 'Mercer residence hall weekly manpower report', 'daily_log', '2026-07-22', 'ready'),
+  ('50000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000005', '30000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'Juniper Row mechanical change directive 017', 'change_order', '2026-07-20', 'ready'),
+  ('50000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000009', null, '40000000-0000-4000-8000-000000000001', 'Harbor Point closeout warranty index', 'other', '2026-06-11', 'ready'),
+  ('50000000-0000-4000-8000-000000000012', '10000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000010', null, '40000000-0000-4000-8000-000000000001', 'Clearwater utility easement exhibit', 'contract', '2026-07-24', 'ready');
+
+insert into public.risk_evidence (
+  id, organization_id, risk_id, document_id, integration_source_id,
+  evidence_type, title, why_it_matters, excerpt, source_label,
+  source_location, page_number, line_start, line_end, relevance_score,
+  support_type, occurred_at
+)
+values
+  ('70000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', '50000000-0000-4000-8000-000000000006', '40000000-0000-4000-8000-000000000001', 'document_excerpt', 'Mockup test deficiency', 'The failed perimeter seal must be corrected and retested before the assembly is repeated.', 'Water penetration observed at the east jamb after 11 minutes at the specified pressure differential.', 'Juniper Row window mockup test report', 'Test observation 4.2', 6, null, null, 96, 'direct', '2026-07-22T18:30:00Z'),
+  ('70000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', null, null, 'project_metadata', 'Repeated assembly exposure', 'The approved mockup is the control assembly for 184 similar openings.', 'The current installation release covers 184 apartment window openings using the same perimeter detail.', 'Juniper Row project controls', 'Envelope release log', null, null, null, 82, 'inferred', '2026-07-23T14:00:00Z'),
+  ('70000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000010', '50000000-0000-4000-8000-000000000007', '40000000-0000-4000-8000-000000000001', 'schedule_event', 'Fabrication release missed', 'The release milestone controls generator fabrication and downstream commissioning.', 'Controls sequence approval required by July 18; fabrication release remains open as of July 23.', 'Granite Peak generator controls submittal log', 'Long-lead equipment row 12', 3, null, null, 97, 'direct', '2026-07-23T19:00:00Z'),
+  ('70000000-0000-4000-8000-000000000007', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000011', '50000000-0000-4000-8000-000000000009', '40000000-0000-4000-8000-000000000001', 'daily_log_entry', 'Crew count below commitment', 'Four consecutive shifts show a material gap between committed and actual staffing.', 'Committed framing crew: 46. Average verified workforce this week: 34.', 'Mercer residence hall weekly manpower report', 'Framing summary', 2, 18, 24, 93, 'direct', '2026-07-22T22:00:00Z'),
+  ('70000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000012', '50000000-0000-4000-8000-000000000008', '40000000-0000-4000-8000-000000000001', 'document_excerpt', 'Open authority comments', 'Unresolved life-safety comments can prevent inspection approval and phased occupancy.', 'Six comments remain open, including notification appliance coverage and sequence matrix revisions.', 'Market Square fire alarm plan review comments', 'Open comments summary', 1, null, null, 95, 'direct', '2026-07-21T20:00:00Z'),
+  ('70000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000013', '50000000-0000-4000-8000-000000000010', '40000000-0000-4000-8000-000000000001', 'contract_clause', 'Pricing remains provisional', 'The directive authorizes work but requires timely backup and final pricing.', 'Contractor shall proceed on time and material while labor and material backup is reconciled for final change pricing.', 'Juniper Row mechanical change directive 017', 'Pricing basis', 2, 31, 36, 92, 'direct', '2026-07-20T17:00:00Z'),
+  ('70000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000015', '50000000-0000-4000-8000-000000000011', '40000000-0000-4000-8000-000000000001', 'document_excerpt', 'Warranty records omitted', 'The closeout index confirms the two records that delayed owner acceptance.', 'Missing at initial issue: AHU-3 motor warranty and domestic booster pump warranty.', 'Harbor Point closeout warranty index', 'Outstanding warranties', 4, null, null, 94, 'direct', '2026-06-11T16:00:00Z'),
+  ('70000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000016', '50000000-0000-4000-8000-000000000012', '40000000-0000-4000-8000-000000000001', 'contract_clause', 'Conflicting easement widths', 'The exhibit and planning narrative must align before site utility design is released.', 'Civil exhibit identifies a 24-foot access easement; planning narrative identifies a 20-foot permanent easement.', 'Clearwater utility easement exhibit', 'Easement note 7', 5, null, null, 88, 'direct', '2026-07-24T19:00:00Z'),
+  ('70000000-0000-4000-8000-000000000012', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000016', null, null, 'manual_note', 'Owner confirmation not yet received', 'This is missing information rather than proof of the final easement requirement.', 'Owner confirmation of the controlling easement width is still pending.', 'Preconstruction coordination note', 'Open decisions log', null, null, null, 64, 'assumption', '2026-07-24T20:00:00Z');
+
+insert into public.recommended_actions (
+  id, organization_id, risk_id, owner_user_id, title, description,
+  action_type, status, priority, due_at, completed_at, dismissed_at,
+  dismissal_reason, created_by_user_id, source
+)
+values
+  ('80000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000004', '11000000-0000-4000-8000-000000000002', 'Escalate switchgear submittal review', 'Confirm the remaining reviewer and obtain a dated approval commitment.', 'email', 'accepted', 'high', '2026-07-27T17:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000005', '11000000-0000-4000-8000-000000000002', 'Close corridor coordination clashes', 'Lead a focused trade review and record disposition for all nine corridor clashes.', 'schedule_meeting', 'in_progress', 'normal', '2026-07-29T17:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000002', 'human'),
+  ('80000000-0000-4000-8000-000000000011', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000006', '11000000-0000-4000-8000-000000000001', 'Validate steel recovery productivity', 'Compare installed tonnage against overtime hours before approving another recovery week.', 'review_document', 'completed', 'normal', '2026-07-23T17:00:00Z', '2026-07-23T15:40:00Z', null, null, '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000012', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000007', null, 'Request a dated manpower recovery plan', 'Ask Golden State Interiors to confirm crew ramp-up by shift and work area.', 'contact_vendor', 'suggested', 'high', '2026-07-30T17:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000002', 'human'),
+  ('80000000-0000-4000-8000-000000000013', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', '11000000-0000-4000-8000-000000000002', 'Hold repeated window installation', 'Keep the repeated opening release on hold until the corrected mockup passes witnessed testing.', 'add_mitigation', 'in_progress', 'urgent', '2026-07-28T17:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000001', 'human'),
+  ('80000000-0000-4000-8000-000000000014', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000012', '11000000-0000-4000-8000-000000000002', 'Confirm resubmittal completeness', 'Review all six authority comments against the revised fire alarm package before upload.', 'review_document', 'accepted', 'high', '2026-07-27T16:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000002', 'human'),
+  ('80000000-0000-4000-8000-000000000015', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000014', null, 'Relocate concrete washout immediately', 'Superseded by the revised logistics plan that moved washout to the north laydown yard.', 'update_schedule', 'dismissed', 'low', null, null, '2026-07-21T18:20:00Z', 'The approved logistics revision already removed the condition.', '11000000-0000-4000-8000-000000000002', 'human'),
+  ('80000000-0000-4000-8000-000000000016', '10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000016', null, 'Confirm controlling utility easement', 'Obtain written owner direction identifying the controlling easement exhibit.', 'request_document', 'suggested', 'normal', '2026-08-03T17:00:00Z', null, null, null, '11000000-0000-4000-8000-000000000001', 'human');
+
+update public.recommended_actions
+set status = 'accepted'
+where id = '80000000-0000-4000-8000-000000000005';
+
+insert into public.risk_activities (
+  organization_id, risk_id, actor_type, actor_user_id, activity_type,
+  summary, metadata, mentioned_user_ids, occurred_at
+)
+values
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', 'integration', null, 'document_uploaded', 'Window mockup test report was added from project records.', '{"documentId":"50000000-0000-4000-8000-000000000006"}'::jsonb, '{}', '2026-07-22T18:35:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', 'system', null, 'evidence_added', 'Mockup test deficiency was linked as direct evidence.', '{"evidenceId":"70000000-0000-4000-8000-000000000004","supportType":"direct"}'::jsonb, '{}', '2026-07-23T14:02:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', 'user', '11000000-0000-4000-8000-000000000002', 'comment_added', 'Alex asked the envelope team to keep the repeated installation release on hold.', '{"body":"Keep the repeated opening release on hold until the witnessed retest passes."}'::jsonb, '{}', '2026-07-23T16:10:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000009', 'user', '11000000-0000-4000-8000-000000000001', 'owner_assigned', 'Matt assigned the window mockup follow-up to Alex Rivera.', '{"ownerUserId":"11000000-0000-4000-8000-000000000002"}'::jsonb, array['11000000-0000-4000-8000-000000000002']::uuid[], '2026-07-23T16:25:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000010', 'ai', null, 'system_analysis_completed', 'AI-assisted analysis summarized the generator release evidence for human review.', '{"evidenceIds":["70000000-0000-4000-8000-000000000006"],"reviewStatus":"reviewed"}'::jsonb, '{}', '2026-07-24T13:05:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000010', 'user', '11000000-0000-4000-8000-000000000001', 'action_accepted', 'Matt accepted the generator controls release action.', '{"actionId":"80000000-0000-4000-8000-000000000005"}'::jsonb, '{}', '2026-07-24T13:18:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000012', 'integration', null, 'document_uploaded', 'Fire alarm plan review comments were added from project records.', '{"documentId":"50000000-0000-4000-8000-000000000008"}'::jsonb, '{}', '2026-07-21T20:03:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000012', 'user', '11000000-0000-4000-8000-000000000002', 'comment_added', 'Alex asked Matt to confirm the phased occupancy date before the resubmittal.', '{"body":"Matt, please confirm whether the September phased occupancy date is still controlling."}'::jsonb, array['11000000-0000-4000-8000-000000000001']::uuid[], '2026-07-22T17:45:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000013', 'user', '11000000-0000-4000-8000-000000000001', 'action_completed', 'Matt completed the initial mechanical pricing reconciliation.', '{"actionId":"80000000-0000-4000-8000-000000000008"}'::jsonb, '{}', '2026-07-24T18:00:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000014', 'system', null, 'action_dismissed', 'The washout relocation action was dismissed after the logistics plan changed.', '{"actionId":"80000000-0000-4000-8000-000000000015","reason":"The approved logistics revision already removed the condition."}'::jsonb, '{}', '2026-07-21T18:20:00Z'),
+  ('10000000-0000-4000-8000-000000000001', '60000000-0000-4000-8000-000000000016', 'user', '11000000-0000-4000-8000-000000000001', 'comment_added', 'Matt documented the missing owner confirmation for the easement width.', '{"body":"Do not release utility design until the owner identifies the controlling exhibit."}'::jsonb, '{}', '2026-07-24T20:05:00Z');
+
+insert into public.daily_briefs (
+  id, organization_id, brief_date, status, headline, introduction, published_at
+)
+values (
+  '90000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000001',
+  '2026-07-17',
+  'published',
+  'Coordination and procurement need attention',
+  'Yesterday''s brief focused on switchgear review, mechanical coordination, and steel recovery productivity.',
+  '2026-07-17T13:00:00Z'
+);
+
+insert into public.brief_items (
+  id, organization_id, daily_brief_id, risk_id, priority, headline, summary,
+  recommended_next_step
+)
+values
+  ('91000000-0000-4000-8000-000000000004', '10000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000004', 1, 'Escalate switchgear review before procurement float is consumed', 'The review duration is ten days beyond the contractual period.', 'Identify the remaining reviewer and obtain a written approval date.'),
+  ('91000000-0000-4000-8000-000000000005', '10000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000005', 2, 'Close corridor clashes before framing release', 'Nine ceiling-space clashes remain unresolved across coordinated trades.', 'Hold a focused coordination review and record each clash disposition.'),
+  ('91000000-0000-4000-8000-000000000006', '10000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000002', '60000000-0000-4000-8000-000000000006', 3, 'Validate whether steel overtime is producing recovery', 'Overtime is above plan for a second week without verified productivity gain.', 'Compare installed tonnage with overtime hours before approving another recovery week.');
