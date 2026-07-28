@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
-import { useOptimistic, useState, useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 
 import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
 } from "@/app/notifications/actions";
 import type { NotificationView } from "@/features/notifications/types";
+import { useHeaderDropdown } from "@/components/header-dropdown-context";
 
 export function NotificationMenu({
   initialItems,
 }: {
   initialItems: readonly NotificationView[];
 }) {
-  const [open, setOpen] = useState(false);
+  const { rootRef, open, close, toggle } = useHeaderDropdown("notifications");
   const [pending, startTransition] = useTransition();
   const [items, updateOptimistic] = useOptimistic(
     initialItems,
@@ -33,10 +34,10 @@ export function NotificationMenu({
   );
   const unread = items.filter((item) => !item.readAt).length;
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
         className="text-muted hover:bg-background hover:text-ink relative grid size-10 place-items-center rounded-md"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
         aria-expanded={open}
@@ -75,7 +76,7 @@ export function NotificationMenu({
                   key={item.id}
                   href={item.href ?? "#"}
                   onClick={() => {
-                    setOpen(false);
+                    close();
                     if (!item.readAt)
                       startTransition(async () => {
                         updateOptimistic({ kind: "one", id: item.id });

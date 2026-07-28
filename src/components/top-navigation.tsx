@@ -11,6 +11,7 @@ import { NotificationMenu } from "@/features/notifications/notification-menu";
 import { HelpSupportMenu } from "@/components/help-support-menu";
 import { GlobalSearch } from "@/features/workspace/global-search";
 import Link from "next/link";
+import { HeaderDropdownProvider } from "@/components/header-dropdown-context";
 
 export async function TopNavigation() {
   const [organization, membership] = await Promise.all([
@@ -49,37 +50,39 @@ export async function TopNavigation() {
         </p>
       </div>
       <nav aria-label="Utility navigation">
-        <ul className="flex items-center gap-0 sm:gap-1">
-          <li>
-            <GlobalSearch />
-          </li>
-          <li>
-            <HelpSupportMenu />
-          </li>
-          <li>
-            <NotificationMenu initialItems={notifications} />
-          </li>
-          <li>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
-                aria-label="Log out"
+        <HeaderDropdownProvider>
+          <ul className="flex items-center gap-0 sm:gap-1">
+            <li>
+              <GlobalSearch />
+            </li>
+            <li>
+              <HelpSupportMenu />
+            </li>
+            <li>
+              <NotificationMenu initialItems={notifications} />
+            </li>
+            <li>
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
+                  aria-label="Log out"
+                >
+                  <LogOut aria-hidden="true" className="size-5" />
+                </button>
+              </form>
+            </li>
+            <li className="ml-1 hidden sm:block">
+              <Link
+                href="/settings/profile"
+                aria-label={profile?.data?.full_name ?? "Current user"}
+                className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-full text-xs font-semibold"
               >
-                <LogOut aria-hidden="true" className="size-5" />
-              </button>
-            </form>
-          </li>
-          <li className="ml-1 hidden sm:block">
-            <Link
-              href="/settings/profile"
-              aria-label={profile?.data?.full_name ?? "Current user"}
-              className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-full text-xs font-semibold"
-            >
-              {initials}
-            </Link>
-          </li>
-        </ul>
+                {initials}
+              </Link>
+            </li>
+          </ul>
+        </HeaderDropdownProvider>
       </nav>
     </header>
   );

@@ -42,6 +42,36 @@ describe("ProjectService onboarding creation", () => {
     );
   });
 
+  it("creates a project when every optional form field is blank", async () => {
+    const repository: ProjectWriter = {
+      create: vi.fn().mockResolvedValue("project-id"),
+    };
+
+    await expect(
+      new ProjectService(repository).create(context, {
+        name: "Required Fields Only",
+        projectNumber: "SL-002",
+        addressLine1: "",
+        city: "",
+        stateCode: "",
+        postalCode: "",
+        startDate: "",
+        targetCompletionDate: "",
+      }),
+    ).resolves.toBe("project-id");
+
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        addressLine1: null,
+        city: null,
+        stateCode: null,
+        postalCode: null,
+        startDate: null,
+        targetCompletionDate: null,
+      }),
+    );
+  });
+
   it("allows Administrators and denies lower organization roles", async () => {
     const repository: ProjectWriter = {
       create: vi.fn().mockResolvedValue("project-id"),

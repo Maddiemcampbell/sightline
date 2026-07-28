@@ -9,8 +9,9 @@ import {
   ScrollText,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useHeaderDropdown } from "@/components/header-dropdown-context";
 
 export const helpMenuItems = [
   {
@@ -51,29 +52,23 @@ export const helpMenuItems = [
 ] as const;
 
 export function HelpSupportMenu() {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const { rootRef, open, close, toggle } = useHeaderDropdown("help");
   const firstItemRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    function closeOutside(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    }
     function handleKeys(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOpen(false);
+        close();
         rootRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
       }
     }
-    document.addEventListener("mousedown", closeOutside);
     document.addEventListener("keydown", handleKeys);
     requestAnimationFrame(() => firstItemRef.current?.focus());
     return () => {
-      document.removeEventListener("mousedown", closeOutside);
       document.removeEventListener("keydown", handleKeys);
     };
-  }, [open]);
+  }, [close, open, rootRef]);
 
   function navigateMenu(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -94,7 +89,7 @@ export function HelpSupportMenu() {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggle}
         className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
         aria-label="Help and support"
         aria-haspopup="menu"
@@ -117,7 +112,7 @@ export function HelpSupportMenu() {
                 key={label}
                 role="menuitem"
                 href={href}
-                onClick={() => setOpen(false)}
+                onClick={close}
                 className="hover:bg-background flex items-start gap-3 rounded-md px-3 py-2.5"
               >
                 <Icon
@@ -143,7 +138,7 @@ export function HelpSupportMenu() {
           <Link
             href="/settings/privacy"
             role="menuitem"
-            onClick={() => setOpen(false)}
+            onClick={close}
             className="text-deep-green border-border mt-1 block border-t px-3 pt-3 pb-2 text-xs font-semibold"
           >
             Privacy &amp; Trust Center

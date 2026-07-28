@@ -71,7 +71,9 @@ export const globalDirectoryQuerySchema = z
   .string()
   .trim()
   .max(120)
-  .transform((value) => value.replace(/[(),]/g, " ").replace(/\s+/g, " "))
+  .transform((value) =>
+    value.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim(),
+  )
   .refine(
     (value) => z.uuid().safeParse(value).success || value.length >= 2,
     "Enter at least two characters.",

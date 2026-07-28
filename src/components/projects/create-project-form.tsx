@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import {
   createProjectAction,
@@ -27,8 +27,33 @@ export function CreateProjectForm() {
     createProjectAction,
     initialState,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!state.validationAttempt) return;
+    requestAnimationFrame(() => {
+      formRef.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+    });
+  }, [state.validationAttempt]);
+
+  const errorProps = (name: string) => {
+    const invalid = Boolean(state.fieldErrors?.[name]?.[0]);
+    return {
+      "aria-invalid": invalid,
+      "aria-describedby": invalid ? `${name}-error` : undefined,
+    } as const;
+  };
+
   return (
-    <form action={action} className="space-y-6" noValidate>
+    <form
+      ref={formRef}
+      key={state.validationAttempt ?? "initial"}
+      action={action}
+      className="space-y-6"
+      noValidate
+    >
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label htmlFor="project-name" className="text-sm font-semibold">
@@ -40,9 +65,13 @@ export function CreateProjectForm() {
             autoComplete="organization"
             maxLength={200}
             required
+            defaultValue={state.values?.name}
+            {...errorProps("name")}
             className={inputClass}
           />
-          <FieldError errors={state.fieldErrors?.name} />
+          <div id="name-error">
+            <FieldError errors={state.fieldErrors?.name} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-number" className="text-sm font-semibold">
@@ -53,22 +82,30 @@ export function CreateProjectForm() {
             name="projectNumber"
             maxLength={80}
             required
+            defaultValue={state.values?.projectNumber}
+            {...errorProps("projectNumber")}
             className={inputClass}
           />
-          <FieldError errors={state.fieldErrors?.projectNumber} />
+          <div id="projectNumber-error">
+            <FieldError errors={state.fieldErrors?.projectNumber} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-state" className="text-sm font-semibold">
-            State
+            State <span className="text-muted">(optional)</span>
           </label>
           <input
             id="project-state"
             name="stateCode"
             maxLength={2}
             placeholder="CA"
+            defaultValue={state.values?.stateCode}
+            {...errorProps("stateCode")}
             className={`${inputClass} uppercase`}
           />
-          <FieldError errors={state.fieldErrors?.stateCode} />
+          <div id="stateCode-error">
+            <FieldError errors={state.fieldErrors?.stateCode} />
+          </div>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="project-address" className="text-sm font-semibold">
@@ -79,8 +116,13 @@ export function CreateProjectForm() {
             name="addressLine1"
             autoComplete="street-address"
             maxLength={240}
+            defaultValue={state.values?.addressLine1}
+            {...errorProps("addressLine1")}
             className={inputClass}
           />
+          <div id="addressLine1-error">
+            <FieldError errors={state.fieldErrors?.addressLine1} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-city" className="text-sm font-semibold">
@@ -91,8 +133,13 @@ export function CreateProjectForm() {
             name="city"
             autoComplete="address-level2"
             maxLength={120}
+            defaultValue={state.values?.city}
+            {...errorProps("city")}
             className={inputClass}
           />
+          <div id="city-error">
+            <FieldError errors={state.fieldErrors?.city} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-postal" className="text-sm font-semibold">
@@ -103,8 +150,13 @@ export function CreateProjectForm() {
             name="postalCode"
             autoComplete="postal-code"
             maxLength={20}
+            defaultValue={state.values?.postalCode}
+            {...errorProps("postalCode")}
             className={inputClass}
           />
+          <div id="postalCode-error">
+            <FieldError errors={state.fieldErrors?.postalCode} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-start" className="text-sm font-semibold">
@@ -114,9 +166,13 @@ export function CreateProjectForm() {
             id="project-start"
             name="startDate"
             type="date"
+            defaultValue={state.values?.startDate}
+            {...errorProps("startDate")}
             className={inputClass}
           />
-          <FieldError errors={state.fieldErrors?.startDate} />
+          <div id="startDate-error">
+            <FieldError errors={state.fieldErrors?.startDate} />
+          </div>
         </div>
         <div>
           <label htmlFor="project-completion" className="text-sm font-semibold">
@@ -126,9 +182,13 @@ export function CreateProjectForm() {
             id="project-completion"
             name="targetCompletionDate"
             type="date"
+            defaultValue={state.values?.targetCompletionDate}
+            {...errorProps("targetCompletionDate")}
             className={inputClass}
           />
-          <FieldError errors={state.fieldErrors?.targetCompletionDate} />
+          <div id="targetCompletionDate-error">
+            <FieldError errors={state.fieldErrors?.targetCompletionDate} />
+          </div>
         </div>
       </div>
       {state.message ? (
