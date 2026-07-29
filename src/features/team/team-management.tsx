@@ -47,10 +47,12 @@ export function TeamManagement(props: Props) {
   const [sort, setSort] = useState<
     "name" | "last_active" | "invitation_status"
   >("name");
-  const [editing, setEditing] =
-    useState<OrganizationMemberProfile | null>(null);
-  const [assigning, setAssigning] =
-    useState<OrganizationMemberProfile | null>(null);
+  const [editing, setEditing] = useState<OrganizationMemberProfile | null>(
+    null,
+  );
+  const [assigning, setAssigning] = useState<OrganizationMemberProfile | null>(
+    null,
+  );
   const [message, setMessage] = useState("");
   const [resentInvitationUrl, setResentInvitationUrl] = useState("");
   const [pending, startTransition] = useTransition();
@@ -95,8 +97,7 @@ export function TeamManagement(props: Props) {
       const result = await action({}, formData);
       if (!result.ok) rollback();
       setMessage(result.message ?? "");
-      if (result.invitationUrl)
-        setResentInvitationUrl(result.invitationUrl);
+      if (result.invitationUrl) setResentInvitationUrl(result.invitationUrl);
       if (result.ok && result.changedMembershipId && result.role) {
         setMembers((current) =>
           current.map((member) =>
@@ -157,7 +158,9 @@ export function TeamManagement(props: Props) {
     <div className="mx-auto max-w-6xl px-[var(--page-gutter)] py-8 sm:py-10">
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-muted text-sm font-semibold">Organization settings</p>
+          <p className="text-muted text-sm font-semibold">
+            Organization settings
+          </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
             Team management
           </h1>
@@ -173,7 +176,10 @@ export function TeamManagement(props: Props) {
       {props.canManage ? (
         <Card className="mt-7">
           <h2 className="text-lg font-semibold">Invite a teammate</h2>
-          <form action={inviteAction} className="mt-4 grid gap-3 sm:grid-cols-[1fr_13rem_auto]">
+          <form
+            action={inviteAction}
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_13rem_auto]"
+          >
             <label className="grid gap-1 text-sm font-medium">
               Email
               <input
@@ -258,9 +264,7 @@ export function TeamManagement(props: Props) {
             onChange={(event) =>
               setSort(
                 event.target.value as
-                  | "name"
-                  | "last_active"
-                  | "invitation_status",
+                  "name" | "last_active" | "invitation_status",
               )
             }
             className="border-border bg-surface h-10 rounded-md border px-3 text-sm"
@@ -292,8 +296,12 @@ export function TeamManagement(props: Props) {
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h3 className="truncate font-semibold">{member.fullName}</h3>
-                    <p className="text-muted truncate text-sm">{member.email}</p>
+                    <h3 className="truncate font-semibold">
+                      {member.fullName}
+                    </h3>
+                    <p className="text-muted truncate text-sm">
+                      {member.email}
+                    </p>
                   </div>
                   <span className="bg-background rounded-full px-2.5 py-1 text-xs font-semibold">
                     {roleLabels[member.role]}
@@ -302,7 +310,9 @@ export function TeamManagement(props: Props) {
                 <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <dt className="text-muted">Last active</dt>
-                    <dd className="mt-1">{formatLastActive(member.lastActiveAt)}</dd>
+                    <dd className="mt-1">
+                      {formatLastActive(member.lastActiveAt)}
+                    </dd>
                   </div>
                   <div>
                     <dt className="text-muted">Invitation status</dt>
@@ -431,7 +441,10 @@ export function TeamManagement(props: Props) {
       </section>
 
       {message ? (
-        <p role="status" className="bg-surface border-border fixed right-5 bottom-5 rounded-lg border px-4 py-3 shadow-lg">
+        <p
+          role="status"
+          className="bg-surface border-border fixed right-5 bottom-5 rounded-lg border px-4 py-3 shadow-lg"
+        >
           {message}
         </p>
       ) : null}

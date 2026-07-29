@@ -12,12 +12,11 @@ describe("internal platform administrator policy", () => {
   });
 
   it("accepts only exact UUID allowlist matches", () => {
-    expect(isInternalAdminAuthUser(operator, ` ${operator.toUpperCase()} `)).toBe(true);
     expect(
-      isInternalAdminAuthUser(
-        "10000000-0000-4000-8000-000000000002",
-        operator,
-      ),
+      isInternalAdminAuthUser(operator, ` ${operator.toUpperCase()} `),
+    ).toBe(true);
+    expect(
+      isInternalAdminAuthUser("10000000-0000-4000-8000-000000000002", operator),
     ).toBe(false);
   });
 
@@ -25,4 +24,3 @@ describe("internal platform administrator policy", () => {
     expect(() => readInternalAdminAuthUserIds("not-a-user-id")).toThrow();
   });
 });
-

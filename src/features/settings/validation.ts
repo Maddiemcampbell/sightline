@@ -13,7 +13,15 @@ export const organizationSettingsSchema = z.object({
   timezone: z.string().refine(isValidTimezone, "Choose a valid timezone."),
   defaultCurrency: z.string().regex(/^[A-Z]{3}$/),
   industry: z.string().trim().max(120),
-  companySize: z.enum(["", "1-10", "11-50", "51-200", "201-500", "501-1000", "1001+"]),
+  companySize: z.enum([
+    "",
+    "1-10",
+    "11-50",
+    "51-200",
+    "201-500",
+    "501-1000",
+    "1001+",
+  ]),
 });
 
 export const notificationSettingsSchema = z.object({

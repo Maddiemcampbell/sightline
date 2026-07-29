@@ -35,7 +35,10 @@ export function AuthCard({
             Sightline
           </span>
         </Link>
-        <h1 id="auth-title" className="text-ink text-2xl font-bold tracking-tight">
+        <h1
+          id="auth-title"
+          className="text-ink text-2xl font-bold tracking-tight"
+        >
           {title}
         </h1>
         <p className="text-muted mt-2 text-sm leading-6">{description}</p>

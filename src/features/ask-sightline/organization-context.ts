@@ -96,19 +96,27 @@ export function buildOrganizationQuestionContext({
 
   const citations: OrganizationCitation[] = [
     ...(riskAnalytics
-      ? [{
-          id:"observation:authoritative-risk-analytics",
-          entityType:"observation" as const,
-          title:"Authoritative portfolio risk analytics",
-          excerpt:sanitizeUntrustedExcerpt([
-            `${riskAnalytics.summary.activeRisks} active risks; ${riskAnalytics.summary.highCriticalRisks} high or critical; ${riskAnalytics.summary.affectedProjects} affected projects.`,
-            ...riskAnalytics.drivers.slice(0,5).map(driver =>
-              `${driver.label}: ${driver.activeRiskCount} active, ${driver.highCriticalCount} high or critical, ${driver.affectedProjectCount} projects. Ranking reasons: ${driver.rankReasons.join("; ")}.`),
-            "Expected exposure unavailable because probability has not been assessed.",
-            `Calculation ${riskAnalytics.metadata.calculationVersion}; taxonomy ${riskAnalytics.metadata.taxonomyVersion}; quality ${riskAnalytics.metadata.quality}.`,
-          ].join(" ")),
-          href:"/reports",
-        }]
+      ? [
+          {
+            id: "observation:authoritative-risk-analytics",
+            entityType: "observation" as const,
+            title: "Authoritative portfolio risk analytics",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                `${riskAnalytics.summary.activeRisks} active risks; ${riskAnalytics.summary.highCriticalRisks} high or critical; ${riskAnalytics.summary.affectedProjects} affected projects.`,
+                ...riskAnalytics.drivers
+                  .slice(0, 5)
+                  .map(
+                    (driver) =>
+                      `${driver.label}: ${driver.activeRiskCount} active, ${driver.highCriticalCount} high or critical, ${driver.affectedProjectCount} projects. Ranking reasons: ${driver.rankReasons.join("; ")}.`,
+                  ),
+                "Expected exposure unavailable because probability has not been assessed.",
+                `Calculation ${riskAnalytics.metadata.calculationVersion}; taxonomy ${riskAnalytics.metadata.taxonomyVersion}; quality ${riskAnalytics.metadata.quality}.`,
+              ].join(" "),
+            ),
+            href: "/reports",
+          },
+        ]
       : []),
     ...(financialAnalytics
       ? [

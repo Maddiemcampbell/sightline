@@ -11,9 +11,11 @@ const idSchema = z.uuid();
 
 export async function markNotificationReadAction(id: string) {
   const membership = await requireCurrentMembership();
-  await new NotificationRepository(
-    await createServerSupabaseClient(),
-  ).markRead(membership.organizationId, membership.id, idSchema.parse(id));
+  await new NotificationRepository(await createServerSupabaseClient()).markRead(
+    membership.organizationId,
+    membership.id,
+    idSchema.parse(id),
+  );
   revalidatePath("/");
 }
 

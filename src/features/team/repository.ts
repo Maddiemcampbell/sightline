@@ -57,14 +57,11 @@ export class TeamRepository {
     actorMembershipId: string,
     targetMembershipId: string,
   ): Promise<void> {
-    const { error } = await this.client.rpc(
-      "transfer_organization_ownership",
-      {
-        target_organization_id: organizationId,
-        actor_membership_id: actorMembershipId,
-        target_membership_id: targetMembershipId,
-      },
-    );
+    const { error } = await this.client.rpc("transfer_organization_ownership", {
+      target_organization_id: organizationId,
+      actor_membership_id: actorMembershipId,
+      target_membership_id: targetMembershipId,
+    });
     if (error) throw new Error(error.message);
   }
 
@@ -159,16 +156,14 @@ export class TeamRepository {
     eventType: string;
     payload: Json;
   }): Promise<void> {
-    const { error } = await this.client
-      .from("notifications")
-      .insert({
-        organization_id: input.organizationId,
-        recipient_membership_id: input.recipientMembershipId,
-        notification_type: normalizeNotificationType(input.eventType),
-        title: notificationTitle(input.eventType),
-        body: "",
-        payload: input.payload,
-      });
+    const { error } = await this.client.from("notifications").insert({
+      organization_id: input.organizationId,
+      recipient_membership_id: input.recipientMembershipId,
+      notification_type: normalizeNotificationType(input.eventType),
+      title: notificationTitle(input.eventType),
+      body: "",
+      payload: input.payload,
+    });
     if (error) throw new Error(error.message);
   }
 

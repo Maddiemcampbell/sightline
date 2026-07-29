@@ -34,7 +34,11 @@ export function buildExportArtifact(
         data: Object.fromEntries(datasets.map((set) => [set.name, set.rows])),
       }),
     );
-    return artifact(contents, `${safeName(manifest.organizationName)}-export.json`, "application/json");
+    return artifact(
+      contents,
+      `${safeName(manifest.organizationName)}-export.json`,
+      "application/json",
+    );
   }
   const csvFiles = datasets.map((set) => ({
     name: `${set.name}.csv`,
@@ -48,11 +52,16 @@ export function buildExportArtifact(
           {
             name: "data.json",
             contents: Buffer.from(
-              prettyJson(Object.fromEntries(datasets.map((set) => [set.name, set.rows]))),
+              prettyJson(
+                Object.fromEntries(datasets.map((set) => [set.name, set.rows])),
+              ),
             ),
           },
         ]
-      : [{ name: "manifest.json", contents: Buffer.from(manifestJson) }, ...csvFiles];
+      : [
+          { name: "manifest.json", contents: Buffer.from(manifestJson) },
+          ...csvFiles,
+        ];
   return artifact(
     createZip(files),
     `${safeName(manifest.organizationName)}-export-${format}.zip`,
@@ -72,10 +81,14 @@ function artifact(contents: Buffer, name: string, mimeType: string) {
 export function toCsv(rows: readonly Record<string, unknown>[]) {
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
   if (!columns.length) return "";
-  return [
-    columns.map(csvCell).join(","),
-    ...rows.map((row) => columns.map((column) => csvCell(row[column])).join(",")),
-  ].join("\r\n") + "\r\n";
+  return (
+    [
+      columns.map(csvCell).join(","),
+      ...rows.map((row) =>
+        columns.map((column) => csvCell(row[column])).join(","),
+      ),
+    ].join("\r\n") + "\r\n"
+  );
 }
 
 function csvCell(value: unknown) {
@@ -94,7 +107,12 @@ function prettyJson(value: unknown) {
 }
 
 function safeName(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "sightline";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "sightline"
+  );
 }
 
 export function createZip(

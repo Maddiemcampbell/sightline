@@ -11,26 +11,26 @@ verified in the target Supabase and hosting projects.
 
 ## Security checklist
 
-| Area | Status | Evidence |
-| --- | --- | --- |
-| Authentication | Pass | Supabase Auth; verified-email enforcement; password reset; server-side `getUser()` validation |
-| Sessions | Pass | HTTP-only, SameSite=Lax, Secure-in-production cookies; refresh through SSR client |
-| Route protection | Pass | Proxy provides early redirects; layouts and request helpers repeat validation |
-| Authorization | Pass | Central capability service; service/action/route enforcement; future-role deny-by-default matrix |
-| Tenant isolation | Pass | Organization context, repository predicates, foreign keys, RLS, and pgTAP isolation coverage |
-| Uploads | Pass | Server authorization, 10 MB limit, signature/MIME validation, sanitized opaque paths, private bucket |
-| Downloads/previews | Pass | Server authorization and ownership lookup; 60-second signed URLs; no public object paths |
-| API routes | Pass | Authenticated principals, same-origin mutation checks, generic public errors, no-store responses |
-| Server Actions | Pass | Principal and centralized capability checks; Next.js origin validation retained |
-| Scheduled jobs | Pass | Required constant-time bearer secret, organization iteration, atomic email delivery claim |
-| Secrets/environment | Pass | Server schema validation; required `APP_URL` and 32+ character `CRON_SECRET`; no tracked secrets |
-| Headers | Pass | Nonce CSP, HSTS, frame denial, MIME sniff prevention, restrictive permissions and referrer policies |
-| Caching | Pass | Authenticated and API responses are private/no-store; nonce responses are dynamic |
-| CSRF | Pass | Same-origin `Origin`/Fetch Metadata checks on mutating route handlers; SameSite cookies |
-| Rate limiting | Partial | Upload limit exists; Supabase Auth limits must be configured; general mutation/AI limits are operational work |
-| Audit | Pass | Append-only audit table/service/viewer, correlation IDs, RLS, privileged viewer |
-| Logging/errors | Partial | Public errors are sanitized; a production log sink, alerting, and redaction policy remain operational work |
-| Dependencies | Pass with CI control | Next 16.2.10 and React 19.2.4 exceed reviewed security patch floors; registry audit must run in connected CI |
+| Area                | Status               | Evidence                                                                                                      |
+| ------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Authentication      | Pass                 | Supabase Auth; verified-email enforcement; password reset; server-side `getUser()` validation                 |
+| Sessions            | Pass                 | HTTP-only, SameSite=Lax, Secure-in-production cookies; refresh through SSR client                             |
+| Route protection    | Pass                 | Proxy provides early redirects; layouts and request helpers repeat validation                                 |
+| Authorization       | Pass                 | Central capability service; service/action/route enforcement; future-role deny-by-default matrix              |
+| Tenant isolation    | Pass                 | Organization context, repository predicates, foreign keys, RLS, and pgTAP isolation coverage                  |
+| Uploads             | Pass                 | Server authorization, 10 MB limit, signature/MIME validation, sanitized opaque paths, private bucket          |
+| Downloads/previews  | Pass                 | Server authorization and ownership lookup; 60-second signed URLs; no public object paths                      |
+| API routes          | Pass                 | Authenticated principals, same-origin mutation checks, generic public errors, no-store responses              |
+| Server Actions      | Pass                 | Principal and centralized capability checks; Next.js origin validation retained                               |
+| Scheduled jobs      | Pass                 | Required constant-time bearer secret, organization iteration, atomic email delivery claim                     |
+| Secrets/environment | Pass                 | Server schema validation; required `APP_URL` and 32+ character `CRON_SECRET`; no tracked secrets              |
+| Headers             | Pass                 | Nonce CSP, HSTS, frame denial, MIME sniff prevention, restrictive permissions and referrer policies           |
+| Caching             | Pass                 | Authenticated and API responses are private/no-store; nonce responses are dynamic                             |
+| CSRF                | Pass                 | Same-origin `Origin`/Fetch Metadata checks on mutating route handlers; SameSite cookies                       |
+| Rate limiting       | Partial              | Upload limit exists; Supabase Auth limits must be configured; general mutation/AI limits are operational work |
+| Audit               | Pass                 | Append-only audit table/service/viewer, correlation IDs, RLS, privileged viewer                               |
+| Logging/errors      | Partial              | Public errors are sanitized; a production log sink, alerting, and redaction policy remain operational work    |
+| Dependencies        | Pass with CI control | Next 16.2.10 and React 19.2.4 exceed reviewed security patch floors; registry audit must run in connected CI  |
 
 ## Release blockers
 

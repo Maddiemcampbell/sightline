@@ -31,13 +31,15 @@ export class CollaborationRepository {
     return memberships.flatMap((membership) => {
       const user = userById.get(membership.application_user_id);
       return user
-        ? [{
-            membershipId: membership.id,
-            userId: user.id,
-            name: user.full_name,
-            username: usernameFor(user.full_name, user.email),
-            avatarUrl: membership.avatar_url,
-          }]
+        ? [
+            {
+              membershipId: membership.id,
+              userId: user.id,
+              name: user.full_name,
+              username: usernameFor(user.full_name, user.email),
+              avatarUrl: membership.avatar_url,
+            },
+          ]
         : [];
     });
   }
@@ -88,29 +90,35 @@ export class CollaborationRepository {
         resolved: 0,
       };
       for (const reaction of commentReactions) counts[reaction.reaction] += 1;
-      return [{
-        id: comment.id,
-        bodyMarkdown: comment.body_markdown,
-        createdAt: comment.created_at,
-        editedAt: comment.edited_at,
-        deletedAt: comment.deleted_at,
-        author,
-        mentions: mentions.data
-          .filter((mention) => mention.comment_id === comment.id)
-          .flatMap((mention) =>
-            collaboratorByMembership.get(mention.mentioned_membership_id) ?? [],
-          ),
-        reactions: counts,
-        reactedByMe: commentReactions
-          .filter((reaction) => reaction.membership_id === membershipId)
-          .map((reaction) => reaction.reaction),
-        canEdit: comment.author_membership_id === membershipId && !comment.deleted_at,
-        canDelete:
-          !comment.deleted_at &&
-          (comment.author_membership_id === membershipId ||
-            context.organizationRole === "owner" ||
-            context.organizationRole === "administrator"),
-      }];
+      return [
+        {
+          id: comment.id,
+          bodyMarkdown: comment.body_markdown,
+          createdAt: comment.created_at,
+          editedAt: comment.edited_at,
+          deletedAt: comment.deleted_at,
+          author,
+          mentions: mentions.data
+            .filter((mention) => mention.comment_id === comment.id)
+            .flatMap(
+              (mention) =>
+                collaboratorByMembership.get(mention.mentioned_membership_id) ??
+                [],
+            ),
+          reactions: counts,
+          reactedByMe: commentReactions
+            .filter((reaction) => reaction.membership_id === membershipId)
+            .map((reaction) => reaction.reaction),
+          canEdit:
+            comment.author_membership_id === membershipId &&
+            !comment.deleted_at,
+          canDelete:
+            !comment.deleted_at &&
+            (comment.author_membership_id === membershipId ||
+              context.organizationRole === "owner" ||
+              context.organizationRole === "administrator"),
+        },
+      ];
     });
   }
 }

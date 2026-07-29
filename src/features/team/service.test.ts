@@ -13,9 +13,7 @@ const organization = {
   createdByAuthUserId: "20000000-0000-4000-8000-000000000001",
 } as const;
 
-function actor(
-  role: OrganizationMembership["role"],
-): OrganizationMembership {
+function actor(role: OrganizationMembership["role"]): OrganizationMembership {
   return {
     id: "30000000-0000-4000-8000-000000000001",
     organizationId: organization.id,

@@ -9,8 +9,14 @@ import { isExportDownloadAllowed } from "@/features/data-exports/download-securi
 import { canExportOrganizationData } from "@/lib/auth/authorization";
 
 const owner = { organizationId: "org-a", organizationRole: "owner" as const };
-const admin = { organizationId: "org-a", organizationRole: "administrator" as const };
-const manager = { organizationId: "org-a", organizationRole: "manager" as const };
+const admin = {
+  organizationId: "org-a",
+  organizationRole: "administrator" as const,
+};
+const manager = {
+  organizationId: "org-a",
+  organizationRole: "manager" as const,
+};
 
 describe("organization data export", () => {
   it("restricts exports to owners and administrators", () => {
@@ -28,7 +34,9 @@ describe("organization data export", () => {
       generatedAt: "2026-07-24T00:00:00.000Z",
       expiresAt: "2026-07-31T00:00:00.000Z",
       format: "zip",
-      datasets: [{ name: "projects", records: 1, files: ["projects.csv", "data.json"] }],
+      datasets: [
+        { name: "projects", records: 1, files: ["projects.csv", "data.json"] },
+      ],
       exclusions: ["credentials"],
     };
     const artifact = buildExportArtifact("zip", manifest, [
@@ -43,7 +51,7 @@ describe("organization data export", () => {
   });
 
   it("escapes formulas and quotes in CSV data", () => {
-    const csv = toCsv([{ name: "=HYPERLINK(\"bad\")", note: "A \"quote\"" }]);
+    const csv = toCsv([{ name: '=HYPERLINK("bad")', note: 'A "quote"' }]);
     expect(csv).toContain("'=HYPERLINK");
     expect(csv).toContain('A ""quote""');
   });
@@ -59,12 +67,22 @@ describe("organization data export", () => {
     expect(isExportDownloadAllowed(owner, ready, now)).toBe(true);
     expect(isExportDownloadAllowed(admin, ready, now)).toBe(true);
     expect(isExportDownloadAllowed(manager, ready, now)).toBe(false);
-    expect(isExportDownloadAllowed(
-      { organizationId: "org-b", organizationRole: "owner" },
-      ready,
-      now,
-    )).toBe(false);
-    expect(isExportDownloadAllowed(owner, { ...ready, status: "processing" }, now)).toBe(false);
-    expect(isExportDownloadAllowed(owner, ready, Date.parse("2026-08-02T00:00:00.000Z"))).toBe(false);
+    expect(
+      isExportDownloadAllowed(
+        { organizationId: "org-b", organizationRole: "owner" },
+        ready,
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isExportDownloadAllowed(owner, { ...ready, status: "processing" }, now),
+    ).toBe(false);
+    expect(
+      isExportDownloadAllowed(
+        owner,
+        ready,
+        Date.parse("2026-08-02T00:00:00.000Z"),
+      ),
+    ).toBe(false);
   });
 });

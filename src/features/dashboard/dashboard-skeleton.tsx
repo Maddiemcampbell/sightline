@@ -8,14 +8,33 @@ export function DashboardSkeleton() {
       aria-label="Preparing your executive dashboard"
     >
       <span className="sr-only">Preparing your executive dashboard</span>
-      <div className="bg-border h-64 rounded-2xl motion-safe:animate-pulse" aria-hidden="true" />
+      <div
+        className="bg-border h-64 rounded-2xl motion-safe:animate-pulse"
+        aria-hidden="true"
+      />
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="grid gap-4 sm:grid-cols-2">
-          <LoadingState label="Loading portfolio overview" rows={4} className="sm:col-span-2 min-h-52" />
-          <LoadingState label="Loading portfolio risk heatmap" rows={6} className="min-h-72" />
-          <LoadingState label="Loading recent intelligence" rows={5} className="min-h-72" />
+          <LoadingState
+            label="Loading portfolio overview"
+            rows={4}
+            className="min-h-52 sm:col-span-2"
+          />
+          <LoadingState
+            label="Loading portfolio risk heatmap"
+            rows={6}
+            className="min-h-72"
+          />
+          <LoadingState
+            label="Loading recent intelligence"
+            rows={5}
+            className="min-h-72"
+          />
         </div>
-        <LoadingState label="Loading AI assistant" rows={8} className="min-h-[30rem]" />
+        <LoadingState
+          label="Loading AI assistant"
+          rows={8}
+          className="min-h-[30rem]"
+        />
       </div>
     </div>
   );

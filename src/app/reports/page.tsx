@@ -84,21 +84,31 @@ export default async function ReportsPage() {
           </Card>
         ))}
       </section>
-      <section className="border-border bg-surface mt-6 rounded-xl border p-6" aria-labelledby="risk-driver-report">
-        <h2 id="risk-driver-report" className="text-lg font-semibold">Authoritative risk drivers</h2>
+      <section
+        className="border-border bg-surface mt-6 rounded-xl border p-6"
+        aria-labelledby="risk-driver-report"
+      >
+        <h2 id="risk-driver-report" className="text-lg font-semibold">
+          Authoritative risk drivers
+        </h2>
         <p className="text-muted mt-1 text-sm">
           Ranked with {riskAnalytics.metadata.calculationVersion}. Historical
           trend is unavailable until the first monthly snapshot is captured.
         </p>
         <ol className="mt-4 grid gap-3 md:grid-cols-2">
-          {riskAnalytics.drivers.slice(0,6).map(driver=>(
-            <li key={driver.category} className="border-border rounded-lg border p-4">
+          {riskAnalytics.drivers.slice(0, 6).map((driver) => (
+            <li
+              key={driver.category}
+              className="border-border rounded-lg border p-4"
+            >
               <p className="font-semibold">{driver.label}</p>
               <p className="text-muted mt-1 text-sm">
-                {driver.activeRiskCount} active · {driver.highCriticalCount} high/critical ·{" "}
-                {driver.affectedProjectCount} projects
+                {driver.activeRiskCount} active · {driver.highCriticalCount}{" "}
+                high/critical · {driver.affectedProjectCount} projects
               </p>
-              <p className="text-muted mt-2 text-xs">{driver.rankReasons.join(" · ")}</p>
+              <p className="text-muted mt-2 text-xs">
+                {driver.rankReasons.join(" · ")}
+              </p>
             </li>
           ))}
         </ol>

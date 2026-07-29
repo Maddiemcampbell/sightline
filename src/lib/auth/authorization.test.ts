@@ -119,9 +119,7 @@ describe("central authorization service", () => {
         "comment:create",
       ],
     };
-    for (const organizationRole of Object.keys(
-      allowed,
-    ) as OrganizationRole[]) {
+    for (const organizationRole of Object.keys(allowed) as OrganizationRole[]) {
       for (const permission of permissions)
         expect(can({ ...owner, organizationRole }, permission)).toBe(
           allowed[organizationRole].includes(permission),

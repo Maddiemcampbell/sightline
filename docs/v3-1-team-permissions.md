@@ -15,24 +15,24 @@ assignments.
 
 ## Capability matrix
 
-| Capability | Owner | Administrator | Manager | Contributor |
-| --- | --- | --- | --- | --- |
-| View all organization projects | Yes | Yes | No | No |
-| View assigned projects | Yes | Yes | Yes | Yes |
-| Edit projects | Yes | Yes | No | No |
-| View risks and documents in accessible projects | Yes | Yes | Yes | Yes |
-| Manage and resolve risks | Yes | Yes | Yes | No |
-| Manage and assign actions | Yes | Yes | Yes | No |
-| Complete own assigned actions | Yes | Yes | Yes | Yes |
-| Upload documents | Yes | Yes | Yes | Yes |
-| Edit document metadata | Yes | Yes | Yes | No |
-| Comment | Yes | Yes | Yes | Yes |
-| Use AI features | Yes | Yes | Yes | No |
-| Manage project members | Yes | Yes | Yes | No |
-| Invite/remove members and change roles | Yes | Yes, except owners/admins | No | No |
-| Manage organization settings/integrations | Yes | Yes | No | No |
-| Transfer ownership | Yes | No | No | No |
-| View financial exposure/internal audit | Yes | Limited by capability | No | No |
+| Capability                                      | Owner | Administrator             | Manager | Contributor |
+| ----------------------------------------------- | ----- | ------------------------- | ------- | ----------- |
+| View all organization projects                  | Yes   | Yes                       | No      | No          |
+| View assigned projects                          | Yes   | Yes                       | Yes     | Yes         |
+| Edit projects                                   | Yes   | Yes                       | No      | No          |
+| View risks and documents in accessible projects | Yes   | Yes                       | Yes     | Yes         |
+| Manage and resolve risks                        | Yes   | Yes                       | Yes     | No          |
+| Manage and assign actions                       | Yes   | Yes                       | Yes     | No          |
+| Complete own assigned actions                   | Yes   | Yes                       | Yes     | Yes         |
+| Upload documents                                | Yes   | Yes                       | Yes     | Yes         |
+| Edit document metadata                          | Yes   | Yes                       | Yes     | No          |
+| Comment                                         | Yes   | Yes                       | Yes     | Yes         |
+| Use AI features                                 | Yes   | Yes                       | Yes     | No          |
+| Manage project members                          | Yes   | Yes                       | Yes     | No          |
+| Invite/remove members and change roles          | Yes   | Yes, except owners/admins | No      | No          |
+| Manage organization settings/integrations       | Yes   | Yes                       | No      | No          |
+| Transfer ownership                              | Yes   | No                        | No      | No          |
+| View financial exposure/internal audit          | Yes   | Limited by capability     | No      | No          |
 
 Administrators cannot create another Owner, modify an Owner, downgrade another
 Administrator, or remove another Administrator. Ownership transfer is a single

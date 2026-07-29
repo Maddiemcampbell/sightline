@@ -62,7 +62,10 @@ function CommentItem({
               {new Date(comment.createdAt).toLocaleString()}
             </time>
             {comment.editedAt && (
-              <span className="text-muted text-xs" title="Edit history retained">
+              <span
+                className="text-muted text-xs"
+                title="Edit history retained"
+              >
                 edited
               </span>
             )}
@@ -128,7 +131,8 @@ function CommentItem({
                       )
                     }
                   >
-                    {reactionLabels[reaction]} {comment.reactions[reaction] || ""}
+                    {reactionLabels[reaction]}{" "}
+                    {comment.reactions[reaction] || ""}
                   </button>
                 ),
               )}

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ProjectAccessRepository } from "@/features/project-access/repository";
 import { ProjectAccessService } from "@/features/project-access/service";
-import { AuthorizationError, type ActorContext } from "@/lib/auth/authorization";
+import {
+  AuthorizationError,
+  type ActorContext,
+} from "@/lib/auth/authorization";
 
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const projectId = "20000000-0000-4000-8000-000000000001";

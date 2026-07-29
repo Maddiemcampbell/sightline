@@ -3,11 +3,12 @@ import { z } from "zod";
 const internalAdminListSchema = z
   .string()
   .optional()
-  .transform((value) =>
-    value
-      ?.split(",")
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean) ?? [],
+  .transform(
+    (value) =>
+      value
+        ?.split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean) ?? [],
   )
   .pipe(z.array(z.uuid()));
 
@@ -21,4 +22,3 @@ export function isInternalAdminAuthUser(
 ) {
   return readInternalAdminAuthUserIds(value).has(authUserId.toLowerCase());
 }
-

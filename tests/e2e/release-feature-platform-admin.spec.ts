@@ -72,9 +72,9 @@ test("operator records and inspects a release with linked flags", async ({
   await form
     .getByRole("button", { name: "Record release" })
     .evaluate((button: HTMLButtonElement) => button.click());
-  await expect.poll(() => releaseExists(identifier), { timeout: 30_000 }).toBe(
-    true,
-  );
+  await expect
+    .poll(() => releaseExists(identifier), { timeout: 30_000 })
+    .toBe(true);
   const releaseId = await findReleaseId(identifier);
   if (!releaseId) throw new Error("Persisted release could not be loaded.");
   const detailPage = await page.context().newPage();

@@ -20,22 +20,26 @@ export class DataExportService {
     assertAuthorized(canExportOrganizationData(context));
     const { format } = dataExportRequestSchema.parse(input);
     if ((await this.repository.countActive(context.organizationId)) >= 3)
-      throw new Error("Wait for an existing export to finish before requesting another.");
-    const [{ data: membership, error: membershipError }, { data: user, error: userError }] =
-      await Promise.all([
-        this.client
-          .from("organization_memberships")
-          .select("id")
-          .eq("organization_id", context.organizationId)
-          .eq("auth_user_id", context.authUserId)
-          .single(),
-        this.client
-          .from("users")
-          .select("full_name,email")
-          .eq("organization_id", context.organizationId)
-          .eq("id", context.userId)
-          .single(),
-      ]);
+      throw new Error(
+        "Wait for an existing export to finish before requesting another.",
+      );
+    const [
+      { data: membership, error: membershipError },
+      { data: user, error: userError },
+    ] = await Promise.all([
+      this.client
+        .from("organization_memberships")
+        .select("id")
+        .eq("organization_id", context.organizationId)
+        .eq("auth_user_id", context.authUserId)
+        .single(),
+      this.client
+        .from("users")
+        .select("full_name,email")
+        .eq("organization_id", context.organizationId)
+        .eq("id", context.userId)
+        .single(),
+    ]);
     if (membershipError) throw new Error(membershipError.message);
     if (userError) throw new Error(userError.message);
     return this.repository.create({
@@ -48,4 +52,3 @@ export class DataExportService {
     });
   }
 }
-

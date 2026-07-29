@@ -122,7 +122,9 @@ export function HelpSupportMenu() {
               aria-hidden="true"
             />
             <span>
-              <span className="block text-sm font-semibold">Report a problem</span>
+              <span className="block text-sm font-semibold">
+                Report a problem
+              </span>
               <span className="text-muted mt-0.5 block text-xs">
                 Send a privacy-safe report to the Sightline team.
               </span>

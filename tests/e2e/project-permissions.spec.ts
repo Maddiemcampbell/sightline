@@ -15,7 +15,9 @@ test("shows project members and opens the project access dialog", async ({
 }) => {
   await page.goto(`/projects/${projectId}`);
   await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Manage access" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Manage access" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Manage access" }).click();
   await expect(
     page.getByRole("dialog", { name: "Project access" }),

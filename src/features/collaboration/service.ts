@@ -69,7 +69,10 @@ export class CollaborationService {
         ),
       );
     }
-    return { id: data.id, mentionedUserIds: mentions.map((item) => item.userId) };
+    return {
+      id: data.id,
+      mentionedUserIds: mentions.map((item) => item.userId),
+    };
   }
 
   async editComment(input: {
@@ -79,7 +82,10 @@ export class CollaborationService {
     bodyMarkdown: string;
   }) {
     const comment = await this.requireComment(input.context, input.commentId);
-    if (comment.author_membership_id !== input.actorMembershipId || comment.deleted_at)
+    if (
+      comment.author_membership_id !== input.actorMembershipId ||
+      comment.deleted_at
+    )
       throw new Error("Only the comment author can edit this comment.");
     const mentions = await this.resolveMentions(
       input.context.organizationId,
@@ -194,7 +200,10 @@ export class CollaborationService {
       ]);
     if (error || userError) throw new Error((error ?? userError)!.message);
     const membershipByUser = new Map(
-      memberships.map((membership) => [membership.application_user_id, membership]),
+      memberships.map((membership) => [
+        membership.application_user_id,
+        membership,
+      ]),
     );
     return users.flatMap((user) => {
       const membership = membershipByUser.get(user.id);

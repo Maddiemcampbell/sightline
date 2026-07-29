@@ -51,7 +51,9 @@ export function ProjectPermissions({
             Project roles control access within this project.
           </p>
         </div>
-        {canAssign ? <Button onClick={() => setOpen(true)}>Manage access</Button> : null}
+        {canAssign ? (
+          <Button onClick={() => setOpen(true)}>Manage access</Button>
+        ) : null}
       </div>
       {members.length ? (
         <div className="mt-5 overflow-x-auto">
@@ -154,7 +156,9 @@ function ProjectAccessDialog({
               Assign or remove multiple members at once.
             </p>
           </div>
-          <Button intent="secondary" onClick={onClose}>Close</Button>
+          <Button intent="secondary" onClick={onClose}>
+            Close
+          </Button>
         </div>
 
         <form action={assignAction} className="mt-6">
@@ -163,8 +167,15 @@ function ProjectAccessDialog({
             <legend className="font-semibold">Organization members</legend>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {eligibleMembers.map((member) => (
-                <label key={member.membershipId} className="border-border flex gap-2 rounded-md border p-3 text-sm">
-                  <input type="checkbox" name="membershipId" value={member.membershipId} />
+                <label
+                  key={member.membershipId}
+                  className="border-border flex gap-2 rounded-md border p-3 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    name="membershipId"
+                    value={member.membershipId}
+                  />
                   <span>
                     <strong className="block">{member.fullName}</strong>
                     <span className="text-muted">{member.email}</span>
@@ -176,49 +187,109 @@ function ProjectAccessDialog({
           <div className="mt-4 flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-sm font-medium">
               Project role
-              <select name="role" defaultValue="contributor" className="border-border bg-background h-10 rounded-md border px-3">
-                {roles.map((role) => <option key={role} value={role} className="capitalize">{role}</option>)}
+              <select
+                name="role"
+                defaultValue="contributor"
+                className="border-border bg-background h-10 rounded-md border px-3"
+              >
+                {roles.map((role) => (
+                  <option key={role} value={role} className="capitalize">
+                    {role}
+                  </option>
+                ))}
               </select>
             </label>
             <Button type="submit" disabled={assigning}>
               {assigning ? "Assigning…" : "Assign selected"}
             </Button>
           </div>
-          {assignState.message ? <p role="status" className="text-muted mt-2 text-sm">{assignState.message}</p> : null}
+          {assignState.message ? (
+            <p role="status" className="text-muted mt-2 text-sm">
+              {assignState.message}
+            </p>
+          ) : null}
         </form>
 
-        <form action={removeAction} className="border-border mt-7 border-t pt-6">
+        <form
+          action={removeAction}
+          className="border-border mt-7 border-t pt-6"
+        >
           <input type="hidden" name="projectId" value={projectId} />
           <fieldset>
             <legend className="font-semibold">Remove existing access</legend>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {members.map((member) => (
-                <label key={member.membershipId} className="border-border flex gap-2 rounded-md border p-3 text-sm">
-                  <input type="checkbox" name="membershipId" value={member.membershipId} />
+                <label
+                  key={member.membershipId}
+                  className="border-border flex gap-2 rounded-md border p-3 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    name="membershipId"
+                    value={member.membershipId}
+                  />
                   {member.fullName} · {member.projectRole}
                 </label>
               ))}
             </div>
           </fieldset>
-          <Button type="submit" intent="secondary" className="mt-4" disabled={removing}>
+          <Button
+            type="submit"
+            intent="secondary"
+            className="mt-4"
+            disabled={removing}
+          >
             {removing ? "Removing…" : "Remove selected"}
           </Button>
-          {removeState.message ? <p role="status" className="text-muted mt-2 text-sm">{removeState.message}</p> : null}
+          {removeState.message ? (
+            <p role="status" className="text-muted mt-2 text-sm">
+              {removeState.message}
+            </p>
+          ) : null}
         </form>
 
-        <form action={inviteAction} className="border-border mt-7 border-t pt-6">
+        <form
+          action={inviteAction}
+          className="border-border mt-7 border-t pt-6"
+        >
           <input type="hidden" name="projectId" value={projectId} />
           <h3 className="font-semibold">Invite by email</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_10rem_auto]">
-            <input aria-label="Project invite email" name="email" type="email" required className="border-border bg-background h-10 rounded-md border px-3" />
-            <select aria-label="Project invite role" name="role" defaultValue="viewer" className="border-border bg-background h-10 rounded-md border px-3">
-              {roles.map((role) => <option key={role} value={role}>{role}</option>)}
+            <input
+              aria-label="Project invite email"
+              name="email"
+              type="email"
+              required
+              className="border-border bg-background h-10 rounded-md border px-3"
+            />
+            <select
+              aria-label="Project invite role"
+              name="role"
+              defaultValue="viewer"
+              className="border-border bg-background h-10 rounded-md border px-3"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
             </select>
-            <Button type="submit" disabled={inviting}>{inviting ? "Inviting…" : "Invite"}</Button>
+            <Button type="submit" disabled={inviting}>
+              {inviting ? "Inviting…" : "Invite"}
+            </Button>
           </div>
-          {inviteState.message ? <p role="status" className="text-muted mt-2 text-sm">{inviteState.message}</p> : null}
+          {inviteState.message ? (
+            <p role="status" className="text-muted mt-2 text-sm">
+              {inviteState.message}
+            </p>
+          ) : null}
           {inviteState.invitationUrl ? (
-            <input aria-label="Project invitation link" readOnly value={inviteState.invitationUrl} className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm" />
+            <input
+              aria-label="Project invitation link"
+              readOnly
+              value={inviteState.invitationUrl}
+              className="border-border bg-background mt-2 w-full rounded-md border px-3 py-2 text-sm"
+            />
           ) : null}
         </form>
       </Card>

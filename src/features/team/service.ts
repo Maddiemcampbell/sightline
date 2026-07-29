@@ -103,10 +103,7 @@ export class TeamService {
   ): Promise<string> {
     assertAuthorized(canManageMembers(actor));
     const { invitationId } = invitationMutationSchema.parse(input);
-    await this.repository.revokeInvitation(
-      actor.organizationId,
-      invitationId,
-    );
+    await this.repository.revokeInvitation(actor.organizationId, invitationId);
     return invitationId;
   }
 

@@ -52,7 +52,7 @@ export function ProjectDetailAssistant({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-deep-green mt-5 min-h-10 w-full rounded-md px-3 text-xs font-semibold text-white hover:bg-ink"
+        className="bg-deep-green hover:bg-ink mt-5 min-h-10 w-full rounded-md px-3 text-xs font-semibold text-white"
       >
         Open full conversation
       </button>

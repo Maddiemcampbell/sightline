@@ -150,66 +150,74 @@ export function buildDashboardView(
   const activeProjects = source.projects.filter(
     (project) => project.status === "active",
   );
-  const projectsAtRisk = new Set(
-    openRisks.flatMap((risk) => (risk.project_id ? [risk.project_id] : [])),
-  ).size;
+  const projectsAtRisk =
+    source.portfolioAggregates?.portfolioSummary.projectsAtRisk ??
+    new Set(
+      openRisks.flatMap((risk) => (risk.project_id ? [risk.project_id] : [])),
+    ).size;
   const driverGroups = new Map<
     string,
     { riskCount: number; exposureCents: number; maxSeverity: number }
   >();
-  for (const risk of openRisks) {
-    const current = driverGroups.get(risk.category) ?? {
-      riskCount: 0,
-      exposureCents: 0,
-      maxSeverity: 0,
-    };
-    driverGroups.set(risk.category, {
-      riskCount: current.riskCount + 1,
-      exposureCents: current.exposureCents + risk.potential_exposure_cents,
-      maxSeverity: Math.max(current.maxSeverity, severityRank[risk.severity]),
-    });
-  }
-  const riskDrivers = [...driverGroups.entries()]
-    .map(([category, values]) => ({
-      category,
-      label: labelCategory(category),
-      riskCount: values.riskCount,
-      exposureCents: values.exposureCents,
-      level:
-        values.maxSeverity >= severityRank.high
-          ? ("high" as const)
-          : values.maxSeverity >= severityRank.medium
-            ? ("medium" as const)
-            : ("low" as const),
-    }))
-    .toSorted(
-      (left, right) =>
-        right.riskCount - left.riskCount ||
-        right.exposureCents - left.exposureCents ||
-        left.label.localeCompare(right.label),
-    )
-    .slice(0, 5);
-  const riskHeatmap = activeProjects.slice(0, 6).map((project) => {
-    const cells: Record<
-      "schedule" | "budget" | "resources" | "contracts" | "design",
-      "critical" | "high" | "medium" | "low" | null
-    > = {
-      schedule: null,
-      budget: null,
-      resources: null,
-      contracts: null,
-      design: null,
-    };
-    for (const risk of openRisks.filter(
-      (candidate) => candidate.project_id === project.id,
-    )) {
-      const group = riskGroup(risk.category);
-      const current = cells[group];
-      if (!current || severityRank[risk.severity] > severityRank[current])
-        cells[group] = risk.severity;
+  if (!source.portfolioAggregates) {
+    for (const risk of openRisks) {
+      const current = driverGroups.get(risk.category) ?? {
+        riskCount: 0,
+        exposureCents: 0,
+        maxSeverity: 0,
+      };
+      driverGroups.set(risk.category, {
+        riskCount: current.riskCount + 1,
+        exposureCents: current.exposureCents + risk.potential_exposure_cents,
+        maxSeverity: Math.max(current.maxSeverity, severityRank[risk.severity]),
+      });
     }
-    return { projectId: project.id, projectName: project.name, cells };
-  });
+  }
+  const riskDrivers =
+    source.portfolioAggregates?.riskDrivers ??
+    [...driverGroups.entries()]
+      .map(([category, values]) => ({
+        category,
+        label: labelCategory(category),
+        riskCount: values.riskCount,
+        exposureCents: values.exposureCents,
+        level:
+          values.maxSeverity >= severityRank.high
+            ? ("high" as const)
+            : values.maxSeverity >= severityRank.medium
+              ? ("medium" as const)
+              : ("low" as const),
+      }))
+      .toSorted(
+        (left, right) =>
+          right.riskCount - left.riskCount ||
+          right.exposureCents - left.exposureCents ||
+          left.label.localeCompare(right.label),
+      )
+      .slice(0, 5);
+  const riskHeatmap =
+    source.portfolioAggregates?.riskHeatmap ??
+    activeProjects.slice(0, 6).map((project) => {
+      const cells: Record<
+        "schedule" | "budget" | "resources" | "contracts" | "design",
+        "critical" | "high" | "medium" | "low" | null
+      > = {
+        schedule: null,
+        budget: null,
+        resources: null,
+        contracts: null,
+        design: null,
+      };
+      for (const risk of openRisks.filter(
+        (candidate) => candidate.project_id === project.id,
+      )) {
+        const group = riskGroup(risk.category);
+        const current = cells[group];
+        if (!current || severityRank[risk.severity] > severityRank[current])
+          cells[group] = risk.severity;
+      }
+      return { projectId: project.id, projectName: project.name, cells };
+    });
   const actionViews = source.actions.map((action) =>
     toActionView(
       action,
@@ -355,55 +363,58 @@ export function buildDashboardView(
     )
     .slice(0, 6);
 
-  const portfolio: PortfolioHealthRow[] = source.projects
-    .filter((project) => project.status === "active")
-    .map((project): PortfolioHealthRow => {
-      const projectRisks = openRisks.filter(
-        (risk) => risk.project_id === project.id,
-      );
-      const current = projectRisks.filter((risk) =>
-        inWindow(risk.detected_at, now - 7 * DAY_MS, now + 1),
-      ).length;
-      const previous = projectRisks.filter((risk) =>
-        inWindow(risk.detected_at, now - 14 * DAY_MS, now - 7 * DAY_MS),
-      ).length;
-      const topRisk = projectRisks.toSorted(
+  const portfolio: readonly PortfolioHealthRow[] =
+    source.portfolioAggregates?.portfolio ??
+    source.projects
+      .filter((project) => project.status === "active")
+      .map((project): PortfolioHealthRow => {
+        const projectRisks = openRisks.filter(
+          (risk) => risk.project_id === project.id,
+        );
+        const current = projectRisks.filter((risk) =>
+          inWindow(risk.detected_at, now - 7 * DAY_MS, now + 1),
+        ).length;
+        const previous = projectRisks.filter((risk) =>
+          inWindow(risk.detected_at, now - 14 * DAY_MS, now - 7 * DAY_MS),
+        ).length;
+        const topRisk = projectRisks.toSorted(
+          (a, b) =>
+            scoreRiskPriority(b, source.now, escalatedRiskIds.has(b.id)) -
+            scoreRiskPriority(a, source.now, escalatedRiskIds.has(a.id)),
+        )[0];
+        const exposureCents = projectRisks.reduce(
+          (sum, risk) => sum + risk.potential_exposure_cents,
+          0,
+        );
+        return {
+          id: project.id,
+          name: project.name,
+          location:
+            [project.city, project.state_code].filter(Boolean).join(", ") ||
+            "Location unavailable",
+          contractValueCents: project.contract_value_cents,
+          projectedMarginCents: project.projected_margin_cents ?? null,
+          openRiskCount: projectRisks.length,
+          exposureCents,
+          trend:
+            current === 0 && previous === 0
+              ? "insufficient"
+              : current > previous
+                ? "up"
+                : current < previous
+                  ? "down"
+                  : "steady",
+          topIssue: topRisk?.title ?? null,
+          concernScore:
+            exposureCents / 1_000_000 +
+            projectRisks.length * 10 +
+            (project.projected_margin_cents < 0 ? 30 : 0),
+        };
+      })
+      .toSorted(
         (a, b) =>
-          scoreRiskPriority(b, source.now, escalatedRiskIds.has(b.id)) -
-          scoreRiskPriority(a, source.now, escalatedRiskIds.has(a.id)),
-      )[0];
-      const exposureCents = projectRisks.reduce(
-        (sum, risk) => sum + risk.potential_exposure_cents,
-        0,
+          b.concernScore - a.concernScore || a.name.localeCompare(b.name),
       );
-      return {
-        id: project.id,
-        name: project.name,
-        location:
-          [project.city, project.state_code].filter(Boolean).join(", ") ||
-          "Location unavailable",
-        contractValueCents: project.contract_value_cents,
-        projectedMarginCents: project.projected_margin_cents ?? null,
-        openRiskCount: projectRisks.length,
-        exposureCents,
-        trend:
-          current === 0 && previous === 0
-            ? "insufficient"
-            : current > previous
-              ? "up"
-              : current < previous
-                ? "down"
-                : "steady",
-        topIssue: topRisk?.title ?? null,
-        concernScore:
-          exposureCents / 1_000_000 +
-          projectRisks.length * 10 +
-          (project.projected_margin_cents < 0 ? 30 : 0),
-      };
-    })
-    .toSorted(
-      (a, b) => b.concernScore - a.concernScore || a.name.localeCompare(b.name),
-    );
 
   const monthStart = new Date(
     source.now.getFullYear(),
@@ -526,12 +537,13 @@ export function buildDashboardView(
     priorities,
     portfolio,
     portfolioSummary: {
-      activeProjects: activeProjects.length,
+      activeProjects:
+        source.portfolioAggregates?.portfolioSummary.activeProjects ??
+        activeProjects.length,
       projectsAtRisk,
-      totalExposureCents: openRisks.reduce(
-        (sum, risk) => sum + risk.potential_exposure_cents,
-        0,
-      ),
+      totalExposureCents:
+        source.portfolioAggregates?.portfolioSummary.totalExposureCents ??
+        openRisks.reduce((sum, risk) => sum + risk.potential_exposure_cents, 0),
       forecastMarginPercent: null,
     },
     financialAnalytics: null,

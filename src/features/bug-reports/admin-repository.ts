@@ -17,10 +17,7 @@ export class BugReportAdminRepository {
     createdAfter?: string | undefined;
     createdBefore?: string | undefined;
   }) {
-    let query = this.client
-      .from("bug_reports")
-      .select("*")
-      .limit(100);
+    let query = this.client.from("bug_reports").select("*").limit(100);
     if (input.search) {
       const safe = input.search.replace(/[%_,()]/g, " ").trim();
       if (safe) {
@@ -50,12 +47,12 @@ export class BugReportAdminRepository {
       }
     }
     if (input.status) query = query.eq("status", input.status);
-    if (input.severity)
-      query = query.eq("customer_severity", input.severity);
+    if (input.severity) query = query.eq("customer_severity", input.severity);
     if (input.organizationId)
       query = query.eq("organization_id", input.organizationId);
     if (input.createdAfter) query = query.gte("created_at", input.createdAfter);
-    if (input.createdBefore) query = query.lte("created_at", input.createdBefore);
+    if (input.createdBefore)
+      query = query.lte("created_at", input.createdBefore);
     query =
       input.order === "oldest"
         ? query.order("created_at", { ascending: true })
@@ -70,7 +67,10 @@ export class BugReportAdminRepository {
     const { data, error } = await query;
     if (error) throw new Error(error.message);
     if (input.order !== "severity") return data;
-    const rank: Record<NonNullable<(typeof data)[number]["customer_severity"]>, number> = {
+    const rank: Record<
+      NonNullable<(typeof data)[number]["customer_severity"]>,
+      number
+    > = {
       blocking: 0,
       major: 1,
       minor: 2,

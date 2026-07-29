@@ -124,16 +124,22 @@ export class PrivacyService {
     );
     const request = await this.repository.cancelRequest(value.requestId);
     if (request.scope === "user_only") {
-      await this.client.from("users").update({
-        deletion_requested_at: null,
-        scheduled_deletion_at: null,
-      }).eq("auth_user_id", request.target_auth_user_id!);
+      await this.client
+        .from("users")
+        .update({
+          deletion_requested_at: null,
+          scheduled_deletion_at: null,
+        })
+        .eq("auth_user_id", request.target_auth_user_id!);
     } else if (request.organization_id) {
-      await this.client.from("organizations").update({
-        deletion_requested_at: null,
-        scheduled_deletion_at: null,
-        privacy_status: "active",
-      }).eq("id", request.organization_id);
+      await this.client
+        .from("organizations")
+        .update({
+          deletion_requested_at: null,
+          scheduled_deletion_at: null,
+          privacy_status: "active",
+        })
+        .eq("id", request.organization_id);
     }
     return request;
   }

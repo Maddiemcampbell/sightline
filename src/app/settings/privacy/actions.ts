@@ -24,7 +24,9 @@ export async function updatePrivacySettingsAction(
       activityRetentionDays: Number(formData.get("activityRetentionDays")),
       aiRetentionDays: Number(formData.get("aiRetentionDays")),
       auditRetentionDays: Number(formData.get("auditRetentionDays")),
-      deletedRecordRetentionDays: Number(formData.get("deletedRecordRetentionDays")),
+      deletedRecordRetentionDays: Number(
+        formData.get("deletedRecordRetentionDays"),
+      ),
     });
     await audit(context, "privacy.retention_updated", "retention_policy");
     revalidatePath("/settings/privacy");
@@ -135,6 +137,9 @@ async function audit(
 function privacyError(error: unknown): PrivacyActionState {
   return {
     message: "",
-    error: error instanceof Error ? error.message : "Privacy settings could not be updated.",
+    error:
+      error instanceof Error
+        ? error.message
+        : "Privacy settings could not be updated.",
   };
 }

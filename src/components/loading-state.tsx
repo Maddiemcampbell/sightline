@@ -21,13 +21,13 @@ export function LoadingState({
       aria-live="polite"
     >
       <span className="sr-only">{label}</span>
-      <div className="bg-border h-4 w-32 motion-safe:animate-pulse rounded-full" />
+      <div className="bg-border h-4 w-32 rounded-full motion-safe:animate-pulse" />
       <div className="mt-6 space-y-3" aria-hidden="true">
         {Array.from({ length: rows }, (_, index) => (
           <div
             key={index}
             className={cn(
-              "bg-border h-3 motion-safe:animate-pulse rounded-full",
+              "bg-border h-3 rounded-full motion-safe:animate-pulse",
               index === rows - 1 ? "w-3/5" : "w-full",
             )}
           />

@@ -78,10 +78,7 @@ export function RiskCommentForm({
               className="hover:bg-background flex w-full items-center gap-2 rounded p-2 text-left text-sm"
               onClick={() =>
                 setComment((current) =>
-                  current.replace(
-                    /@([a-z0-9._-]*)$/i,
-                    `@${user.username} `,
-                  ),
+                  current.replace(/@([a-z0-9._-]*)$/i, `@${user.username} `),
                 )
               }
             >

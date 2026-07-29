@@ -18,17 +18,17 @@ export async function updateBugReportAction(formData: FormData) {
     assignedOperatorId: formData.get("assignedOperatorId") || null,
     resolutionNotes: formData.get("resolutionNotes") || undefined,
     relatedReleaseId: formData.get("relatedReleaseId") || null,
-    externalIssueReference:
-      formData.get("externalIssueReference") || undefined,
+    externalIssueReference: formData.get("externalIssueReference") || undefined,
   });
   const operator = await requirePlatformPermission(
     "platform.support.write",
     "bug_report",
     input.reportId,
   );
-  await new BugReportAdminRepository(
-    createAdminSupabaseClient(),
-  ).update(input.reportId, input);
+  await new BugReportAdminRepository(createAdminSupabaseClient()).update(
+    input.reportId,
+    input,
+  );
   await recordPlatformAuditEvent({
     operator,
     action: "platform.bug_report.updated",
@@ -50,9 +50,11 @@ export async function addBugReportNoteAction(formData: FormData) {
     "bug_report",
     input.reportId,
   );
-  await new BugReportAdminRepository(
-    createAdminSupabaseClient(),
-  ).addNote(input.reportId, operator.id, input.body);
+  await new BugReportAdminRepository(createAdminSupabaseClient()).addNote(
+    input.reportId,
+    operator.id,
+    input.body,
+  );
   await recordPlatformAuditEvent({
     operator,
     action: "platform.bug_report.note_added",

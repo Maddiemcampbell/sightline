@@ -17,10 +17,10 @@ export function isExportDownloadAllowed(
 ): job is DownloadableExport {
   return Boolean(
     job &&
-      canExportOrganizationData(subject, job) &&
-      job.status === "ready" &&
-      job.storage_path &&
-      job.expires_at &&
-      Date.parse(job.expires_at) > now,
+    canExportOrganizationData(subject, job) &&
+    job.status === "ready" &&
+    job.storage_path &&
+    job.expires_at &&
+    Date.parse(job.expires_at) > now,
   );
 }

@@ -1351,6 +1351,13 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_dashboard_portfolio_aggregates: {
+        Args: {
+          requested_organization_id: string;
+          requested_now?: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: DatabaseEnums;
     CompositeTypes: Record<never, never>;

@@ -51,12 +51,9 @@ export async function POST(request: Request) {
     membership.applicationUserId,
     parsed.data.idempotencyKey,
   );
-  if (existing)
-    return NextResponse.json({ accepted: true });
+  if (existing) return NextResponse.json({ accepted: true });
   if (
-    !allowBugReportSubmission(
-      `${membership.organizationId}:${principal.id}`,
-    )
+    !allowBugReportSubmission(`${membership.organizationId}:${principal.id}`)
   ) {
     return NextResponse.json(
       { message: "Too many reports. Please wait a minute and try again." },
@@ -73,9 +70,7 @@ export async function POST(request: Request) {
         process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 40) ?? "local",
       environment:
         process.env.VERCEL_ENV ??
-        (process.env.NODE_ENV === "production"
-          ? "production"
-          : "development"),
+        (process.env.NODE_ENV === "production" ? "production" : "development"),
     },
   );
 
@@ -105,7 +100,9 @@ export async function POST(request: Request) {
       });
     } catch {
       if (uploadedPath)
-        await client.storage.from("bug-report-attachments").remove([uploadedPath]);
+        await client.storage
+          .from("bug-report-attachments")
+          .remove([uploadedPath]);
       attachmentWarning =
         "Your report was saved, but the image could not be attached.";
     }

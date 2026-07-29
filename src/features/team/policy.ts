@@ -24,10 +24,7 @@ export function canChangeMemberRole(
   return true;
 }
 
-export function canRemoveMember(
-  actor: TeamActor,
-  target: TeamTarget,
-): boolean {
+export function canRemoveMember(actor: TeamActor, target: TeamTarget): boolean {
   if (actor.role !== "owner" && actor.role !== "administrator") return false;
   if (actor.membershipId === target.membershipId) return false;
   if (target.role === "owner") return false;

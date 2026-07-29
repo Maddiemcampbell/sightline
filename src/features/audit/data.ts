@@ -2,10 +2,7 @@ import "server-only";
 
 import { AuditLogRepository } from "@/features/audit/repository";
 import { toAuditLogView } from "@/features/audit/view";
-import {
-  assertAuthorized,
-  canViewAuditLogs,
-} from "@/lib/auth/authorization";
+import { assertAuthorized, canViewAuditLogs } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 

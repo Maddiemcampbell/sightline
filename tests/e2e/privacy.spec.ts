@@ -16,9 +16,7 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
     ),
   ).toBeVisible();
   await expect(
-    main.getByText(
-      "Customers retain ownership of their uploaded documents.",
-    ),
+    main.getByText("Customers retain ownership of their uploaded documents."),
   ).toBeVisible();
   await expect(
     main.getByRole("heading", { name: "Current AI processing policy" }),
@@ -36,9 +34,7 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
     main.getByRole("heading", { name: "Data retention", exact: true }),
   ).toBeVisible();
   await expect(main.getByLabel("Deletion grace period")).toHaveValue("30");
-  await expect(
-    main.getByRole("heading", { name: "Legal hold" }),
-  ).toBeVisible();
+  await expect(main.getByRole("heading", { name: "Legal hold" })).toBeVisible();
   await expect(
     main.getByRole("heading", { name: "Delete organization" }),
   ).toBeVisible();

@@ -9,9 +9,7 @@ import {
   approveRiskSuggestion,
   rejectRiskSuggestion,
 } from "@/features/ai/review-service";
-import {
-  assertSameOrganization,
-} from "@/lib/auth/authorization";
+import { assertSameOrganization } from "@/lib/auth/authorization";
 import { assertInternalAdmin } from "@/lib/auth/internal-admin";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { recordAuditEvent } from "@/features/audit/service";

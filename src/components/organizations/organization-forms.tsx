@@ -143,9 +143,7 @@ export function InvitationForm() {
   );
 }
 
-export function AcceptInvitationForm({
-  token,
-}: Readonly<{ token: string }>) {
+export function AcceptInvitationForm({ token }: Readonly<{ token: string }>) {
   const action = acceptInvitationAction.bind(null, token);
   const [state, formAction, pending] = useActionState(action, initialState);
   return (
@@ -166,7 +164,10 @@ export function LeaveOrganizationForm() {
   return (
     <form action={formAction} className="space-y-4">
       {state.message ? (
-        <p role="alert" className="bg-soft-red text-danger rounded-md p-3 text-sm">
+        <p
+          role="alert"
+          className="bg-soft-red text-danger rounded-md p-3 text-sm"
+        >
           {state.message}
         </p>
       ) : null}

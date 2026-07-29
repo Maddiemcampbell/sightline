@@ -15,12 +15,12 @@ membership determines the scope where an allowed capability applies.
 
 ## Project roles
 
-| Project role | Access |
-| --- | --- |
-| Owner | Full project control, permissions, risks, actions, documents, and membership |
-| Manager | Manage project work, risks, actions, documents, and members |
-| Contributor | View and contribute to assigned work; upload documents; complete permitted actions |
-| Viewer | Read-only access to the project and its related records |
+| Project role | Access                                                                             |
+| ------------ | ---------------------------------------------------------------------------------- |
+| Owner        | Full project control, permissions, risks, actions, documents, and membership       |
+| Manager      | Manage project work, risks, actions, documents, and members                        |
+| Contributor  | View and contribute to assigned work; upload documents; complete permitted actions |
+| Viewer       | Read-only access to the project and its related records                            |
 
 Organization Owners and Administrators bypass explicit project assignment and
 can access every project. Organization Managers and Contributors see only

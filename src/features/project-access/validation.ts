@@ -24,6 +24,4 @@ export const projectInvitationSchema = z.object({
   role: projectRoleSchema,
 });
 
-export const projectInvitationTokenSchema = z
-  .string()
-  .regex(/^[a-f0-9]{64}$/);
+export const projectInvitationTokenSchema = z.string().regex(/^[a-f0-9]{64}$/);

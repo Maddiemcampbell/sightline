@@ -63,9 +63,7 @@ describe("scheduled organization jobs", () => {
 
   it("backs retries off and stops at the configured attempt limit", () => {
     const now = new Date("2026-07-26T20:00:00.000Z");
-    expect(organizationJobRetryAt(now, 2, 3)).toBe(
-      "2026-07-26T20:30:00.000Z",
-    );
+    expect(organizationJobRetryAt(now, 2, 3)).toBe("2026-07-26T20:30:00.000Z");
     expect(organizationJobRetryAt(now, 3, 3)).toBeNull();
   });
 });

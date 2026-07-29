@@ -29,9 +29,7 @@ function toOrganization(row: {
 export class OrganizationRepository {
   constructor(private readonly client: SupabaseClient<AppDatabase>) {}
 
-  async listMemberships(
-    authUserId: string,
-  ): Promise<OrganizationMembership[]> {
+  async listMemberships(authUserId: string): Promise<OrganizationMembership[]> {
     const { data: memberships, error } = await this.client
       .from("organization_memberships")
       .select("*")
@@ -115,7 +113,9 @@ export class OrganizationRepository {
       throw new Error(assignmentsResult.error.message);
     const projectIds = [
       ...new Set(
-        (assignmentsResult.data ?? []).map((assignment) => assignment.project_id),
+        (assignmentsResult.data ?? []).map(
+          (assignment) => assignment.project_id,
+        ),
       ),
     ];
     const projectsResult = projectIds.length

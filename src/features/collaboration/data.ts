@@ -61,23 +61,25 @@ export async function getRiskCollaboration(riskId: string, projectId: string) {
     viewers: presenceResult.data.flatMap((presence) => {
       const person = collaboratorByMembership.get(presence.membership_id);
       return person
-        ? [{
-            ...person,
-            lastViewedAt: presence.last_viewed_at,
-            viewingNow: Date.parse(presence.last_viewed_at) >= viewedNowCutoff,
-          }]
+        ? [
+            {
+              ...person,
+              lastViewedAt: presence.last_viewed_at,
+              viewingNow:
+                Date.parse(presence.last_viewed_at) >= viewedNowCutoff,
+            },
+          ]
         : [];
     }),
     assignmentHistory: historyResult.data.map((history) => ({
       id: history.id,
-      previousAssignee:
-        history.previous_assignee_user_id
-          ? collaboratorByUser.get(history.previous_assignee_user_id)?.name ?? "Unknown"
-          : "Unassigned",
-      assignee:
-        history.assignee_user_id
-          ? collaboratorByUser.get(history.assignee_user_id)?.name ?? "Unknown"
-          : "Unassigned",
+      previousAssignee: history.previous_assignee_user_id
+        ? (collaboratorByUser.get(history.previous_assignee_user_id)?.name ??
+          "Unknown")
+        : "Unassigned",
+      assignee: history.assignee_user_id
+        ? (collaboratorByUser.get(history.assignee_user_id)?.name ?? "Unknown")
+        : "Unassigned",
       assignedAt: history.created_at,
       assignedBy:
         collaboratorByMembership.get(history.assigned_by_membership_id)?.name ??

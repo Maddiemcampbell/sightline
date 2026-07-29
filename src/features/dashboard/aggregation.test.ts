@@ -218,4 +218,28 @@ describe("dashboard aggregation", () => {
     expect(view.value.actionCompletionRate).toBeNull();
     expect(view.value.estimatedLossAvoidedCents).toBeNull();
   });
+
+  it("preserves dashboard semantics when PostgreSQL supplies portfolio aggregates", () => {
+    const baseline = buildDashboardView(source(), "America/Los_Angeles");
+    const aggregated = buildDashboardView(
+      source({
+        portfolioAggregates: {
+          portfolio: baseline.portfolio,
+          portfolioSummary: {
+            activeProjects: baseline.portfolioSummary.activeProjects,
+            projectsAtRisk: baseline.portfolioSummary.projectsAtRisk,
+            totalExposureCents: baseline.portfolioSummary.totalExposureCents,
+          },
+          riskDrivers: baseline.riskDrivers,
+          riskHeatmap: baseline.riskHeatmap,
+        },
+      }),
+      "America/Los_Angeles",
+    );
+
+    expect(aggregated.portfolio).toEqual(baseline.portfolio);
+    expect(aggregated.portfolioSummary).toEqual(baseline.portfolioSummary);
+    expect(aggregated.riskDrivers).toEqual(baseline.riskDrivers);
+    expect(aggregated.riskHeatmap).toEqual(baseline.riskHeatmap);
+  });
 });

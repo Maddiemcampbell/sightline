@@ -82,7 +82,9 @@ export function BugReportDialog({
         setIdempotencyKey(crypto.randomUUID());
       }
     } catch {
-      setMessage("We could not save the report. Check your connection and retry.");
+      setMessage(
+        "We could not save the report. Check your connection and retry.",
+      );
     } finally {
       setPending(false);
     }
@@ -105,7 +107,8 @@ export function BugReportDialog({
             Report a problem
           </h2>
           <p className="text-muted mt-1 text-sm">
-            Tell us what went wrong. Only the title and description are required.
+            Tell us what went wrong. Only the title and description are
+            required.
           </p>
         </div>
         <button
@@ -125,12 +128,7 @@ export function BugReportDialog({
         }}
         className="space-y-5 px-6 py-5"
       >
-        <Field
-          name="title"
-          label="Title"
-          required
-          error={errors.title?.[0]}
-        />
+        <Field name="title" label="Title" required error={errors.title?.[0]} />
         <Field
           name="description"
           label="What happened?"
@@ -148,10 +146,7 @@ export function BugReportDialog({
           <Field name="expectedBehavior" label="Expected behavior" multiline />
           <Field name="actualBehavior" label="Actual behavior" multiline />
         </div>
-        <Field
-          name="relevantFeature"
-          label="Relevant feature or workflow"
-        />
+        <Field name="relevantFeature" label="Relevant feature or workflow" />
         <label className="block text-sm font-semibold">
           How disruptive is this? <span className="text-muted">(optional)</span>
           <select
@@ -255,7 +250,11 @@ function Field({
         />
       )}
       {error ? (
-        <span id={`${id}-error`} role="alert" className="mt-1 block text-sm text-red-700">
+        <span
+          id={`${id}-error`}
+          role="alert"
+          className="mt-1 block text-sm text-red-700"
+        >
           {error}
         </span>
       ) : null}

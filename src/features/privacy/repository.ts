@@ -32,9 +32,7 @@ export class PrivacyRepository {
     organizationId: string,
     includeOrganizationRequests: boolean,
   ) {
-    let query = this.client
-      .from("privacy_deletion_requests")
-      .select("*");
+    let query = this.client.from("privacy_deletion_requests").select("*");
     query = includeOrganizationRequests
       ? query.or(
           `requested_by_auth_user_id.eq.${authUserId},organization_id.eq.${organizationId}`,

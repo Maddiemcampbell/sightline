@@ -16,8 +16,12 @@ import {
 } from "@/features/portfolio-intelligence/core";
 import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
 import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
-import { calculatePortfolioRiskAnalytics } from "@/features/risk-analytics/calculations";
+import {
+  calculatePortfolioRiskAnalytics,
+  calculateRiskAnalyticsByProject,
+} from "@/features/risk-analytics/calculations";
 import { collectAllRows } from "@/lib/supabase/pagination";
+import { DashboardPortfolioAggregateRepository } from "@/features/dashboard/portfolio-aggregates";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -25,6 +29,7 @@ export async function getDashboardView() {
   assertAuthorized(canViewRisk(context));
   const canViewFinancials = canViewFinancialExposure(context);
   const client = await createServerSupabaseClient();
+  const now = new Date();
   const [
     organizationResult,
     currentUserResult,
@@ -38,6 +43,7 @@ export async function getDashboardView() {
     vendorsResult,
     activityPage,
     evidenceResult,
+    portfolioAggregates,
   ] = await Promise.all([
     client
       .from("organizations")
@@ -93,6 +99,10 @@ export async function getDashboardView() {
       .from("risk_evidence")
       .select("risk_id")
       .eq("organization_id", context.organizationId),
+    new DashboardPortfolioAggregateRepository(client).retrieve(
+      context.organizationId,
+      now,
+    ),
   ]);
   const results = [
     organizationResult,
@@ -151,31 +161,26 @@ export async function getDashboardView() {
       activities: activitiesResult.data ?? [],
       resolutions,
       users: usersResult.data ?? [],
+      portfolioAggregates,
     },
     timezone,
   );
   const riskAnalytics = calculatePortfolioRiskAnalytics({
-    now: new Date(),
+    now,
     projects,
     risks: riskRows,
     actions: actionsResult.data ?? [],
     evidence: evidenceResult.data ?? [],
     canViewFinancials,
   });
-  const riskAnalyticsByProject = Object.fromEntries(
-    projects.map((project) => [
-      project.id,
-      calculatePortfolioRiskAnalytics({
-        now: new Date(),
-        projects,
-        risks: riskRows,
-        actions: actionsResult.data ?? [],
-        evidence: evidenceResult.data ?? [],
-        canViewFinancials,
-        filters: { projectIds: [project.id] },
-      }),
-    ]),
-  );
+  const riskAnalyticsByProject = calculateRiskAnalyticsByProject({
+    now,
+    projects,
+    risks: riskRows,
+    actions: actionsResult.data ?? [],
+    evidence: evidenceResult.data ?? [],
+    canViewFinancials,
+  });
   const financialAnalytics = canViewFinancials
     ? await new FinancialAnalyticsService(
         new FinancialAnalyticsRepository(client),
@@ -206,7 +211,7 @@ export async function getDashboardView() {
     actions: actionsResult.data ?? [],
     documents: documentsResult.data ?? [],
     vendors: vendorsResult.data ?? [],
-    now: new Date(),
+    now,
   }).map((observation) =>
     canViewFinancials
       ? observation
@@ -246,7 +251,7 @@ export async function getDashboardView() {
       projects,
       risks,
       resolutions,
-      now: new Date(),
+      now,
     }),
     activity: activityPage.items
       .filter((item) => meaningfulActivityTypes.has(item.activityType))

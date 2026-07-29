@@ -21,17 +21,15 @@ export class NotificationRepository {
       .order("created_at", { ascending: false })
       .limit(limit);
     if (error) throw new Error(error.message);
-    return data.map(
-      (row): NotificationView => ({
-        id: row.id,
-        type: row.notification_type,
-        title: row.title,
-        body: row.body,
-        href: row.href,
-        readAt: row.read_at,
-        createdAt: row.created_at,
-      }),
-    );
+    return data.map((row): NotificationView => ({
+      id: row.id,
+      type: row.notification_type,
+      title: row.title,
+      body: row.body,
+      href: row.href,
+      readAt: row.read_at,
+      createdAt: row.created_at,
+    }));
   }
 
   async unreadCount(organizationId: string, membershipId: string) {

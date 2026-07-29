@@ -29,6 +29,7 @@ export type DashboardSource = Readonly<{
   activities: readonly RiskActivityRow[];
   resolutions: readonly RiskResolutionRow[];
   users: readonly Pick<UserRow, "id" | "full_name">[];
+  portfolioAggregates?: DashboardPortfolioAggregates;
 }>;
 
 export type Comparison = Readonly<{
@@ -82,6 +83,21 @@ export type PortfolioRiskHeatmapRow = Readonly<{
       "critical" | "high" | "medium" | "low" | null
     >
   >;
+}>;
+
+/**
+ * Organization-scoped values calculated in PostgreSQL. Keeping this shape
+ * independent of database rows lets the dashboard consume compact aggregate
+ * results without downloading every risk simply to rebuild these sections.
+ */
+export type DashboardPortfolioAggregates = Readonly<{
+  portfolio: readonly PortfolioHealthRow[];
+  portfolioSummary: Omit<
+    DashboardView["portfolioSummary"],
+    "forecastMarginPercent"
+  >;
+  riskDrivers: readonly RiskDriver[];
+  riskHeatmap: readonly PortfolioRiskHeatmapRow[];
 }>;
 
 export type WorkInMotion = Readonly<{

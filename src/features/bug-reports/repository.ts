@@ -46,16 +46,16 @@ export class BugReportRepository {
         diagnostic_consent: input.diagnosticConsent,
         application_version: system.applicationVersion,
         environment: system.environment,
-        browser_os: input.diagnosticConsent ? input.browserOs ?? null : null,
+        browser_os: input.diagnosticConsent ? (input.browserOs ?? null) : null,
         viewport_width: input.diagnosticConsent
-          ? input.viewportWidth ?? null
+          ? (input.viewportWidth ?? null)
           : null,
         viewport_height: input.diagnosticConsent
-          ? input.viewportHeight ?? null
+          ? (input.viewportHeight ?? null)
           : null,
         correlation_id: input.correlationId,
         client_error_reference: input.diagnosticConsent
-          ? input.clientErrorReference ?? null
+          ? (input.clientErrorReference ?? null)
           : null,
         idempotency_key: input.idempotencyKey,
       })

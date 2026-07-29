@@ -28,15 +28,15 @@ describe("customer bug report validation", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.title).toBeDefined();
-      expect(result.error.flatten().fieldErrors.stepsToReproduce).toBeUndefined();
+      expect(
+        result.error.flatten().fieldErrors.stepsToReproduce,
+      ).toBeUndefined();
     }
   });
 
   it("detects image content from magic bytes", () => {
     expect(
-      detectImageType(
-        Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0]),
-      ),
+      detectImageType(Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0])),
     ).toBe("image/png");
     expect(
       detectImageType(Uint8Array.from([60, 115, 99, 114, 105, 112, 116])),

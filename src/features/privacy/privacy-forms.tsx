@@ -10,7 +10,10 @@ export function PrivacyForm({
   submitLabel,
   destructive = false,
 }: {
-  action: (state: PrivacyActionState, formData: FormData) => Promise<PrivacyActionState>;
+  action: (
+    state: PrivacyActionState,
+    formData: FormData,
+  ) => Promise<PrivacyActionState>;
   children: React.ReactNode;
   submitLabel: string;
   destructive?: boolean;
@@ -33,8 +36,16 @@ export function PrivacyForm({
       <PrimaryButton type="submit" disabled={pending || !confirmed}>
         {pending ? "Saving…" : submitLabel}
       </PrimaryButton>
-      {state.error && <p role="alert" className="text-danger text-sm">{state.error}</p>}
-      {state.message && <p role="status" className="text-deep-green text-sm font-semibold">{state.message}</p>}
+      {state.error && (
+        <p role="alert" className="text-danger text-sm">
+          {state.error}
+        </p>
+      )}
+      {state.message && (
+        <p role="status" className="text-deep-green text-sm font-semibold">
+          {state.message}
+        </p>
+      )}
     </form>
   );
 }

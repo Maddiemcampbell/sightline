@@ -164,7 +164,7 @@ export default async function ProjectPage({ params }: Props) {
                 className={`block border-b-2 px-0.5 py-3 text-sm font-semibold ${
                   index === 0
                     ? "border-deep-green text-deep-green"
-                    : "text-muted border-transparent hover:text-ink"
+                    : "text-muted hover:text-ink border-transparent"
                 }`}
               >
                 {label}
@@ -369,16 +369,16 @@ export default async function ProjectPage({ params }: Props) {
                 {detail.documents.length ? (
                   <ul className="divide-border divide-y">
                     {detail.documents.slice(0, 5).map((document) => (
-                      <li key={document.id} className="py-3 first:pt-0 last:pb-0">
+                      <li
+                        key={document.id}
+                        className="py-3 first:pt-0 last:pb-0"
+                      >
                         <Link
                           href={`/documents/${document.id}`}
-                          className="flex items-start gap-3 hover:text-deep-green"
+                          className="hover:text-deep-green flex items-start gap-3"
                         >
                           <span className="bg-soft-green text-deep-green grid size-9 shrink-0 place-items-center rounded-md">
-                            <FileText
-                              aria-hidden="true"
-                              className="size-4"
-                            />
+                            <FileText aria-hidden="true" className="size-4" />
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold">
@@ -537,7 +537,10 @@ function ProjectPill({
     <span
       className={`inline-flex min-h-7 items-center rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}
     >
-      <span aria-hidden="true" className="mr-1.5 size-1.5 rounded-full bg-current" />
+      <span
+        aria-hidden="true"
+        className="mr-1.5 size-1.5 rounded-full bg-current"
+      />
       {label}
     </span>
   );
@@ -554,7 +557,10 @@ function RiskPill({ severity }: { severity: RiskRow["severity"] }) {
     <span
       className={`inline-flex min-h-7 items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${tone}`}
     >
-      <span aria-hidden="true" className="mr-1.5 size-1.5 rounded-full bg-current" />
+      <span
+        aria-hidden="true"
+        className="mr-1.5 size-1.5 rounded-full bg-current"
+      />
       {severity}
     </span>
   );
@@ -595,9 +601,7 @@ function RiskExposure({
       {risks.length ? (
         <ul className="mt-6 space-y-4">
           {severities.map((severity) => {
-            const matching = risks.filter(
-              (risk) => risk.severity === severity,
-            );
+            const matching = risks.filter((risk) => risk.severity === severity);
             const percent = (matching.length / risks.length) * 100;
             return (
               <li key={severity}>
@@ -674,7 +678,7 @@ function formatDate(value: string | null) {
 function statusLabel(status: string) {
   return status === "complete"
     ? "Completed"
-    : status.replaceAll("_", " ").replace(/^\w/, (letter) =>
-        letter.toUpperCase(),
-      );
+    : status
+        .replaceAll("_", " ")
+        .replace(/^\w/, (letter) => letter.toUpperCase());
 }

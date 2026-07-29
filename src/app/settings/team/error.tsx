@@ -2,11 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 
-export default function TeamSettingsError({
-  reset,
-}: {
-  reset: () => void;
-}) {
+export default function TeamSettingsError({ reset }: { reset: () => void }) {
   return (
     <div className="mx-auto max-w-3xl px-[var(--page-gutter)] py-16">
       <h1 className="text-2xl font-semibold">Team settings are unavailable</h1>

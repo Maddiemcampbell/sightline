@@ -88,7 +88,8 @@ export class PrivacyCleanupService {
   }
 
   private async archiveOrganization(request: DeletionRequest) {
-    if (!request.organization_id) throw new Error("missing_organization_target");
+    if (!request.organization_id)
+      throw new Error("missing_organization_target");
     const organizationId = request.organization_id;
     const { data: organization, error } = await this.client
       .from("organizations")
@@ -124,7 +125,8 @@ export class PrivacyCleanupService {
   }
 
   private async deleteOrganizationData(request: DeletionRequest) {
-    if (!request.organization_id) throw new Error("missing_organization_target");
+    if (!request.organization_id)
+      throw new Error("missing_organization_target");
     const organizationId = request.organization_id;
     const { data: organization, error } = await this.client
       .from("organizations")
@@ -175,7 +177,10 @@ export class PrivacyCleanupService {
         .eq("id", setting.organization_id)
         .maybeSingle();
       if (organization?.legal_hold_enabled) {
-        results.push({ organizationId: setting.organization_id, legalHold: true });
+        results.push({
+          organizationId: setting.organization_id,
+          legalHold: true,
+        });
         continue;
       }
       const cutoff = new Date(
@@ -188,7 +193,9 @@ export class PrivacyCleanupService {
         .not("archived_at", "is", null)
         .lt("archived_at", cutoff);
       if (documentError) throw new Error(documentError.message);
-      const paths = documents.flatMap((document) => document.storage_path ?? []);
+      const paths = documents.flatMap(
+        (document) => document.storage_path ?? [],
+      );
       for (let index = 0; index < paths.length; index += 100) {
         const { error: storageError } = await this.client.storage
           .from(DOCUMENT_BUCKET)
@@ -200,7 +207,10 @@ export class PrivacyCleanupService {
           .from("documents")
           .delete()
           .eq("organization_id", setting.organization_id)
-          .in("id", documents.map((document) => document.id));
+          .in(
+            "id",
+            documents.map((document) => document.id),
+          );
         if (deleteError) throw new Error(deleteError.message);
       }
       const { data: purged, error: purgeError } = await this.client.rpc(
@@ -229,7 +239,9 @@ export class PrivacyCleanupService {
     if (existing) return;
     const { error } = await this.client.from("audit_logs").insert({
       organization_id:
-        action === "privacy.organization_deleted" ? null : request.organization_id,
+        action === "privacy.organization_deleted"
+          ? null
+          : request.organization_id,
       actor_auth_user_id: null,
       actor_user_id: null,
       event_type: action,

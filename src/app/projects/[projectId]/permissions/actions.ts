@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  auditIdentifier,
-  recordAuditEvent,
-} from "@/features/audit/service";
+import { auditIdentifier, recordAuditEvent } from "@/features/audit/service";
 import { ProjectAccessRepository } from "@/features/project-access/repository";
 import { ProjectAccessService } from "@/features/project-access/service";
 import { TeamRepository } from "@/features/team/repository";
