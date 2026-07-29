@@ -6,16 +6,24 @@ import {
 } from "@/features/portfolio-intelligence/core";
 import type { Json } from "@/lib/supabase/database.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export async function refreshPortfolioIntelligence(organizationId: string) {
   const client = createAdminSupabaseClient();
-  const [projects, risks, actions, documents, vendors, evidence] =
+  const [projects, riskRows, actions, documents, vendors, evidence] =
     await Promise.all([
       client
         .from("projects")
         .select("id,name,status")
         .eq("organization_id", organizationId),
-      client.from("risks").select("*").eq("organization_id", organizationId),
+      collectAllRows((from, to) =>
+        client
+          .from("risks")
+          .select("*", { count: "exact" })
+          .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
       client
         .from("recommended_actions")
         .select("id,risk_id,title,status,due_at")
@@ -33,30 +41,20 @@ export async function refreshPortfolioIntelligence(organizationId: string) {
         .select("risk_id,document_id")
         .eq("organization_id", organizationId),
     ]);
-  for (const result of [
-    projects,
-    risks,
-    actions,
-    documents,
-    vendors,
-    evidence,
-  ]) {
+  for (const result of [projects, actions, documents, vendors, evidence]) {
     if (result.error) throw new Error(result.error.message);
   }
 
   const now = new Date();
   const observations = derivePortfolioObservations({
     projects: projects.data ?? [],
-    risks: risks.data ?? [],
+    risks: riskRows,
     actions: actions.data ?? [],
     documents: documents.data ?? [],
     vendors: vendors.data ?? [],
     now,
   });
-  const relationships = deriveRiskRelationships(
-    risks.data ?? [],
-    evidence.data ?? [],
-  );
+  const relationships = deriveRiskRelationships(riskRows, evidence.data ?? []);
 
   const { error: supersedeError } = await client
     .from("portfolio_observations")

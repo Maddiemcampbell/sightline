@@ -5,6 +5,7 @@ import type { ActionOwner, ActionView } from "@/features/actions/types";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { RecommendedActionRow } from "@/lib/supabase/database-row.types";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export function toActionView(
   row: RecommendedActionRow,
@@ -31,17 +32,21 @@ export function toActionView(
 export async function getActionsWorkspace(filters: ActionFilters) {
   const context = await requireActorContext();
   const client = await createServerSupabaseClient();
-  const [actionsResult, risksResult, projectsResult, usersResult] =
-    await Promise.all([
+  const [actionsResult, risks, projectsResult, usersResult] = await Promise.all(
+    [
       client
         .from("recommended_actions")
         .select("*")
         .eq("organization_id", context.organizationId)
         .order("due_at", { ascending: true, nullsFirst: false }),
-      client
-        .from("risks")
-        .select("id,title,project_id")
-        .eq("organization_id", context.organizationId),
+      collectAllRows((from, to) =>
+        client
+          .from("risks")
+          .select("id,title,project_id", { count: "exact" })
+          .eq("organization_id", context.organizationId)
+          .order("id")
+          .range(from, to),
+      ),
       client
         .from("projects")
         .select("id,name")
@@ -52,16 +57,11 @@ export async function getActionsWorkspace(filters: ActionFilters) {
         .select("id,full_name")
         .eq("organization_id", context.organizationId)
         .order("full_name"),
-    ]);
-  for (const result of [
-    actionsResult,
-    risksResult,
-    projectsResult,
-    usersResult,
-  ])
+    ],
+  );
+  for (const result of [actionsResult, projectsResult, usersResult])
     if (result.error) throw new Error(result.error.message);
   const actions = actionsResult.data ?? [];
-  const risks = risksResult.data ?? [];
   const projects = projectsResult.data ?? [];
   const users = usersResult.data ?? [];
   const riskById = new Map(risks.map((risk) => [risk.id, risk]));

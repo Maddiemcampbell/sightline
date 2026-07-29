@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export async function getRiskMemory(riskId: string) {
   const context = await requireActorContext();
@@ -18,7 +19,7 @@ export async function getRiskMemory(riskId: string) {
   const client = await createServerSupabaseClient();
   const [
     currentResult,
-    risksResult,
+    risks,
     evidenceResult,
     projectsResult,
     resolutionsResult,
@@ -30,10 +31,14 @@ export async function getRiskMemory(riskId: string) {
       .eq("organization_id", context.organizationId)
       .eq("id", riskId)
       .maybeSingle(),
-    client
-      .from("risks")
-      .select("*")
-      .eq("organization_id", context.organizationId),
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", context.organizationId)
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("risk_evidence")
       .select("risk_id,document_id")
@@ -53,7 +58,6 @@ export async function getRiskMemory(riskId: string) {
   ]);
   for (const result of [
     currentResult,
-    risksResult,
     evidenceResult,
     projectsResult,
     resolutionsResult,
@@ -67,7 +71,6 @@ export async function getRiskMemory(riskId: string) {
       historicalMatches: [],
       canViewFinancials: false,
     };
-  const risks = risksResult.data ?? [];
   const projects = projectsResult.data ?? [];
   const riskById = new Map(risks.map((risk) => [risk.id, risk]));
   const projectById = new Map(projects.map((project) => [project.id, project]));

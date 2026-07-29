@@ -14,6 +14,7 @@ import {
   canViewRisk,
 } from "@/lib/auth/authorization";
 import { sumMoneyCents } from "@/features/financial-analytics/calculations";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 function rows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -23,13 +24,20 @@ function rows<T>(data: T | null, error: { message: string } | null): T {
 
 async function portfolioRows(organizationId: string) {
   const client = await createServerSupabaseClient();
-  const [projectsResult, risksResult] = await Promise.all([
+  const [projectsResult, risks] = await Promise.all([
     client.from("projects").select("*").eq("organization_id", organizationId),
-    client.from("risks").select("*").eq("organization_id", organizationId),
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .order("id")
+        .range(from, to),
+    ),
   ]);
   return {
     projects: rows(projectsResult.data, projectsResult.error),
-    risks: rows(risksResult.data, risksResult.error),
+    risks,
   };
 }
 
@@ -229,12 +237,16 @@ export async function getRisks(filters: RiskFilters) {
 export async function getResolutionValueSummary() {
   const { organizationId } = await requireActorContext();
   const client = await createServerSupabaseClient();
-  const [risksResult, resolutionsResult] = await Promise.all([
-    client
-      .from("risks")
-      .select("id,detected_at,status")
-      .eq("organization_id", organizationId)
-      .eq("status", "resolved"),
+  const [risks, resolutionsResult] = await Promise.all([
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("id,detected_at,status", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .eq("status", "resolved")
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("risk_resolutions")
       .select("*")
@@ -242,7 +254,6 @@ export async function getResolutionValueSummary() {
       .is("reopened_at", null)
       .order("resolved_at", { ascending: false }),
   ]);
-  const risks = rows(risksResult.data, risksResult.error);
   const resolutions = rows(resolutionsResult.data, resolutionsResult.error);
   const riskById = new Map(risks.map((risk) => [risk.id, risk]));
   const seen = new Set<string>();
@@ -269,7 +280,7 @@ export async function getProjectDetail(projectId: string) {
   const client = await createServerSupabaseClient();
   const [
     projectResult,
-    risksResult,
+    risks,
     documentsResult,
     linksResult,
     vendorsResult,
@@ -281,12 +292,15 @@ export async function getProjectDetail(projectId: string) {
       .eq("organization_id", organizationId)
       .eq("id", projectId)
       .maybeSingle(),
-    client
-      .from("risks")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .eq("project_id", projectId)
-      .order("detected_at", { ascending: false }),
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .eq("project_id", projectId)
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("documents")
       .select("*")
@@ -307,7 +321,6 @@ export async function getProjectDetail(projectId: string) {
   ]);
   if (projectResult.error) throw new Error(projectResult.error.message);
   if (!projectResult.data) return null;
-  const risks = rows(risksResult.data, risksResult.error);
   const profitAtRiskCents = sumMoneyCents(
     risks
       .filter((risk) => !["resolved", "dismissed"].includes(risk.status))

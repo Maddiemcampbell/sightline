@@ -5,6 +5,7 @@ import { toActionView } from "@/features/actions/data";
 import { requireActorContext } from "@/lib/auth/request-context";
 import type { Json } from "@/lib/supabase/database.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 function requireRows<T>(data: T | null, error: { message: string } | null): T {
   if (error) throw new Error(error.message);
@@ -40,7 +41,7 @@ export async function getDailyBriefViewForOrganization(
 
   const [
     itemsResult,
-    risksResult,
+    allRisks,
     projectsResult,
     evidenceResult,
     actionsResult,
@@ -54,7 +55,14 @@ export async function getDailyBriefViewForOrganization(
       .eq("organization_id", organizationId)
       .eq("daily_brief_id", brief.id)
       .order("priority"),
-    client.from("risks").select("*").eq("organization_id", organizationId),
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("projects")
       .select("*")
@@ -88,7 +96,6 @@ export async function getDailyBriefViewForOrganization(
   ]);
 
   const items = requireRows(itemsResult.data, itemsResult.error);
-  const allRisks = requireRows(risksResult.data, risksResult.error);
   const projects = requireRows(projectsResult.data, projectsResult.error);
   const evidence = requireRows(evidenceResult.data, evidenceResult.error);
   const actions = requireRows(actionsResult.data, actionsResult.error);

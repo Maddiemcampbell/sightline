@@ -7,18 +7,19 @@ import {
 } from "@/features/risk-analytics/types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export class RiskSnapshotService {
   async createMonthlySnapshot(organizationId:string,now=new Date()){
     const client=createAdminSupabaseClient();
     const [projects,risks,actions,evidence]=await Promise.all([
       client.from("projects").select("*").eq("organization_id",organizationId),
-      client.from("risks").select("*").eq("organization_id",organizationId),
+      collectAllRows((from,to) => client.from("risks").select("*",{count:"exact"}).eq("organization_id",organizationId).order("id").range(from,to)),
       client.from("recommended_actions").select("*").eq("organization_id",organizationId),
       client.from("risk_evidence").select("risk_id").eq("organization_id",organizationId),
     ]);
-    for(const result of [projects,risks,actions,evidence]) if(result.error) throw new Error(result.error.message);
-    const analytics=calculatePortfolioRiskAnalytics({now,projects:projects.data??[],risks:risks.data??[],
+    for(const result of [projects,actions,evidence]) if(result.error) throw new Error(result.error.message);
+    const analytics=calculatePortfolioRiskAnalytics({now,projects:projects.data??[],risks,
       actions:actions.data??[],evidence:evidence.data??[],canViewFinancials:true});
     const snapshotMonth=`${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,"0")}-01`;
     const {data,error}=await client.from("portfolio_risk_snapshots").upsert({

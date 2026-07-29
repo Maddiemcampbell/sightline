@@ -13,6 +13,7 @@ import type {
 import type { Risk } from "@/domain/types";
 import type { RiskRow } from "@/lib/supabase/database-row.types";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 const rules: readonly DetectionRule[] = [
   expiringInsuranceRule,
@@ -71,14 +72,17 @@ export async function runDetection(input: {
         detections,
       };
     });
-    const existingResult = await client
-      .from("risks")
-      .select("id,detection_key")
-      .eq("organization_id", organizationId)
-      .not("detection_key", "is", null);
-    if (existingResult.error) throw new Error(existingResult.error.message);
+    const existingRisks = await collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("id,detection_key", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .not("detection_key", "is", null)
+        .order("id")
+        .range(from, to),
+    );
     const existingKeys = new Set(
-      (existingResult.data ?? []).flatMap((risk) =>
+      existingRisks.flatMap((risk) =>
         risk.detection_key ? [risk.detection_key] : [],
       ),
     );
@@ -391,19 +395,24 @@ export async function regenerateDailyBrief(
   now: Date,
 ): Promise<number> {
   const client = createAdminSupabaseClient();
-  const [risksResult, organizationResult] = await Promise.all([
-    client.from("risks").select("*").eq("organization_id", organizationId),
+  const [riskRows, organizationResult] = await Promise.all([
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", organizationId)
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("organizations")
       .select("timezone")
       .eq("id", organizationId)
       .single(),
   ]);
-  const { data: rows, error } = risksResult;
-  if (error) throw new Error(error.message);
   if (organizationResult.error)
     throw new Error(organizationResult.error.message);
-  const risks = (rows ?? []).map(mapRisk);
+  const risks = riskRows.map(mapRisk);
   const selected = selectDailyBriefRisks(risks);
   const briefDate = formatOrganizationDate(
     now,

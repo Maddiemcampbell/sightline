@@ -10,6 +10,7 @@ import {
 import { NotificationRepository } from "@/features/notifications/repository";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export const EXPORT_BUCKET = "organization-exports";
 export const EXPORT_TTL_DAYS = 7;
@@ -122,7 +123,7 @@ export class DataExportWorker {
   private async loadDatasets(organizationId: string): Promise<ExportDataset[]> {
     const results = await Promise.all([
       exportRows(this.client.from("projects").select("id,name,project_number,status,address_line_1,city,state_code,postal_code,start_date,target_completion_date,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("risks").select("id,project_id,vendor_id,title,summary,category,severity,status,confidence_score,why_it_matters,detected_at,due_at,resolved_at,created_at,updated_at").eq("organization_id", organizationId)),
+      collectAllRows((from, to) => this.client.from("risks").select("id,project_id,vendor_id,title,summary,category,severity,status,confidence_score,why_it_matters,detected_at,due_at,resolved_at,created_at,updated_at", { count: "exact" }).eq("organization_id", organizationId).order("id").range(from, to)),
       exportRows(this.client.from("recommended_actions").select("id,risk_id,owner_user_id,title,description,status,priority,action_type,due_at,completed_at,dismissed_at,dismissal_reason,source,created_at,updated_at").eq("organization_id", organizationId)),
       exportRows(this.client.from("documents").select("id,project_id,vendor_id,name,original_filename,document_type,document_date,mime_type,size_bytes,processing_status,archived_at,created_at,updated_at").eq("organization_id", organizationId)),
       exportRows(this.client.from("vendors").select("id,name,trade,contact_name,contact_email,created_at,updated_at").eq("organization_id", organizationId)),

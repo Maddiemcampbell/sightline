@@ -17,6 +17,7 @@ import {
 import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
 import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
 import { calculatePortfolioRiskAnalytics } from "@/features/risk-analytics/calculations";
+import { collectAllRows } from "@/lib/supabase/pagination";
 
 export async function getDashboardView() {
   const context = await requireActorContext();
@@ -28,7 +29,7 @@ export async function getDashboardView() {
     organizationResult,
     currentUserResult,
     projectsResult,
-    risksResult,
+    riskRows,
     actionsResult,
     activitiesResult,
     resolutionsResult,
@@ -53,10 +54,14 @@ export async function getDashboardView() {
       .from("projects")
       .select("*")
       .eq("organization_id", context.organizationId),
-    client
-      .from("risks")
-      .select("*")
-      .eq("organization_id", context.organizationId),
+    collectAllRows((from, to) =>
+      client
+        .from("risks")
+        .select("*", { count: "exact" })
+        .eq("organization_id", context.organizationId)
+        .order("id")
+        .range(from, to),
+    ),
     client
       .from("recommended_actions")
       .select("*")
@@ -93,7 +98,6 @@ export async function getDashboardView() {
     organizationResult,
     currentUserResult,
     projectsResult,
-    risksResult,
     actionsResult,
     activitiesResult,
     resolutionsResult,
@@ -117,7 +121,7 @@ export async function getDashboardView() {
           projected_margin_cents: 0,
         },
   );
-  const risks = (risksResult.data ?? []).map((risk) =>
+  const risks = riskRows.map((risk) =>
     canViewFinancials
       ? risk
       : {
@@ -153,7 +157,7 @@ export async function getDashboardView() {
   const riskAnalytics = calculatePortfolioRiskAnalytics({
     now: new Date(),
     projects,
-    risks: risksResult.data ?? [],
+    risks: riskRows,
     actions: actionsResult.data ?? [],
     evidence: evidenceResult.data ?? [],
     canViewFinancials,
@@ -164,7 +168,7 @@ export async function getDashboardView() {
       calculatePortfolioRiskAnalytics({
         now: new Date(),
         projects,
-        risks: risksResult.data ?? [],
+        risks: riskRows,
         actions: actionsResult.data ?? [],
         evidence: evidenceResult.data ?? [],
         canViewFinancials,
