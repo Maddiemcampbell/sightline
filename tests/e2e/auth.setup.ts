@@ -4,6 +4,8 @@ import { dirname } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test as setup } from "@playwright/test";
 
+import { ensureE2eAuthUser } from "./support/auth-users";
+
 const authState = "test-results/e2e-auth.json";
 const authUserId = "12000000-0000-4000-8000-000000000001";
 const organizationId = "10000000-0000-4000-8000-000000000001";
@@ -32,11 +34,12 @@ setup(
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: UnusedWebSocketTransport as never },
     });
-    const resolvedOwnerAuthUserId = await ensureAuthUser(
+    const resolvedOwnerAuthUserId = await ensureE2eAuthUser({
       admin,
-      authUserId,
+      id: authUserId,
       email,
-    );
+      password,
+    });
     const { error: userError } = await admin
       .from("users")
       .update({ auth_user_id: resolvedOwnerAuthUserId, email })
@@ -55,11 +58,12 @@ setup(
         { onConflict: "organization_id,application_user_id" },
       );
     if (membershipError) throw new Error(membershipError.message);
-    const resolvedAlexAuthUserId = await ensureAuthUser(
+    const resolvedAlexAuthUserId = await ensureE2eAuthUser({
       admin,
-      alexAuthUserId,
-      "alex-rivera@sightline.local",
-    );
+      id: alexAuthUserId,
+      email: "alex-rivera@sightline.local",
+      password,
+    });
     const { error: alexUserError } = await admin
       .from("users")
       .update({
@@ -112,60 +116,3 @@ setup(
     await page.context().storageState({ path: authState });
   },
 );
-
-async function ensureAuthUser(
-  admin: ReturnType<typeof createClient>,
-  preferredId: string,
-  userEmail: string,
-) {
-  let lastError = "Supabase Auth did not return a user.";
-  const retryDelays = [0, 250, 500, 1_000, 2_000, 4_000, 4_000, 4_000] as const;
-  for (const delay of retryDelays) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-    const { data: listed, error: listError } = await admin.auth.admin.listUsers(
-      {
-        page: 1,
-        perPage: 1_000,
-      },
-    );
-    if (listError) {
-      lastError = `Unable to list Auth users: ${listError.message || listError.name || "Auth service unavailable"}`;
-      continue;
-    }
-    const existingByEmail = listed.users.find(
-      (candidate) => candidate.email?.toLowerCase() === userEmail.toLowerCase(),
-    );
-    const existingById = listed.users.find(
-      (candidate) => candidate.id === preferredId,
-    );
-    const existing = existingByEmail ?? existingById;
-    if (existing) {
-      const updated = await admin.auth.admin.updateUserById(existing.id, {
-        email: userEmail,
-        password,
-        email_confirm: true,
-      });
-      if (updated.error) {
-        lastError = `Unable to update ${userEmail}: ${updated.error.message}`;
-        continue;
-      }
-      return existing.id;
-    }
-    const created = await admin.auth.admin.createUser({
-      id: preferredId,
-      email: userEmail,
-      password,
-      email_confirm: true,
-    });
-    if (created.error) {
-      lastError = `Unable to create ${userEmail}: ${created.error.message}`;
-      continue;
-    }
-    if (!created.data.user) {
-      lastError = `Unable to create ${userEmail}: Auth returned no user.`;
-      continue;
-    }
-    return created.data.user.id;
-  }
-  throw new Error(lastError);
-}

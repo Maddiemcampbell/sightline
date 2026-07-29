@@ -27,6 +27,9 @@ export default defineConfig({
     {
       name: "platform-setup",
       testMatch: /platform-admin\.setup\.ts/,
+      // Provision Auth users sequentially. Running both setup projects in
+      // parallel can synchronize retries against the local Admin Auth API.
+      dependencies: ["setup"],
     },
     {
       name: "chromium",

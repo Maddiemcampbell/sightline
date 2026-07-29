@@ -1318,6 +1318,39 @@ export type Database = {
         };
         Returns: boolean;
       };
+      list_portfolio_projects_page: {
+        Args: {
+          requested_organization_id: string;
+          search_query?: string;
+          stage_filter?: string;
+          sort_key?: string;
+          page_size?: number;
+          page_offset?: number;
+        };
+        Returns: Json;
+      };
+      list_portfolio_risks_page: {
+        Args: {
+          requested_organization_id: string;
+          view_filter?: string;
+          search_query?: string;
+          category_filter?: string;
+          severity_filter?: string;
+          status_filter?: string;
+          project_filter?: string;
+          due_filter?: string;
+          sort_key?: string;
+          page_size?: number;
+          page_offset?: number;
+        };
+        Returns: Json;
+      };
+      get_resolution_value_summary: {
+        Args: {
+          requested_organization_id: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: DatabaseEnums;
     CompositeTypes: Record<never, never>;

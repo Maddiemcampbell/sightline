@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
 import { getProjects, type ProjectListView } from "@/features/portfolio/data";
+import { Pagination } from "@/features/portfolio/pagination-controls";
 import { ProjectsAssistant } from "@/features/portfolio/projects-assistant";
 import { projectFiltersSchema } from "@/features/portfolio/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
@@ -36,26 +37,14 @@ export default async function ProjectsPage({ searchParams }: Props) {
     organization_id: context.organizationId,
   });
   const filters = projectFiltersSchema.parse(await searchParams);
-  const projects = await getProjects(filters);
-  const activeProjects = projects.filter(
-    (project) => project.stage === "active",
-  ).length;
-  const atRiskProjects = projects.filter(
-    (project) => project.health === "at_risk",
-  ).length;
-  const totalExposure = projects.reduce(
-    (sum, project) => sum + (project.exposureCents ?? 0),
-    0,
-  );
-  const visibleMargins = projects.flatMap((project) =>
-    project.forecastMarginPercent === null
-      ? []
-      : [project.forecastMarginPercent],
-  );
-  const averageMargin = visibleMargins.length
-    ? visibleMargins.reduce((sum, value) => sum + value, 0) /
-      visibleMargins.length
-    : null;
+  const result = await getProjects(filters);
+  const projects = result.items;
+  const {
+    activeCount: activeProjects,
+    atRiskCount: atRiskProjects,
+    totalExposureCents: totalExposure,
+    averageMarginPercent: averageMargin,
+  } = result.summary;
 
   return (
     <div className="mx-auto max-w-[96rem] px-[var(--page-gutter)] py-8 sm:py-10">
@@ -97,7 +86,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
         <SummaryMetric
           label="Active projects"
           value={String(activeProjects)}
-          detail={`${projects.length} accessible projects`}
+          detail={`${result.total} filtered projects`}
           icon={BriefcaseBusiness}
         />
         <SummaryMetric
@@ -182,7 +171,7 @@ export default async function ProjectsPage({ searchParams }: Props) {
 
       <div className="mt-6 flex items-center justify-between gap-4">
         <p className="text-muted text-sm">
-          {projects.length} project{projects.length === 1 ? "" : "s"}
+          {result.total} project{result.total === 1 ? "" : "s"}
         </p>
         <p className="text-muted hidden text-xs sm:block">
           Financial details respect your organization role.
@@ -222,6 +211,13 @@ export default async function ProjectsPage({ searchParams }: Props) {
             <>
               <ProjectTable projects={projects} />
               <ProjectCards projects={projects} />
+              <Pagination
+                path="/projects"
+                page={result.page}
+                pageSize={result.pageSize}
+                total={result.total}
+                parameters={filters}
+              />
             </>
           )}
         </div>

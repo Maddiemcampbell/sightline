@@ -5,6 +5,11 @@ const firstValue = z.preprocess(
   z.string().optional(),
 );
 
+const page = z.preprocess(
+  (value) => (Array.isArray(value) ? value[0] : value),
+  z.coerce.number().int().min(1).max(100_000).catch(1),
+);
+
 export const projectFiltersSchema = z.object({
   q: firstValue.transform((value) => value?.trim().slice(0, 120) ?? ""),
   stage: firstValue.pipe(
@@ -15,6 +20,7 @@ export const projectFiltersSchema = z.object({
   sort: firstValue.pipe(
     z.enum(["exposure", "margin", "name", "activity"]).catch("exposure"),
   ),
+  page,
 });
 
 export const riskFiltersSchema = z.object({
@@ -53,7 +59,7 @@ export const riskFiltersSchema = z.object({
   ),
   project: firstValue
     .pipe(z.string().max(100).catch("all"))
-    .transform((value) => value ?? "all"),
+    .transform((value) => value?.trim() || "all"),
   due: firstValue.pipe(
     z.enum(["all", "overdue", "7_days", "30_days", "none"]).catch("all"),
   ),
@@ -62,6 +68,7 @@ export const riskFiltersSchema = z.object({
       .enum(["exposure", "confidence", "severity", "due", "detected"])
       .catch("exposure"),
   ),
+  page,
 });
 
 export type ProjectFilters = z.infer<typeof projectFiltersSchema>;

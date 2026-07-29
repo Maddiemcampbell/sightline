@@ -6,15 +6,9 @@ import { RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/metric-card";
 import { formatMoney } from "@/features/daily-brief/formatters";
-import {
-  getProjects,
-  getResolutionValueSummary,
-  getRisks,
-} from "@/features/portfolio/data";
-import {
-  projectFiltersSchema,
-  riskFiltersSchema,
-} from "@/features/portfolio/validation";
+import { getResolutionValueSummary, getRisks } from "@/features/portfolio/data";
+import { Pagination } from "@/features/portfolio/pagination-controls";
+import { riskFiltersSchema } from "@/features/portfolio/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
 
 type Props = {
@@ -23,11 +17,11 @@ type Props = {
 
 export default async function RisksPage({ searchParams }: Props) {
   const filters = riskFiltersSchema.parse(await searchParams);
-  const [risks, projects, valueSummary] = await Promise.all([
+  const [result, valueSummary] = await Promise.all([
     getRisks(filters),
-    getProjects(projectFiltersSchema.parse({})),
     getResolutionValueSummary(),
   ]);
+  const risks = result.items;
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
@@ -130,20 +124,14 @@ export default async function RisksPage({ searchParams }: Props) {
             "dismissed",
           ]}
         />
-        <label>
-          <span className="sr-only">Project</span>
-          <select
+        <label className="relative">
+          <span className="sr-only">Project name</span>
+          <input
             name="project"
-            defaultValue={filters.project}
+            defaultValue={filters.project === "all" ? "" : filters.project}
+            placeholder="All projects"
             className="border-border h-10 w-full rounded-md border px-3 text-sm"
-          >
-            <option value="all">All projects</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <Select
           name="due"
@@ -161,7 +149,9 @@ export default async function RisksPage({ searchParams }: Props) {
           Apply filters
         </button>
       </form>
-      <p className="text-muted mt-5 text-sm">{risks.length} risks</p>
+      <p className="text-muted mt-5 text-sm">
+        {result.total} risk{result.total === 1 ? "" : "s"}
+      </p>
       {risks.length === 0 ? (
         <div className="mt-4">
           <EmptyState
@@ -246,6 +236,13 @@ export default async function RisksPage({ searchParams }: Props) {
               </div>
             </Card>
           ))}
+          <Pagination
+            path="/risks"
+            page={result.page}
+            pageSize={result.pageSize}
+            total={result.total}
+            parameters={filters}
+          />
         </div>
       )}
     </div>

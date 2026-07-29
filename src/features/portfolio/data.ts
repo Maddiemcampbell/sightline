@@ -1,12 +1,18 @@
 import "server-only";
 
+import { z } from "zod";
+
 import { requireActorContext } from "@/lib/auth/request-context";
 import type {
   ProjectFilters,
   RiskFilters,
 } from "@/features/portfolio/validation";
+import {
+  PORTFOLIO_PAGE_SIZE,
+  type PaginatedResult,
+} from "@/features/portfolio/pagination";
+import { postgresTimestampSchema } from "@/features/portfolio/database-validation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { calculateResolutionValueSummary } from "@/domain/resolutions";
 import {
   assertAuthorized,
   canViewFinancialExposure,
@@ -22,157 +28,207 @@ function rows<T>(data: T | null, error: { message: string } | null): T {
   return data;
 }
 
-async function portfolioRows(organizationId: string) {
-  const client = await createServerSupabaseClient();
-  const [projectsResult, risks] = await Promise.all([
-    client.from("projects").select("*").eq("organization_id", organizationId),
-    collectAllRows((from, to) =>
-      client
-        .from("risks")
-        .select("*", { count: "exact" })
-        .eq("organization_id", organizationId)
-        .order("id")
-        .range(from, to),
-    ),
-  ]);
-  return {
-    projects: rows(projectsResult.data, projectsResult.error),
-    risks,
-  };
-}
+const projectPageSchema = z.object({
+  items: z.array(
+    z.object({
+      id: z.uuid(),
+      image_url: z.string().nullable(),
+      name: z.string(),
+      project_number: z.string(),
+      location: z.string(),
+      stage: z.enum(["planning", "active", "on_hold", "complete", "cancelled"]),
+      projected_margin_cents: z.number(),
+      contract_value_cents: z.number().nullable(),
+      forecast_margin_percent: z.coerce.number().nullable(),
+      open_risk_count: z.number().int(),
+      exposure_cents: z.number(),
+      elevated_risk_count: z.number().int(),
+      health: z.enum(["at_risk", "watch", "on_track"]),
+      risk_score: z.number().int(),
+      risk_trend: z.enum(["insufficient", "rising", "improving", "steady"]),
+      schedule: z.enum([
+        "complete",
+        "paused",
+        "delayed",
+        "planned",
+        "on_track",
+      ]),
+      target_completion_date: z.string().nullable(),
+      ai_summary: z.string(),
+      recent_activity: postgresTimestampSchema,
+    }),
+  ),
+  total: z.number().int().nonnegative(),
+  summary: z.object({
+    activeCount: z.number().int().nonnegative(),
+    atRiskCount: z.number().int().nonnegative(),
+    riskAtRiskCount: z.number().int().nonnegative(),
+    totalExposureCents: z.number(),
+    averageMarginPercent: z.coerce.number().nullable(),
+  }),
+});
 
-export async function getProjects(filters: ProjectFilters) {
+const riskPageSchema = z.object({
+  items: z.array(
+    z
+      .object({
+        id: z.uuid(),
+        title: z.string(),
+        summary: z.string(),
+        category: z.enum([
+          "insurance",
+          "schedule",
+          "documentation",
+          "contract",
+          "safety",
+          "financial",
+          "vendor",
+          "weather",
+          "other",
+        ]),
+        severity: z.enum(["low", "medium", "high", "critical"]),
+        status: z.enum([
+          "monitoring",
+          "action_needed",
+          "in_progress",
+          "resolved",
+          "dismissed",
+        ]),
+        potential_exposure_cents: z.number(),
+        estimated_margin_impact_cents: z.number(),
+        confidence_score: z.number(),
+        due_at: z.string().nullable(),
+        detected_at: z.string(),
+        project_id: z.uuid().nullable(),
+        project: z
+          .object({
+            id: z.uuid(),
+            name: z.string(),
+            project_number: z.string(),
+          })
+          .nullable(),
+      })
+      .passthrough(),
+  ),
+  total: z.number().int().nonnegative(),
+});
+
+export async function getProjects(filters: ProjectFilters): Promise<
+  PaginatedResult<
+    {
+      id: string;
+      imageUrl: string | null;
+      name: string;
+      number: string;
+      location: string;
+      stage: z.infer<typeof projectPageSchema>["items"][number]["stage"];
+      projectedMarginCents: number | null;
+      contractValueCents: number | null;
+      forecastMarginPercent: number | null;
+      openRiskCount: number;
+      exposureCents: number | null;
+      health: "at_risk" | "watch" | "on_track";
+      riskScore: number;
+      riskTrend: "insufficient" | "rising" | "improving" | "steady";
+      schedule: "complete" | "paused" | "delayed" | "planned" | "on_track";
+      targetCompletionDate: string | null;
+      aiSummary: string;
+      recentActivity: number;
+    },
+    z.infer<typeof projectPageSchema>["summary"]
+  >
+> {
   const context = await requireActorContext();
   assertAuthorized(canViewProject(context));
   const canSeeFinancials = canViewFinancialExposure(context);
-  const { organizationId } = context;
-  const { projects, risks } = await portfolioRows(organizationId);
-  const search = filters.q.toLowerCase();
-  const views = projects
-    .map((project) => {
-      const projectRisks = risks.filter(
-        (risk) =>
-          risk.project_id === project.id &&
-          !["resolved", "dismissed"].includes(risk.status),
-      );
-      const currentRiskCount = projectRisks.filter(
-        (risk) => Date.parse(risk.detected_at) >= Date.now() - 7 * 86_400_000,
-      ).length;
-      const previousRiskCount = projectRisks.filter((risk) => {
-        const detectedAt = Date.parse(risk.detected_at);
-        return (
-          detectedAt >= Date.now() - 14 * 86_400_000 &&
-          detectedAt < Date.now() - 7 * 86_400_000
-        );
-      }).length;
-      const mostImportantRisk = projectRisks.toSorted((a, b) => {
-        const severity = { low: 1, medium: 2, high: 3, critical: 4 } as const;
-        return (
-          severity[b.severity] - severity[a.severity] ||
-          b.potential_exposure_cents - a.potential_exposure_cents
-        );
-      })[0];
-      const exposureCents = projectRisks.reduce(
-        (sum, risk) => sum + risk.potential_exposure_cents,
-        0,
-      );
-      const criticalOrHigh = projectRisks.filter((risk) =>
-        ["critical", "high"].includes(risk.severity),
-      ).length;
-      const projectedMarginCents =
-        canSeeFinancials && project.projected_margin_cents !== null
-          ? project.projected_margin_cents
-          : null;
-      return {
-        id: project.id,
-        imageUrl: project.image_url,
-        name: project.name,
-        number: project.project_number,
-        location: [project.city, project.state_code].filter(Boolean).join(", "),
-        stage: project.status,
-        projectedMarginCents,
-        contractValueCents: canSeeFinancials
-          ? project.contract_value_cents
-          : null,
-        forecastMarginPercent:
-          projectedMarginCents !== null && project.contract_value_cents
-            ? (projectedMarginCents / project.contract_value_cents) * 100
-            : null,
-        openRiskCount: projectRisks.length,
-        exposureCents: canSeeFinancials ? exposureCents : null,
-        health:
-          criticalOrHigh > 0 || (projectedMarginCents ?? 0) < 0
-            ? ("at_risk" as const)
-            : projectRisks.length > 0
-              ? ("watch" as const)
-              : ("on_track" as const),
-        riskScore: Math.min(
-          100,
-          criticalOrHigh * 25 +
-            Math.max(0, projectRisks.length - criticalOrHigh) * 10,
-        ),
-        riskTrend:
-          currentRiskCount === 0 && previousRiskCount === 0
-            ? ("insufficient" as const)
-            : currentRiskCount > previousRiskCount
-              ? ("rising" as const)
-              : currentRiskCount < previousRiskCount
-                ? ("improving" as const)
-                : ("steady" as const),
-        schedule:
-          project.status === "complete"
-            ? ("complete" as const)
-            : project.status === "on_hold"
-              ? ("paused" as const)
-              : project.target_completion_date &&
-                  Date.parse(project.target_completion_date) < Date.now()
-                ? ("delayed" as const)
-                : project.status === "planning"
-                  ? ("planned" as const)
-                  : ("on_track" as const),
-        targetCompletionDate: project.target_completion_date,
-        aiSummary:
-          mostImportantRisk?.summary ??
-          "No active project risk currently requires attention.",
-        recentActivity: projectRisks.reduce(
-          (latest, risk) => Math.max(latest, Date.parse(risk.updated_at)),
-          Date.parse(project.updated_at),
-        ),
-      };
-    })
-    .filter(
-      (project) =>
-        (!search ||
-          `${project.name} ${project.number} ${project.location}`
-            .toLowerCase()
-            .includes(search)) &&
-        (filters.stage === "all" || project.stage === filters.stage),
-    );
-  return views.toSorted((a, b) =>
-    filters.sort === "margin"
-      ? (a.projectedMarginCents ?? Number.MAX_SAFE_INTEGER) -
-        (b.projectedMarginCents ?? Number.MAX_SAFE_INTEGER)
-      : filters.sort === "name"
-        ? a.name.localeCompare(b.name)
-        : filters.sort === "activity"
-          ? b.recentActivity - a.recentActivity
-          : (b.exposureCents ?? -1) - (a.exposureCents ?? -1),
-  );
+  const client = await createServerSupabaseClient();
+  const { data, error } = await client.rpc("list_portfolio_projects_page", {
+    requested_organization_id: context.organizationId,
+    search_query: filters.q,
+    stage_filter: filters.stage,
+    sort_key: filters.sort,
+    page_size: PORTFOLIO_PAGE_SIZE,
+    page_offset: (filters.page - 1) * PORTFOLIO_PAGE_SIZE,
+  });
+  if (error) throw new Error(error.message);
+  const result = projectPageSchema.parse(data);
+  return {
+    items: result.items.map((project) => ({
+      id: project.id,
+      imageUrl: project.image_url,
+      name: project.name,
+      number: project.project_number,
+      location: project.location,
+      stage: project.stage,
+      projectedMarginCents: canSeeFinancials
+        ? project.projected_margin_cents
+        : null,
+      contractValueCents: canSeeFinancials
+        ? project.contract_value_cents
+        : null,
+      forecastMarginPercent: canSeeFinancials
+        ? project.forecast_margin_percent
+        : null,
+      openRiskCount: project.open_risk_count,
+      exposureCents: canSeeFinancials ? project.exposure_cents : null,
+      health: canSeeFinancials
+        ? project.health
+        : project.elevated_risk_count > 0
+          ? "at_risk"
+          : project.open_risk_count > 0
+            ? "watch"
+            : "on_track",
+      riskScore: project.risk_score,
+      riskTrend: project.risk_trend,
+      schedule: project.schedule,
+      targetCompletionDate: project.target_completion_date,
+      aiSummary: project.ai_summary,
+      recentActivity: Date.parse(project.recent_activity),
+    })),
+    total: result.total,
+    page: filters.page,
+    pageSize: PORTFOLIO_PAGE_SIZE,
+    summary: {
+      ...result.summary,
+      atRiskCount: canSeeFinancials
+        ? result.summary.atRiskCount
+        : result.summary.riskAtRiskCount,
+      totalExposureCents: canSeeFinancials
+        ? result.summary.totalExposureCents
+        : 0,
+      averageMarginPercent: canSeeFinancials
+        ? result.summary.averageMarginPercent
+        : null,
+    },
+  };
 }
 
-export type ProjectListView = Awaited<ReturnType<typeof getProjects>>[number];
+export type ProjectListView = Awaited<
+  ReturnType<typeof getProjects>
+>["items"][number];
 
 export async function getRisks(filters: RiskFilters) {
   const context = await requireActorContext();
   assertAuthorized(canViewRisk(context));
   const canSeeFinancials = canViewFinancialExposure(context);
-  const { organizationId } = context;
-  const { projects, risks } = await portfolioRows(organizationId);
-  const projectById = new Map(projects.map((project) => [project.id, project]));
-  const now = Date.now();
-  const search = filters.q.toLowerCase();
-  return risks
-    .map((risk) => ({
+  const client = await createServerSupabaseClient();
+  const { data, error } = await client.rpc("list_portfolio_risks_page", {
+    requested_organization_id: context.organizationId,
+    view_filter: filters.view,
+    search_query: filters.q,
+    category_filter: filters.category,
+    severity_filter: filters.severity,
+    status_filter: filters.status,
+    project_filter: filters.project,
+    due_filter: filters.due,
+    sort_key: filters.sort,
+    page_size: PORTFOLIO_PAGE_SIZE,
+    page_offset: (filters.page - 1) * PORTFOLIO_PAGE_SIZE,
+  });
+  if (error) throw new Error(error.message);
+  const result = riskPageSchema.parse(data);
+  return {
+    items: result.items.map((risk) => ({
       ...risk,
       potential_exposure_cents: canSeeFinancials
         ? risk.potential_exposure_cents
@@ -180,99 +236,29 @@ export async function getRisks(filters: RiskFilters) {
       estimated_margin_impact_cents: canSeeFinancials
         ? risk.estimated_margin_impact_cents
         : 0,
-      project: risk.project_id
-        ? (projectById.get(risk.project_id) ?? null)
-        : null,
-    }))
-    .filter((risk) => {
-      const due = risk.due_at ? Date.parse(risk.due_at) : null;
-      const dueMatch =
-        filters.due === "all" ||
-        (filters.due === "none" && due === null) ||
-        (filters.due === "overdue" &&
-          due !== null &&
-          due < now &&
-          !["resolved", "dismissed"].includes(risk.status)) ||
-        (filters.due === "7_days" &&
-          due !== null &&
-          due >= now &&
-          due <= now + 7 * 86400000) ||
-        (filters.due === "30_days" &&
-          due !== null &&
-          due >= now &&
-          due <= now + 30 * 86400000);
-      return (
-        (filters.view === "all" ||
-          (filters.view === "resolved" && risk.status === "resolved") ||
-          (filters.view === "active" &&
-            !["resolved", "dismissed"].includes(risk.status))) &&
-        (!search ||
-          `${risk.title} ${risk.summary} ${risk.project?.name ?? ""}`
-            .toLowerCase()
-            .includes(search)) &&
-        (filters.category === "all" || risk.category === filters.category) &&
-        (filters.severity === "all" || risk.severity === filters.severity) &&
-        (filters.status === "all" || risk.status === filters.status) &&
-        (filters.project === "all" || risk.project_id === filters.project) &&
-        dueMatch
-      );
-    })
-    .toSorted((a, b) => {
-      const severity = { low: 0, medium: 1, high: 2, critical: 3 } as const;
-      if (filters.sort === "confidence")
-        return b.confidence_score - a.confidence_score;
-      if (filters.sort === "severity")
-        return severity[b.severity] - severity[a.severity];
-      if (filters.sort === "due")
-        return (
-          (a.due_at ? Date.parse(a.due_at) : Number.MAX_SAFE_INTEGER) -
-          (b.due_at ? Date.parse(b.due_at) : Number.MAX_SAFE_INTEGER)
-        );
-      if (filters.sort === "detected")
-        return Date.parse(b.detected_at) - Date.parse(a.detected_at);
-      return b.potential_exposure_cents - a.potential_exposure_cents;
-    });
+    })),
+    total: result.total,
+    page: filters.page,
+    pageSize: PORTFOLIO_PAGE_SIZE,
+    summary: undefined,
+  } satisfies PaginatedResult<(typeof result.items)[number], undefined>;
 }
 
 export async function getResolutionValueSummary() {
   const { organizationId } = await requireActorContext();
   const client = await createServerSupabaseClient();
-  const [risks, resolutionsResult] = await Promise.all([
-    collectAllRows((from, to) =>
-      client
-        .from("risks")
-        .select("id,detected_at,status", { count: "exact" })
-        .eq("organization_id", organizationId)
-        .eq("status", "resolved")
-        .order("id")
-        .range(from, to),
-    ),
-    client
-      .from("risk_resolutions")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .is("reopened_at", null)
-      .order("resolved_at", { ascending: false }),
-  ]);
-  const resolutions = rows(resolutionsResult.data, resolutionsResult.error);
-  const riskById = new Map(risks.map((risk) => [risk.id, risk]));
-  const seen = new Set<string>();
-  return calculateResolutionValueSummary(
-    resolutions.flatMap((resolution) => {
-      const risk = riskById.get(resolution.risk_id);
-      if (!risk || seen.has(risk.id)) return [];
-      seen.add(risk.id);
-      return [
-        {
-          exposureBeforeCents: resolution.exposure_before_cents,
-          remainingExposureCents: resolution.remaining_exposure_cents,
-          estimatedLossAvoidedCents: resolution.estimated_loss_avoided_cents,
-          detectedAt: risk.detected_at,
-          resolvedAt: resolution.resolved_at,
-        },
-      ];
-    }),
-  );
+  const { data, error } = await client.rpc("get_resolution_value_summary", {
+    requested_organization_id: organizationId,
+  });
+  if (error) throw new Error(error.message);
+  return z
+    .object({
+      risksResolved: z.number().int().nonnegative(),
+      estimatedExposureReducedCents: z.number().nonnegative(),
+      estimatedLossAvoidedCents: z.number().nonnegative(),
+      averageResolutionHours: z.number().int().nonnegative(),
+    })
+    .parse(data);
 }
 
 export async function getProjectDetail(projectId: string) {

@@ -3,6 +3,8 @@ import { createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test } from "@playwright/test";
 
+import { ensureE2eAuthUser } from "./support/auth-users";
+
 test("redirects the legacy platform admin path to the protected console", async ({
   page,
 }) => {
@@ -16,6 +18,7 @@ test("redirects the legacy platform admin path to the protected console", async 
 const organizationId = "10000000-0000-4000-8000-000000000001";
 const limitedEmail = "e2e-limited-platform-operator@sightline.local";
 const limitedPassword = "Sightline-Limited-Platform-E2E-2026!";
+const limitedAuthUserId = "12000000-0000-4000-8000-000000000004";
 const operatorEmail = "e2e-platform-operator@sightline.local";
 const operatorPassword = "Sightline-Platform-E2E-2026!";
 
@@ -123,34 +126,17 @@ test("denies and audits an active operator without directory capabilities", asyn
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Supabase E2E environment is unavailable.");
   const admin = adminClient(url, key);
-  const { data: listed, error: listError } = await admin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1_000,
+  const authUserId = await ensureE2eAuthUser({
+    admin,
+    id: limitedAuthUserId,
+    email: limitedEmail,
+    password: limitedPassword,
   });
-  if (listError) throw new Error(listError.message);
-  const existing = listed.users.find(
-    (candidate) => candidate.email?.toLowerCase() === limitedEmail,
-  );
-  const authResult = existing
-    ? await admin.auth.admin.updateUserById(existing.id, {
-        email: limitedEmail,
-        password: limitedPassword,
-        email_confirm: true,
-      })
-    : await admin.auth.admin.createUser({
-        email: limitedEmail,
-        password: limitedPassword,
-        email_confirm: true,
-      });
-  if (authResult.error || !authResult.data.user)
-    throw new Error(
-      authResult.error?.message ?? "Limited operator user is unavailable.",
-    );
   const { data: operator, error: operatorError } = await admin
     .from("platform_operators")
     .upsert(
       {
-        auth_user_id: authResult.data.user.id,
+        auth_user_id: authUserId,
         email: limitedEmail,
         display_name: "Limited E2E Operator",
         status: "active",

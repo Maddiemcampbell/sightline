@@ -4,7 +4,10 @@ import { dirname } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test as setup } from "@playwright/test";
 
+import { ensureE2eAuthUser } from "./support/auth-users";
+
 const authState = "test-results/e2e-platform-auth.json";
+const authUserId = "12000000-0000-4000-8000-000000000003";
 const email = "e2e-platform-operator@sightline.local";
 const password = "Sightline-Platform-E2E-2026!";
 const permissions = [
@@ -40,12 +43,17 @@ setup(
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: UnusedWebSocketTransport as never },
     });
-    const authUserId = await ensureAuthUser(admin);
+    const resolvedAuthUserId = await ensureE2eAuthUser({
+      admin,
+      id: authUserId,
+      email,
+      password,
+    });
     const { data: operator, error: operatorError } = await admin
       .from("platform_operators")
       .upsert(
         {
-          auth_user_id: authUserId,
+          auth_user_id: resolvedAuthUserId,
           email,
           display_name: "E2E Platform Operator",
           status: "active",
@@ -78,51 +86,3 @@ setup(
     await page.context().storageState({ path: authState });
   },
 );
-
-async function ensureAuthUser(admin: ReturnType<typeof createClient>) {
-  let lastError = "Supabase Auth did not return a platform operator.";
-  const retryDelays = [0, 250, 500, 1_000, 2_000, 4_000, 4_000] as const;
-  for (const delay of retryDelays) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-    const { data: listed, error: listError } =
-      await admin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1_000,
-      });
-    if (listError) {
-      lastError = `Unable to list Auth users: ${listError.message || listError.name || "Auth service unavailable"}`;
-      continue;
-    }
-    const existing = listed.users.find(
-      (candidate) => candidate.email?.toLowerCase() === email,
-    );
-    if (existing) {
-      const { error } = await admin.auth.admin.updateUserById(existing.id, {
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (error) {
-        lastError = `Unable to update the platform operator: ${error.message}`;
-        continue;
-      }
-      return existing.id;
-    }
-    const { data, error } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (error) {
-      lastError = `Unable to create the platform operator: ${error.message}`;
-      continue;
-    }
-    if (!data.user) {
-      lastError =
-        "Unable to create the platform operator: Auth returned no user.";
-      continue;
-    }
-    return data.user.id;
-  }
-  throw new Error(lastError);
-}

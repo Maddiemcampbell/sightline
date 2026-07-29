@@ -9,7 +9,7 @@ describe("portfolio filter validation", () => {
   it("uses safe defaults for unsupported project filters", () => {
     expect(
       projectFiltersSchema.parse({ stage: "deleted", sort: "unknown" }),
-    ).toEqual({ q: "", stage: "all", sort: "exposure" });
+    ).toEqual({ q: "", stage: "all", sort: "exposure", page: 1 });
   });
 
   it("normalizes array search parameters to their first value", () => {
@@ -19,7 +19,12 @@ describe("portfolio filter validation", () => {
         stage: ["active", "complete"],
         sort: "margin",
       }),
-    ).toEqual({ q: "concrete", stage: "active", sort: "margin" });
+    ).toEqual({
+      q: "concrete",
+      stage: "active",
+      sort: "margin",
+      page: 1,
+    });
   });
 
   it("accepts shareable risk filters", () => {
@@ -33,6 +38,7 @@ describe("portfolio filter validation", () => {
         project: "project-id",
         due: "7_days",
         sort: "confidence",
+        page: "3",
       }),
     ).toEqual({
       q: "insurance",
@@ -43,6 +49,12 @@ describe("portfolio filter validation", () => {
       project: "project-id",
       due: "7_days",
       sort: "confidence",
+      page: 3,
     });
+  });
+
+  it("uses the first page for invalid pagination parameters", () => {
+    expect(projectFiltersSchema.parse({ page: "-2" }).page).toBe(1);
+    expect(riskFiltersSchema.parse({ page: "not-a-number" }).page).toBe(1);
   });
 });
