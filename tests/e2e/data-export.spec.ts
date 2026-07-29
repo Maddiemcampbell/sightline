@@ -3,7 +3,9 @@ import { test, expect } from "@playwright/test";
 
 const organizationId = "10000000-0000-4000-8000-000000000001";
 
-test("shows asynchronous organization data export controls and history", async ({ page }) => {
+test("shows asynchronous organization data export controls and history", async ({
+  page,
+}) => {
   const requestedAfter = new Date().toISOString();
   await page.goto("/settings/data-export");
   await expect(
@@ -23,6 +25,25 @@ test("shows asynchronous organization data export controls and history", async (
   await expect(historyPage.getByRole("cell", { name: "Queued" })).toBeVisible();
 });
 
+test("configures recurring organization data exports", async ({ page }) => {
+  await page.goto("/settings/data-export");
+  const recurring = page
+    .getByRole("heading", { name: "Recurring exports" })
+    .locator("..");
+  await recurring.getByLabel("Enable recurring exports").check();
+  await recurring.getByLabel("Format").selectOption("csv");
+  await recurring.getByLabel("Frequency").selectOption("weekly");
+  await recurring.getByLabel("Weekly day").selectOption("1");
+  await recurring.getByLabel("Local time").fill("06:30");
+  await recurring
+    .getByRole("button", { name: "Save recurring schedule" })
+    .click();
+  await expect(recurring.getByRole("status")).toHaveText(
+    "Recurring export schedule saved.",
+  );
+  await expect.poll(() => recurringScheduleWasSaved()).toBe(true);
+});
+
 async function exportWasQueued(requestedAfter: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,4 +60,24 @@ async function exportWasQueued(requestedAfter: string) {
     .gte("requested_at", requestedAfter);
   if (error) throw new Error(error.message);
   return (count ?? 0) > 0;
+}
+
+async function recurringScheduleWasSaved() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return false;
+  const client = createClient(url, key, { auth: { persistSession: false } });
+  const { data, error } = await client
+    .from("organization_data_export_schedules")
+    .select("enabled,export_format,cadence,weekday,local_time")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(
+    data?.enabled &&
+    data.export_format === "csv" &&
+    data.cadence === "weekly" &&
+    data.weekday === 1 &&
+    data.local_time.startsWith("06:30"),
+  );
 }

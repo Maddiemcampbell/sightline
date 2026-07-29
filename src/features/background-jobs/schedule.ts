@@ -1,6 +1,6 @@
 import type { OrganizationJobType } from "@/features/background-jobs/types";
 
-function localParts(now: Date, timezone: string) {
+export function localScheduleParts(now: Date, timezone: string) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
@@ -18,6 +18,10 @@ function localParts(now: Date, timezone: string) {
   );
   return {
     date: `${parts.year}-${parts.month}-${parts.day}`,
+    dayOfMonth: Number(parts.day),
+    weekday: new Date(
+      `${parts.year}-${parts.month}-${parts.day}T00:00:00Z`,
+    ).getUTCDay(),
     minutes: Number(parts.hour) * 60 + Number(parts.minute),
   };
 }
@@ -33,7 +37,7 @@ export function scheduledOrganizationJob(
   }>,
 ) {
   if (!input.enabled) return null;
-  const local = localParts(input.now, input.timezone);
+  const local = localScheduleParts(input.now, input.timezone);
   const [hours = 0, minutes = 0] = input.localTime
     .slice(0, 5)
     .split(":")

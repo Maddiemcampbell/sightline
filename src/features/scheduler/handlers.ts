@@ -2,6 +2,7 @@ import "server-only";
 
 import { runScheduledOrganizationJobs } from "@/features/background-jobs/runners";
 import { DataExportWorker } from "@/features/data-exports/worker";
+import { enqueueDueScheduledDataExports } from "@/features/data-exports/schedule-service";
 import { detectLongRunningJobs } from "@/features/job-monitoring/alerts";
 import { runDetection } from "@/features/detection/service";
 import { PrivacyCleanupService } from "@/features/privacy/cleanup";
@@ -69,11 +70,16 @@ export const privacyCleanupHandler: SchedulerHandler = async () => {
 };
 
 export const customerDataExportsHandler: SchedulerHandler = async () => {
-  const summary = await new DataExportWorker(createAdminSupabaseClient()).run();
+  const client = createAdminSupabaseClient();
+  const queued = await enqueueDueScheduledDataExports(client);
+  const summary = await new DataExportWorker(client).run();
   return {
+    scheduled: queued.length,
     expired: summary.expired,
     processed: summary.exports.length,
     completed: summary.exports.filter((item) => item.status === "ready").length,
     failed: summary.exports.filter((item) => item.status === "failed").length,
+    retrying: summary.exports.filter((item) => item.status === "retrying")
+      .length,
   };
 };

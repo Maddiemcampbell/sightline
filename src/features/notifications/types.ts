@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
   "risk_assigned",
   "action_completed",
   "data_export_ready",
+  "data_export_failed",
   "background_job_failed",
 ] as const;
 

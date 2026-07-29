@@ -25,6 +25,29 @@ class UnusedWebSocketTransport {
   }
 }
 
+test("shows content-free customer health metrics", async ({ page }) => {
+  await page.goto("/internal/admin/customer-health");
+  await expect(
+    page.getByRole("heading", { name: "Customer health" }),
+  ).toBeVisible();
+  await expect(page.getByText("BuildCo Construction")).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Last login" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Onboarding" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Feature adoption" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Job failures (30d)" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Activity (30d)" }),
+  ).toBeVisible();
+});
+
 test("searches and inspects connected customer records with an audit trail", async ({
   page,
 }) => {

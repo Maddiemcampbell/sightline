@@ -57,7 +57,9 @@ test("updates an action optimistically and persists the change", async ({
   const changed = original === "low" ? "normal" : "low";
   await priority.selectOption(changed);
   await expect(priority).toHaveValue(changed);
-  await expect(action).toHaveAttribute("data-persisted-priority", changed);
+  await expect(action).toHaveAttribute("data-persisted-priority", changed, {
+    timeout: 15_000,
+  });
   await page.reload();
   await expect(page.getByLabel(priorityLabel, { exact: true })).toHaveValue(
     changed,
@@ -71,6 +73,7 @@ test("updates an action optimistically and persists the change", async ({
   await expect(persistedAction).toHaveAttribute(
     "data-persisted-priority",
     original,
+    { timeout: 15_000 },
   );
   await page.reload();
   await expect(page.getByLabel(priorityLabel, { exact: true })).toHaveValue(

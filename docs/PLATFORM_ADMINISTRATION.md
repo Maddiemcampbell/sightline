@@ -96,6 +96,21 @@ the customer record without a trace. Detail-page secondary sections fail
 independently, so a job or audit-source outage does not falsely make the core
 customer account appear missing.
 
+## Customer health
+
+`/internal/admin/customer-health` is a content-free operational read model for
+authorized operators. Login recency comes from the latest organization-member
+Auth login. Organization activity comes from throttled membership activity and
+safe audit-event counts. Job failures cover organization jobs and terminal data
+export failures from the last 30 days.
+
+Onboarding completion uses five explicit organization milestones: create a
+project, add a vendor, upload document metadata, create a risk, and generate a
+Daily Brief. Feature adoption reports use of seven core capabilities: projects,
+vendors, documents, risks, accepted action management, Ask Sightline, and Daily
+Briefs. These indicators are operational heuristics, not customer sentiment or
+commercial health scores.
+
 ## Remaining platform scope
 
 Jobs, AI observability, health, support, feature flags, releases, and some

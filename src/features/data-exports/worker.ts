@@ -11,10 +11,12 @@ import { NotificationRepository } from "@/features/notifications/repository";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { collectAllRows } from "@/lib/supabase/pagination";
+import { dataExportRetryAt } from "@/features/data-exports/schedule";
 
 export const EXPORT_BUCKET = "organization-exports";
 export const EXPORT_TTL_DAYS = 7;
-type ExportJob = AppDatabase["public"]["Tables"]["organization_data_exports"]["Row"];
+type ExportJob =
+  AppDatabase["public"]["Tables"]["organization_data_exports"]["Row"];
 
 export class DataExportWorker {
   constructor(private readonly client: SupabaseClient<AppDatabase>) {}
@@ -32,8 +34,8 @@ export class DataExportWorker {
         await this.process(job);
         results.push({ id: job.id, status: "ready" as const });
       } catch {
-        await this.fail(job);
-        results.push({ id: job.id, status: "failed" as const });
+        const status = await this.fail(job);
+        results.push({ id: job.id, status });
       }
     }
     return { expired, exports: results };
@@ -48,7 +50,9 @@ export class DataExportWorker {
     if (error) throw new Error(error.message);
     const datasets = await this.loadDatasets(job.organization_id);
     const generatedAt = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + EXPORT_TTL_DAYS * 86_400_000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + EXPORT_TTL_DAYS * 86_400_000,
+    ).toISOString();
     const manifest: ExportManifest = {
       schemaVersion: "1.0",
       exportId: job.id,
@@ -97,6 +101,7 @@ export class DataExportWorker {
         completed_at: generatedAt,
         expires_at: expiresAt,
         failure_code: null,
+        next_retry_at: null,
       })
       .eq("id", job.id)
       .eq("organization_id", job.organization_id)
@@ -122,21 +127,108 @@ export class DataExportWorker {
 
   private async loadDatasets(organizationId: string): Promise<ExportDataset[]> {
     const results = await Promise.all([
-      exportRows(this.client.from("projects").select("id,name,project_number,status,address_line_1,city,state_code,postal_code,start_date,target_completion_date,created_at,updated_at").eq("organization_id", organizationId)),
-      collectAllRows((from, to) => this.client.from("risks").select("id,project_id,vendor_id,title,summary,category,severity,status,confidence_score,why_it_matters,detected_at,due_at,resolved_at,created_at,updated_at", { count: "exact" }).eq("organization_id", organizationId).order("id").range(from, to)),
-      exportRows(this.client.from("recommended_actions").select("id,risk_id,owner_user_id,title,description,status,priority,action_type,due_at,completed_at,dismissed_at,dismissal_reason,source,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("documents").select("id,project_id,vendor_id,name,original_filename,document_type,document_date,mime_type,size_bytes,processing_status,archived_at,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("vendors").select("id,name,trade,contact_name,contact_email,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("risk_activities").select("id,risk_id,actor_user_id,actor_type,activity_type,from_status,to_status,summary,occurred_at,created_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("collaboration_comments").select("id,project_id,subject_type,subject_id,author_membership_id,body_markdown,edited_at,deleted_at,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("risk_conversations").select("id,risk_id,user_id,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("risk_conversation_messages").select("id,conversation_id,role,content,answer_status,evidence_ids,confidence,missing_information,suggested_follow_ups,created_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("daily_briefs").select("id,brief_date,status,headline,introduction,published_at,created_at,updated_at").eq("organization_id", organizationId)),
-      exportRows(this.client.from("brief_items").select("id,daily_brief_id,risk_id,priority,headline,summary,recommended_next_step,created_at").eq("organization_id", organizationId)),
+      exportRows(
+        this.client
+          .from("projects")
+          .select(
+            "id,name,project_number,status,address_line_1,city,state_code,postal_code,start_date,target_completion_date,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      collectAllRows((from, to) =>
+        this.client
+          .from("risks")
+          .select(
+            "id,project_id,vendor_id,title,summary,category,severity,status,confidence_score,why_it_matters,detected_at,due_at,resolved_at,created_at,updated_at",
+            { count: "exact" },
+          )
+          .eq("organization_id", organizationId)
+          .order("id")
+          .range(from, to),
+      ),
+      exportRows(
+        this.client
+          .from("recommended_actions")
+          .select(
+            "id,risk_id,owner_user_id,title,description,status,priority,action_type,due_at,completed_at,dismissed_at,dismissal_reason,source,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("documents")
+          .select(
+            "id,project_id,vendor_id,name,original_filename,document_type,document_date,mime_type,size_bytes,processing_status,archived_at,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("vendors")
+          .select(
+            "id,name,trade,contact_name,contact_email,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("risk_activities")
+          .select(
+            "id,risk_id,actor_user_id,actor_type,activity_type,from_status,to_status,summary,occurred_at,created_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("collaboration_comments")
+          .select(
+            "id,project_id,subject_type,subject_id,author_membership_id,body_markdown,edited_at,deleted_at,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("risk_conversations")
+          .select("id,risk_id,user_id,created_at,updated_at")
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("risk_conversation_messages")
+          .select(
+            "id,conversation_id,role,content,answer_status,evidence_ids,confidence,missing_information,suggested_follow_ups,created_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("daily_briefs")
+          .select(
+            "id,brief_date,status,headline,introduction,published_at,created_at,updated_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
+      exportRows(
+        this.client
+          .from("brief_items")
+          .select(
+            "id,daily_brief_id,risk_id,priority,headline,summary,recommended_next_step,created_at",
+          )
+          .eq("organization_id", organizationId),
+      ),
     ]);
     const names = [
-      "projects", "risks", "actions", "documents", "vendors", "activity",
-      "comments", "ai_conversations", "ai_messages", "daily_briefs", "daily_brief_items",
+      "projects",
+      "risks",
+      "actions",
+      "documents",
+      "vendors",
+      "activity",
+      "comments",
+      "ai_conversations",
+      "ai_messages",
+      "daily_briefs",
+      "daily_brief_items",
     ];
     return results.map((rows, index) => ({ name: names[index]!, rows }));
   }
@@ -172,18 +264,54 @@ export class DataExportWorker {
   }
 
   private async fail(job: ExportJob) {
-    await this.client
+    const now = new Date();
+    const retryAt = dataExportRetryAt(now, job.attempt_count);
+    const status = retryAt ? ("retrying" as const) : ("failed" as const);
+    const { error } = await this.client
       .from("organization_data_exports")
-      .update({ status: "failed", failure_code: "generation_failed" })
+      .update({
+        status,
+        failure_code: "generation_failed",
+        next_retry_at: retryAt,
+        processing_started_at: null,
+        completed_at: retryAt ? null : now.toISOString(),
+      })
       .eq("id", job.id)
       .eq("organization_id", job.organization_id)
       .eq("status", "processing");
-    await this.audit(job, "data_export.failed", { format: job.export_format });
+    if (error) throw new Error(error.message);
+    if (retryAt) {
+      await this.audit(job, "data_export.retry_scheduled", {
+        format: job.export_format,
+        attempt: String(job.attempt_count),
+        nextRetryAt: retryAt,
+      });
+      return status;
+    }
+    if (job.requested_by_membership_id) {
+      await new NotificationRepository(this.client).create({
+        organizationId: job.organization_id,
+        recipientMembershipId: job.requested_by_membership_id,
+        type: "data_export_failed",
+        title: "Your data export could not be generated",
+        body: "Sightline exhausted the available retry attempts. Request a new export or contact support.",
+        href: "/settings/data-export",
+        payload: { exportId: job.id, attemptCount: job.attempt_count },
+      });
+    }
+    await this.audit(job, "data_export.failed", {
+      format: job.export_format,
+      attempt: String(job.attempt_count),
+    });
+    return status;
   }
 
   private async audit(
     job: ExportJob,
-    action: "data_export.completed" | "data_export.failed",
+    action:
+      | "data_export.completed"
+      | "data_export.retry_scheduled"
+      | "data_export.failed",
     metadata: Record<string, string>,
   ) {
     await new AuditService(new AuditLogRepository(this.client)).record(

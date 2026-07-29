@@ -541,6 +541,7 @@ export type Database = {
         failure_code: string | null;
         id: string;
         manifest: Json;
+        next_retry_at: string | null;
         organization_id: string;
         processing_started_at: string | null;
         requested_at: string;
@@ -548,9 +549,29 @@ export type Database = {
         requested_by_email: string;
         requested_by_membership_id: string | null;
         requested_by_name: string;
-        status: "queued" | "processing" | "ready" | "failed" | "expired";
+        schedule_id: string | null;
+        schedule_occurrence_key: string | null;
+        status:
+          "queued" | "processing" | "retrying" | "ready" | "failed" | "expired";
         storage_path: string | null;
         updated_at: string;
+      }>;
+      organization_data_export_schedules: Table<{
+        cadence: "daily" | "weekly" | "monthly";
+        configured_by_auth_user_id: string | null;
+        configured_by_email: string;
+        configured_by_membership_id: string | null;
+        configured_by_name: string;
+        created_at: string;
+        day_of_month: number;
+        enabled: boolean;
+        export_format: "csv" | "json" | "zip";
+        id: string;
+        local_time: string;
+        organization_id: string;
+        timezone: string;
+        updated_at: string;
+        weekday: number;
       }>;
       portfolio_observations: Table<{
         affected_project_ids: string[];
@@ -658,6 +679,7 @@ export type Database = {
           | "risk_assigned"
           | "action_completed"
           | "data_export_ready"
+          | "data_export_failed"
           | "background_job_failed";
         organization_id: string;
         payload: Json;
@@ -1183,6 +1205,24 @@ export type Database = {
       }>;
     };
     Views: {
+      platform_customer_health: View<{
+        account_status: "active" | "pending_deletion" | "archived";
+        activity_events_30d: number;
+        adopted_feature_count: number;
+        available_feature_count: number;
+        created_at: string;
+        feature_adoption_percent: number;
+        health_rank: number;
+        health_status: "healthy" | "watch" | "needs_attention";
+        id: string;
+        job_failures_30d: number;
+        last_activity_at: string | null;
+        last_job_failure_at: string | null;
+        last_login_at: string | null;
+        name: string;
+        onboarding_completion_percent: number;
+        slug: string;
+      }>;
       platform_organization_directory: View<{
         account_status: "active" | "pending_deletion" | "archived";
         active_project_count: number;

@@ -56,33 +56,46 @@ export async function mutateAction(input: ActionMutationInput) {
             canAssignProjectActions(context, access.resource),
         );
       }
-      const admin = createAdminSupabaseClient();
-      const { data: before } = await admin
-        .from("recommended_actions")
-        .select("owner_user_id,risk_id")
-        .eq("organization_id", context.organizationId)
-        .eq("id", value.actionId)
-        .single();
-      const result = value.operation === "accept"
-        ? service.accept(context, value.actionId)
-        : value.operation === "start"
-          ? service.start(context, value.actionId)
-          : value.operation === "complete"
-            ? service.complete(context, value.actionId)
-            : value.operation === "assign"
-              ? service.assignOwner(context, value.actionId, value.ownerUserId)
-              : value.operation === "priority"
-                ? service.changePriority(
+      const needsCollaborationContext =
+        value.operation === "assign" || value.operation === "complete";
+      const admin = needsCollaborationContext
+        ? createAdminSupabaseClient()
+        : null;
+      const before = admin
+        ? (
+            await admin
+              .from("recommended_actions")
+              .select("owner_user_id,risk_id")
+              .eq("organization_id", context.organizationId)
+              .eq("id", value.actionId)
+              .single()
+          ).data
+        : null;
+      const result =
+        value.operation === "accept"
+          ? service.accept(context, value.actionId)
+          : value.operation === "start"
+            ? service.start(context, value.actionId)
+            : value.operation === "complete"
+              ? service.complete(context, value.actionId)
+              : value.operation === "assign"
+                ? service.assignOwner(
                     context,
                     value.actionId,
-                    value.priority,
+                    value.ownerUserId,
                   )
-                : value.operation === "due_date"
-                  ? service.setDueDate(context, value.actionId, value.dueAt)
-              : service.dismiss(context, value.actionId, value.reason);
+                : value.operation === "priority"
+                  ? service.changePriority(
+                      context,
+                      value.actionId,
+                      value.priority,
+                    )
+                  : value.operation === "due_date"
+                    ? service.setDueDate(context, value.actionId, value.dueAt)
+                    : service.dismiss(context, value.actionId, value.reason);
       const changed = await result;
-      const actorMembershipId = (await requireCurrentMembership()).id;
-      if (value.operation === "assign")
+      if (value.operation === "assign" && admin) {
+        const actorMembershipId = (await requireCurrentMembership()).id;
         await recordAssignment({
           client: admin,
           context,
@@ -95,7 +108,9 @@ export async function mutateAction(input: ActionMutationInput) {
           href: `/risks/${before?.risk_id ?? changed.risk_id}?tab=actions`,
           title: "Action assigned to you",
         });
-      if (value.operation === "complete")
+      }
+      if (value.operation === "complete" && admin) {
+        const actorMembershipId = (await requireCurrentMembership()).id;
         await notifyActionCompleted({
           client: admin,
           context,
@@ -104,6 +119,7 @@ export async function mutateAction(input: ActionMutationInput) {
           actionId: value.actionId,
           riskId: before?.risk_id ?? changed.risk_id,
         });
+      }
       return changed;
     },
   );

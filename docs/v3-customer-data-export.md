@@ -29,11 +29,18 @@ queued work using `FOR UPDATE SKIP LOCKED`, retries stale jobs, and writes
 artifacts to the private `organization-exports` bucket. Deployments should run
 the worker at least every five minutes.
 
+Owners and Administrators can configure one recurring schedule per organization
+with an enabled state, CSV/JSON/ZIP format, daily/weekly/monthly cadence, local
+time, calendar day, and IANA timezone. The central scheduler creates at most one
+export per local schedule occurrence using a database uniqueness constraint.
+
 Artifacts expire seven days after generation. Each worker run removes expired
 objects before claiming new work and marks their history records `expired`.
-History remains available without the storage path. Jobs are retry-safe:
-artifact paths are deterministic, uploads use upsert, and stale claims are not
-eligible for one hour.
+History remains available without the storage path. Generation failures use
+bounded exponential backoff and a five-attempt limit. Retry timestamps and
+attempt counts are visible in durable export history; terminal failures notify
+the requesting member. Artifact paths are deterministic, uploads use upsert,
+and stale claims are not eligible for one hour.
 
 ## Download security and auditing
 
@@ -44,7 +51,7 @@ expired, unauthorized, and cross-tenant identifiers all return the same 404
 response to resist enumeration. The bucket has no authenticated storage
 policies and is never public.
 
-Audit events are recorded when an export is requested, completed, fails, and
-is downloaded. The requester receives an in-app notification when processing
-completes.
-
+Audit events are recorded when a schedule changes and when an export is
+requested, scheduled, retried, completed, fails terminally, and is downloaded.
+The requester receives an in-app notification when processing completes or
+exhausts its retries.
