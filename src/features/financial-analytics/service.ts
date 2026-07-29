@@ -10,6 +10,7 @@ import type {
   ForecastPeriod,
   PortfolioFinancialComparison,
 } from "@/features/financial-analytics/types";
+import type { FinancialProjectSource } from "@/features/financial-analytics/repository";
 import {
   assertAuthorized,
   canViewFinancialExposure,
@@ -27,15 +28,21 @@ export class FinancialAnalyticsService {
     projectId = null,
     forecastPeriod = "monthly",
     now = new Date(),
+    preloadedProjects = null,
   }: {
     context: ActorContext;
     projectId?: string | null;
     forecastPeriod?: ForecastPeriod;
     now?: Date;
+    preloadedProjects?: readonly FinancialProjectSource[] | null;
   }) {
     assertAuthorized(canViewFinancialExposure(context));
     const [{ projects, cashEvents }, snapshots] = await Promise.all([
-      this.repository.retrieveOrganization(context.organizationId, projectId),
+      this.repository.retrieveOrganization(
+        context.organizationId,
+        projectId,
+        preloadedProjects,
+      ),
       projectId
         ? Promise.resolve([])
         : this.repository.getSnapshots(context.organizationId, 3),

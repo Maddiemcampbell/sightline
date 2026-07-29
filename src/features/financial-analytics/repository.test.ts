@@ -177,5 +177,12 @@ describe("FinancialAnalyticsRepository", () => {
         .filter((trace) => trace.from !== null && trace.to !== null)
         .every((trace) => (trace.to ?? 0) - (trace.from ?? 0) + 1 <= 1_000),
     ).toBe(true);
+
+    traces.length = 0;
+    const reused = await new FinancialAnalyticsRepository(
+      client,
+    ).retrieveOrganization(organizationId, null, projects);
+    expect(reused.projects).toHaveLength(1_200);
+    expect(traces.some((trace) => trace.table === "projects")).toBe(false);
   });
 });

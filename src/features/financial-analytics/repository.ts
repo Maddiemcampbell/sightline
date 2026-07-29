@@ -9,12 +9,23 @@ import type {
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import { collectAllRows } from "@/lib/supabase/pagination";
 
+export type FinancialProjectSource = Readonly<{
+  id: string;
+  name: string;
+  status: string;
+  contract_value_cents: number | null;
+  projected_margin_cents: number;
+  start_date: string | null;
+  target_completion_date: string | null;
+}>;
+
 export class FinancialAnalyticsRepository {
   constructor(private readonly client: SupabaseClient<AppDatabase>) {}
 
   async retrieveOrganization(
     organizationId: string,
     projectId: string | null = null,
+    preloadedProjects: readonly FinancialProjectSource[] | null = null,
   ): Promise<{
     projects: readonly ProjectFinancialInput[];
     cashEvents: readonly CashFlowEventInput[];
@@ -25,18 +36,27 @@ export class FinancialAnalyticsRepository {
         .select("default_currency")
         .eq("id", organizationId)
         .single(),
-      collectAllRows((from, to) => {
-        const query = this.client
-          .from("projects")
-          .select(
-            "id,name,status,contract_value_cents,projected_margin_cents,start_date,target_completion_date",
-            { count: "exact" },
+      preloadedProjects
+        ? Promise.resolve(
+            preloadedProjects.filter(
+              (project) => !projectId || project.id === projectId,
+            ),
           )
-          .eq("organization_id", organizationId)
-          .order("name")
-          .order("id");
-        return (projectId ? query.eq("id", projectId) : query).range(from, to);
-      }),
+        : collectAllRows((from, to) => {
+            const query = this.client
+              .from("projects")
+              .select(
+                "id,name,status,contract_value_cents,projected_margin_cents,start_date,target_completion_date",
+                { count: "exact" },
+              )
+              .eq("organization_id", organizationId)
+              .order("name")
+              .order("id");
+            return (projectId ? query.eq("id", projectId) : query).range(
+              from,
+              to,
+            );
+          }),
     ]);
     if (organizationResult.error)
       throw new Error(organizationResult.error.message);
@@ -88,6 +108,19 @@ export class FinancialAnalyticsRepository {
     const financialByProject = new Map(
       financials.map((financial) => [financial.project_id, financial]),
     );
+    const changeOrdersByProject = new Map<
+      string,
+      ProjectFinancialInput["changeOrders"][number][]
+    >();
+    for (const order of changeOrders) {
+      const rows = changeOrdersByProject.get(order.project_id) ?? [];
+      rows.push({
+        id: order.id,
+        status: order.status,
+        amountCents: order.amount_cents,
+      });
+      changeOrdersByProject.set(order.project_id, rows);
+    }
     const projectById = new Map(
       projects.map((project) => [project.id, project]),
     );
@@ -109,13 +142,7 @@ export class FinancialAnalyticsRepository {
         forecastCostToCompleteCents:
           financial?.forecast_cost_to_complete_cents ?? null,
         dataAsOfDate: financial?.data_as_of_date ?? null,
-        changeOrders: changeOrders
-          .filter((order) => order.project_id === project.id)
-          .map((order) => ({
-            id: order.id,
-            status: order.status,
-            amountCents: order.amount_cents,
-          })),
+        changeOrders: changeOrdersByProject.get(project.id) ?? [],
       };
     });
     const cashEvents = cashEventRows.flatMap((event): CashFlowEventInput[] => {
