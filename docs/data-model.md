@@ -210,6 +210,12 @@ risk/status indexes support the action register and risk panels. Every mutation
 is authorized by organization and appends an `action_updated` risk activity;
 the application restores the previous row if that audit append fails.
 
+The dashboard currently infers “waiting externally” from nonterminal
+`contact_vendor`, `request_document`, and `open_rfi` actions. This is not an
+explicit workflow state. Its limitations and the proposed future dependency
+schema are documented in
+[`ADR 0001`](adr/0001-waiting-externally-inference.md).
+
 ## V2 risk activity timeline
 
 Risk activity is an append-only user-facing event stream. Rows store an event
