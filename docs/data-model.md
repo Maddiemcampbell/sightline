@@ -67,10 +67,13 @@ portfolio experience adds projected project margin and risk ownership in
   maximum concrete-placement temperature.
 - `detection_runs` records the trigger source, per-rule findings, created and
   updated counts, completion state, and failures for every engine run.
-- `ai_analysis_runs` records sanitized context, structured output, provider,
+- `ai_analysis_runs` records metadata-only input/output snapshots, provider,
   model, prompt version, latency, token usage, and failure/fallback state.
 - `ai_risk_suggestions` is the review queue. Only approved suggestions reference
-  an activated risk; rejected suggestions retain the review reason.
+  an activated risk; rejected suggestions retain the review reason. Sanitized
+  review context is retained only while a suggestion is pending.
+- `ai_observability_events` centralizes privacy-safe usage, latency, retrieval,
+  evidence, and status telemetry without storing prompts or customer content.
 - `risk_email_drafts` stores human-editable risk communications and their
   generation provenance. Drafts may reference a recommended action and a known
   organization user or vendor contact. `manually_sent` records only a human

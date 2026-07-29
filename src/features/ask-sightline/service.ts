@@ -9,11 +9,13 @@ import {
   validateRiskQuestionGrounding,
 } from "@/domain/ai/risk-question";
 import {
+  ORGANIZATION_QUESTION_PROMPT_VERSION,
   organizationQuestionOutputSchema,
   validateOrganizationQuestionGrounding,
   type OrganizationQuestionContext,
 } from "@/domain/ai/organization-question";
 import { OpenAiRiskQuestionProvider } from "@/features/ask-sightline/openai-provider";
+import { tryRecordAiObservability } from "@/features/ai/observability";
 import { allowRiskQuestion } from "@/features/ask-sightline/rate-limit";
 import { AskSightlineRepository } from "@/features/ask-sightline/repository";
 import { selectRelevantEvidence } from "@/features/ask-sightline/retrieval";
@@ -128,6 +130,7 @@ export class AskSightlineService {
       content: contextInput.question,
     });
     const provider = this.provider ?? configuredProvider();
+    let usedFallback = false;
     let result;
     try {
       result = await provider.answer(contextInput);
@@ -136,6 +139,7 @@ export class AskSightlineService {
         contextInput,
       );
     } catch {
+      usedFallback = true;
       result = {
         output: deterministicAnswer(contextInput),
         model: "deterministic-analyst-v1",
@@ -163,6 +167,24 @@ export class AskSightlineService {
       input_tokens: result.usage.inputTokens,
       output_tokens: result.usage.outputTokens,
       total_tokens: result.usage.totalTokens,
+    });
+    await tryRecordAiObservability(this.client, {
+      organizationId: context.organizationId,
+      operationType: "risk_question",
+      sourceRecordId: answer.id,
+      provider: usedFallback ? "deterministic" : provider.name,
+      modelName: result.model,
+      promptVersion: ORGANIZATION_QUESTION_PROMPT_VERSION,
+      status: usedFallback ? "fallback" : "success",
+      latencyMs: result.latencyMs,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.totalTokens,
+      retrievalCandidateCount: retrieved.evidence.length,
+      retrievalSelectedCount: contextInput.evidence.length,
+      evidenceAvailableCount: contextInput.evidence.length,
+      evidenceCitedCount: new Set(result.output.evidenceCitations).size,
+      errorCode: usedFallback ? "provider_failure" : undefined,
     });
     await this.repository.prune(context, conversation.id);
     return answer;
@@ -217,6 +239,7 @@ export class AskSightlineService {
     });
     const provider =
       this.organizationProvider ?? configuredOrganizationProvider();
+    let usedFallback = false;
     let result;
     try {
       result = await provider.answerOrganization(questionContext);
@@ -225,6 +248,7 @@ export class AskSightlineService {
         questionContext,
       );
     } catch {
+      usedFallback = true;
       result = {
         output: validateOrganizationQuestionGrounding(
           deterministicOrganizationAnswer(questionContext),
@@ -242,6 +266,23 @@ export class AskSightlineService {
     const citations = new Map(
       questionContext.citations.map((citation) => [citation.id, citation]),
     );
+    await tryRecordAiObservability(this.client, {
+      organizationId: context.organizationId,
+      operationType: "organization_question",
+      provider: usedFallback ? "deterministic" : provider.name,
+      modelName: result.model,
+      promptVersion: RISK_QUESTION_PROMPT_VERSION,
+      status: usedFallback ? "fallback" : "success",
+      latencyMs: result.latencyMs,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.totalTokens,
+      retrievalCandidateCount: questionContext.citations.length,
+      retrievalSelectedCount: questionContext.citations.length,
+      evidenceAvailableCount: questionContext.citations.length,
+      evidenceCitedCount: new Set(result.output.citationIds).size,
+      errorCode: usedFallback ? "provider_failure" : undefined,
+    });
     return {
       id: crypto.randomUUID(),
       role: "assistant" as const,

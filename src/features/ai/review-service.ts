@@ -31,15 +31,11 @@ export async function approveRiskSuggestion(input: {
   if (error || !suggestion) throw new Error("Suggestion not found.");
   if (suggestion.review_status !== "pending")
     throw new Error("Suggestion has already been reviewed.");
-  const { data: run, error: runError } = await client
-    .from("ai_analysis_runs")
-    .select("input_snapshot")
-    .eq("id", suggestion.analysis_run_id)
-    .eq("organization_id", input.organizationId)
-    .single();
-  if (runError || !run)
+  if (!suggestion.review_context)
     throw new Error("Analysis evidence snapshot not found.");
-  const analysisInput = riskAnalysisInputSchema.parse(run.input_snapshot);
+  const analysisInput = riskAnalysisInputSchema.parse(
+    suggestion.review_context,
+  );
   const suggestedRisk = validateEvidenceGrounding(
     riskAnalysisOutputSchema.parse(suggestion.suggested_risk),
     analysisInput,
@@ -146,6 +142,7 @@ export async function approveRiskSuggestion(input: {
       reviewed_at: new Date().toISOString(),
       review_note: input.reviewNote?.trim() || null,
       activated_risk_id: risk.id,
+      review_context: null,
     })
     .eq("id", suggestion.id)
     .eq("organization_id", input.organizationId)
@@ -178,6 +175,7 @@ export async function rejectRiskSuggestion(input: {
       reviewed_by_user_id: input.reviewerUserId,
       reviewed_at: new Date().toISOString(),
       review_note: reason,
+      review_context: null,
     })
     .eq("id", input.suggestionId)
     .eq("organization_id", input.organizationId)

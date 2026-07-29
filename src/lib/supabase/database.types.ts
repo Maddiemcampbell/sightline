@@ -403,20 +403,14 @@ export type Database = {
           application_version: string;
           environment: string;
           status:
-            | "planned"
-            | "deploying"
-            | "deployed"
-            | "failed"
-            | "rolled_back";
+            "planned" | "deploying" | "deployed" | "failed" | "rolled_back";
           deployed_at: string | null;
           commit_sha: string | null;
           source_reference: string | null;
           deployed_by: string | null;
           release_notes: string;
           rollback_status:
-            | "not_rolled_back"
-            | "rollback_pending"
-            | "rolled_back";
+            "not_rolled_back" | "rollback_pending" | "rolled_back";
           created_by_operator_id: string | null;
           updated_by_operator_id: string | null;
         }
@@ -436,12 +430,7 @@ export type Database = {
           steps_to_reproduce: string | null;
           expected_behavior: string | null;
           actual_behavior: string | null;
-          customer_severity:
-            | "blocking"
-            | "major"
-            | "minor"
-            | "cosmetic"
-            | null;
+          customer_severity: "blocking" | "major" | "minor" | "cosmetic" | null;
           relevant_route: string | null;
           relevant_feature: string | null;
           diagnostic_consent: boolean;
@@ -912,6 +901,30 @@ export type Database = {
         status: "complete" | "failed" | "fallback";
         total_tokens: number | null;
       }>;
+      ai_observability_events: Table<{
+        created_at: string;
+        error_code: string | null;
+        evidence_available_count: number | null;
+        evidence_cited_count: number | null;
+        id: string;
+        input_tokens: number | null;
+        latency_ms: number;
+        model_name: string;
+        operation_type:
+          | "risk_analysis"
+          | "email_draft"
+          | "risk_question"
+          | "organization_question";
+        organization_id: string;
+        output_tokens: number | null;
+        prompt_version: string;
+        provider: string;
+        retrieval_candidate_count: number | null;
+        retrieval_selected_count: number | null;
+        source_record_id: string | null;
+        status: "success" | "fallback" | "failure";
+        total_tokens: number | null;
+      }>;
       ai_risk_suggestions: Table<
         Timestamped & {
           activated_risk_id: string | null;
@@ -920,6 +933,7 @@ export type Database = {
           organization_id: string;
           project_id: string | null;
           review_note: string | null;
+          review_context: Json | null;
           review_status: DatabaseEnums["ai_review_status"];
           reviewed_at: string | null;
           reviewed_by_user_id: string | null;

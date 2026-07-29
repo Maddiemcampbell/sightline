@@ -150,8 +150,10 @@ single SQL transaction exposed through a narrowly typed RPC.
   risk; unavailable citations invalidate the output.
 - AI output is a draft. It cannot change status, assign work, send an email, or
   mark a risk resolved without a separate human mutation.
-- Provider/model/prompt version, sanitized input, output, latency, and token use
-  remain auditable. See `docs/ai-trust-model.md` for the V1 implementation.
+- Privacy-safe provider/model/prompt version, latency, token use, retrieval and
+  evidence counts, status, and aggregate feedback remain auditable. Raw prompts,
+  document contents, questions, answers, and generated output are excluded from
+  observability. See `docs/ai-trust-model.md` for the trust boundary.
 
 ## Feature flags
 

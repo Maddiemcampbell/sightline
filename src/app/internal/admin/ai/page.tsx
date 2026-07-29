@@ -24,91 +24,49 @@ type Operation = {
   promptVersion: string;
   tokens: number | null;
   latencyMs: number | null;
+  retrieval: string;
+  evidence: string;
   createdAt: string;
 };
 
 export default async function PlatformAIUsagePage() {
   await requirePlatformPermission("platform.ai.read", "admin_page", "ai_usage");
   const client = createAdminSupabaseClient();
-  const [metrics, analyses, drafts, answers] = await Promise.all([
+  const [metrics, recent] = await Promise.all([
     new PlatformOperationsService(client).aiSummary(),
     client
-      .from("ai_analysis_runs")
+      .from("ai_observability_events")
       .select(
-        "id,organization_id,status,provider,model_name,prompt_version,total_tokens,latency_ms,created_at",
+        "id,organization_id,operation_type,status,provider,model_name,prompt_version,total_tokens,latency_ms,retrieval_candidate_count,retrieval_selected_count,evidence_available_count,evidence_cited_count,created_at",
       )
-      .order("created_at", { ascending: false })
-      .limit(50),
-    client
-      .from("risk_email_drafts")
-      .select(
-        "id,organization_id,generation_source,provider,model_name,prompt_version,total_tokens,latency_ms,created_at",
-      )
-      .order("created_at", { ascending: false })
-      .limit(50),
-    client
-      .from("risk_conversation_messages")
-      .select(
-        "id,organization_id,answer_status,provider,model_name,prompt_version,total_tokens,latency_ms,created_at,role",
-      )
-      .eq("role", "assistant")
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
-  for (const result of [analyses, drafts, answers]) {
-    if (result.error) throw new Error(result.error.message);
-  }
-  const operations: Operation[] = [
-    ...(analyses.data ?? []).map((item) => ({
-      id: item.id,
-      kind: "Risk analysis",
-      organizationId: item.organization_id,
-      status: item.status,
-      provider: item.provider,
-      model: item.model_name,
-      promptVersion: item.prompt_version,
-      tokens: item.total_tokens,
-      latencyMs: item.latency_ms,
-      createdAt: item.created_at,
-    })),
-    ...(drafts.data ?? []).map((item) => ({
-      id: item.id,
-      kind: "Email draft",
-      organizationId: item.organization_id,
-      status: item.generation_source,
-      provider: item.provider,
-      model: item.model_name,
-      promptVersion: item.prompt_version,
-      tokens: item.total_tokens,
-      latencyMs: item.latency_ms,
-      createdAt: item.created_at,
-    })),
-    ...(answers.data ?? []).map((item) => ({
-      id: item.id,
-      kind: "Risk answer",
-      organizationId: item.organization_id,
-      status: item.answer_status ?? "unavailable",
-      provider: item.provider ?? "unknown",
-      model: item.model_name ?? "unknown",
-      promptVersion: item.prompt_version ?? "unknown",
-      tokens: item.total_tokens,
-      latencyMs: item.latency_ms,
-      createdAt: item.created_at,
-    })),
-  ]
-    .sort(
-      (left, right) =>
-        new Date(right.createdAt).getTime() -
-        new Date(left.createdAt).getTime(),
-    )
-    .slice(0, 50);
+  if (recent.error) throw new Error(recent.error.message);
+  const operations: Operation[] = (recent.data ?? []).map((item) => ({
+    id: item.id,
+    kind: humanize(item.operation_type),
+    organizationId: item.organization_id,
+    status: item.status,
+    provider: item.provider,
+    model: item.model_name,
+    promptVersion: item.prompt_version,
+    tokens: item.total_tokens,
+    latencyMs: item.latency_ms,
+    retrieval: ratio(
+      item.retrieval_selected_count,
+      item.retrieval_candidate_count,
+    ),
+    evidence: ratio(item.evidence_cited_count, item.evidence_available_count),
+    createdAt: item.created_at,
+  }));
 
   return (
     <div className="space-y-6 p-6">
       <AdminPageHeader
         eyebrow="AI operations"
         title="AI usage"
-        description="Model operations, provider-reported token usage, latency, and failures. Prompts, document excerpts, generated bodies, and model reasoning are intentionally excluded."
+        description="Privacy-safe model operations, usage, retrieval, evidence grounding, errors, and answer feedback. Prompts, document excerpts, generated content, and model reasoning are never recorded here."
       />
       <MetricCards metrics={metrics} />
       <section className="overflow-hidden rounded-lg border bg-white">
@@ -122,9 +80,11 @@ export default async function PlatformAIUsagePage() {
                 <th className="p-3">Operation</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Model</th>
-                <th className="p-3">Prompt</th>
+                <th className="p-3">Prompt version</th>
                 <th className="p-3">Tokens</th>
                 <th className="p-3">Latency</th>
+                <th className="p-3">Retrieval</th>
+                <th className="p-3">Evidence</th>
                 <th className="p-3">Recorded</th>
               </tr>
             </thead>
@@ -158,6 +118,8 @@ export default async function PlatformAIUsagePage() {
                       ? "Unavailable"
                       : `${operation.latencyMs} ms`}
                   </td>
+                  <td className="p-3">{operation.retrieval}</td>
+                  <td className="p-3">{operation.evidence}</td>
                   <td className="p-3">{formatDateTime(operation.createdAt)}</td>
                 </tr>
               ))}
@@ -170,4 +132,10 @@ export default async function PlatformAIUsagePage() {
       </section>
     </div>
   );
+}
+
+function ratio(numerator: number | null, denominator: number | null) {
+  if (numerator === null || denominator === null) return "Unavailable";
+  if (denominator === 0) return "No eligible records";
+  return `${numerator}/${denominator} (${((numerator / denominator) * 100).toFixed(0)}%)`;
 }

@@ -9,6 +9,7 @@ import {
 } from "@/domain/ai/email-draft";
 import { RiskActivityService } from "@/features/activity/service";
 import { OpenAiEmailDraftProvider } from "@/features/ai/openai-email-draft-provider";
+import { tryRecordAiObservability } from "@/features/ai/observability";
 import type { EmailDraftProvider } from "@/features/ai/provider";
 import { sanitizeUntrustedExcerpt } from "@/features/ai/prompt-security";
 import { EmailDraftRepository } from "@/features/email-drafts/repository";
@@ -99,6 +100,27 @@ export class EmailDraftService {
       input_tokens: result.usage.inputTokens,
       output_tokens: result.usage.outputTokens,
       total_tokens: result.usage.totalTokens,
+    });
+    await tryRecordAiObservability(this.client, {
+      organizationId: context.organizationId,
+      operationType: "email_draft",
+      sourceRecordId: draft.id,
+      provider: generationSource === "ai" ? provider.name : "deterministic",
+      modelName: result.model,
+      promptVersion: EMAIL_DRAFT_PROMPT_VERSION,
+      status: generationSource === "ai" ? "success" : "fallback",
+      latencyMs: result.latencyMs,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.totalTokens,
+      retrievalCandidateCount: source.evidence.length,
+      retrievalSelectedCount: input.evidence.length,
+      evidenceAvailableCount: input.evidence.length,
+      evidenceCitedCount: new Set(result.output.evidenceIdsUsed).size,
+      errorCode:
+        generationSource === "deterministic_fallback"
+          ? "provider_failure"
+          : undefined,
     });
     await this.activity.append(context, {
       riskId: source.risk.id,

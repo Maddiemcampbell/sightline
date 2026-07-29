@@ -34,12 +34,27 @@ risk of prompt injection, so human review remains mandatory.
 
 1. The provider receives project context, document excerpts, existing evidence,
    and related historical risks.
-2. Sightline validates citations and stores the provider, model, prompt version,
-   timestamp, latency, token usage, sanitized input, and structured output.
+2. Sightline validates citations and stores privacy-safe telemetry: provider,
+   model, prompt version, timestamp, latency, token usage, retrieval counts,
+   evidence counts, and success/fallback/failure state. It does not log prompts,
+   excerpts, questions, answers, or generated content.
 3. The output is stored as `pending`; it cannot enter the Daily Brief.
 4. An authorized reviewer approves or rejects it. Rejection requires a reason.
 5. Approval creates a `monitoring` risk, copies cited evidence, adds the drafted
    next action, and records the human approval in risk activity.
+
+The sanitized evidence context needed for step 4 is access-controlled product
+workflow state on the pending suggestion, not observability data. It is cleared
+after approval or rejection. Analysis-run snapshots contain counts and
+classification metadata only.
+
+## AI observability
+
+`ai_observability_events` is the common monitoring boundary for risk analysis,
+email drafts, risk questions, and organization questions. The internal AI usage
+page reports model/provider, latency, token usage, retrieval coverage, evidence
+coverage, provider error/fallback rate, and aggregate answer feedback. Unknown
+historical denominators remain unavailable rather than being reported as zero.
 
 The `/internal/ai-review` route demonstrates this flow in development. It is
 disabled in production until application authentication replaces the V1 seeded

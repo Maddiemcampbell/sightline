@@ -89,29 +89,22 @@ export class PlatformOperationsService {
   }
 
   async aiSummary(): Promise<readonly PlatformMetric[]> {
-    const [analyses, drafts, answers] = await Promise.all([
+    const [events, feedback] = await Promise.all([
       this.client
-        .from("ai_analysis_runs")
-        .select("status,total_tokens,latency_ms")
+        .from("ai_observability_events")
+        .select(
+          "status,total_tokens,latency_ms,retrieval_candidate_count,retrieval_selected_count,evidence_available_count,evidence_cited_count",
+        )
         .gte("created_at", oneDayAgo()),
       this.client
-        .from("risk_email_drafts")
-        .select("total_tokens,latency_ms")
-        .gte("created_at", oneDayAgo()),
-      this.client
-        .from("risk_conversation_messages")
-        .select("total_tokens,latency_ms,role")
-        .eq("role", "assistant")
+        .from("risk_answer_feedback")
+        .select("rating")
         .gte("created_at", oneDayAgo()),
     ]);
-    for (const result of [analyses, drafts, answers]) {
+    for (const result of [events, feedback]) {
       if (result.error) throw new Error(result.error.message);
     }
-    const operations = [
-      ...(analyses.data ?? []),
-      ...(drafts.data ?? []),
-      ...(answers.data ?? []),
-    ];
+    const operations = events.data ?? [];
     const tokens = operations.reduce(
       (sum, item) => sum + (item.total_tokens ?? 0),
       0,
@@ -119,9 +112,24 @@ export class PlatformOperationsService {
     const latencies = operations
       .map((item) => item.latency_ms)
       .filter((value): value is number => value !== null);
-    const failures = (analyses.data ?? []).filter(
-      (item) => item.status === "failed",
+    const failures = operations.filter(
+      (item) => item.status === "failure",
     ).length;
+    const fallbacks = operations.filter(
+      (item) => item.status === "fallback",
+    ).length;
+    const retrieval = coverage(
+      operations,
+      (row) => row.retrieval_selected_count,
+      (row) => row.retrieval_candidate_count,
+    );
+    const evidence = coverage(
+      operations,
+      (row) => row.evidence_cited_count,
+      (row) => row.evidence_available_count,
+    );
+    const ratings = feedback.data ?? [];
+    const helpful = ratings.filter((item) => item.rating === "helpful").length;
     return [
       metric(
         "AI operations",
@@ -144,10 +152,34 @@ export class PlatformOperationsService {
         "info",
       ),
       metric(
-        "Failed analyses",
-        String(failures),
-        "Last 24 hours",
-        failures ? "warning" : "healthy",
+        "Error rate",
+        operations.length
+          ? `${(((failures + fallbacks) / operations.length) * 100).toFixed(1)}%`
+          : "No operations",
+        `${failures} unrecovered failures · ${fallbacks} recovered by deterministic fallback`,
+        failures + fallbacks ? "warning" : "healthy",
+      ),
+      metric(
+        "Retrieval coverage",
+        retrieval === null ? "Unavailable" : `${(retrieval * 100).toFixed(1)}%`,
+        "Selected records compared with eligible records",
+        "info",
+      ),
+      metric(
+        "Evidence coverage",
+        evidence === null ? "Unavailable" : `${(evidence * 100).toFixed(1)}%`,
+        "Cited evidence compared with supplied evidence",
+        "info",
+      ),
+      metric(
+        "Answer feedback",
+        ratings.length
+          ? `${((helpful / ratings.length) * 100).toFixed(1)}% helpful`
+          : "No feedback",
+        `${ratings.length} ratings in the last 24 hours`,
+        ratings.some((item) => item.rating === "incorrect")
+          ? "warning"
+          : "info",
       ),
     ];
   }
@@ -243,6 +275,25 @@ export class PlatformOperationsService {
 
 function oneDayAgo() {
   return new Date(Date.now() - 86_400_000).toISOString();
+}
+
+function coverage<T>(
+  rows: readonly T[],
+  numeratorFor: (row: T) => number | null,
+  denominatorFor: (row: T) => number | null,
+) {
+  const measured = rows.filter(
+    (row) => numeratorFor(row) !== null && denominatorFor(row) !== null,
+  );
+  const denominator = measured.reduce(
+    (sum, row) => sum + (denominatorFor(row) ?? 0),
+    0,
+  );
+  if (!measured.length || denominator === 0) return null;
+  return (
+    measured.reduce((sum, row) => sum + (numeratorFor(row) ?? 0), 0) /
+    denominator
+  );
 }
 
 function metric(
