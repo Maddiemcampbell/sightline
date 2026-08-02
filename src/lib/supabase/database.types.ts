@@ -129,6 +129,7 @@ type Timestamped = {
 };
 
 type OrganizationRow = Timestamped & {
+  plan_key: "essential" | "professional";
   brand_color: string;
   company_size:
     "1-10" | "11-50" | "51-200" | "201-500" | "501-1000" | "1001+" | null;
@@ -170,6 +171,8 @@ type UserRow = Timestamped & {
 };
 
 type ProjectRow = Timestamped & {
+  archived_at: string | null;
+  archived_by_user_id: string | null;
   address_line_1: string | null;
   city: string | null;
   contract_value_cents: number | null;
@@ -1325,6 +1328,34 @@ export type Database = {
       }>;
     };
     Functions: {
+      organization_project_limit: {
+        Args: { target_plan_key: string };
+        Returns: number;
+      };
+      create_entitled_project: {
+        Args: {
+          target_organization_id: string;
+          principal_application_user_id: string;
+          project_name: string;
+          project_number_value: string;
+          project_address_line_1: string | null;
+          project_city: string | null;
+          project_state_code: string | null;
+          project_postal_code: string | null;
+          project_start_date: string | null;
+          project_target_completion_date: string | null;
+        };
+        Returns: string;
+      };
+      set_project_archived: {
+        Args: {
+          target_organization_id: string;
+          target_project_id: string;
+          principal_application_user_id: string;
+          should_archive: boolean;
+        };
+        Returns: undefined;
+      };
       claim_stripe_billing_event: {
         Args: {
           supplied_provider_event_id: string;

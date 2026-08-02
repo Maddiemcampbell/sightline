@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { CustomerProvisioningRepository } from "./repository";
 import { hashActivationToken } from "./service";
 import type { BillingStatus, CustomerAccessRequest } from "./types";
-import type { StripeEvent } from "./stripe";
+import { getStripeSubscriptionPlan, type StripeEvent } from "./stripe";
 
 const ACTIVATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1_000;
 
@@ -77,6 +77,7 @@ export class StripeWebhookService {
           "Stripe Checkout event is missing billing identifiers.",
         );
       const token = randomBytes(32).toString("hex");
+      const planKey = await getStripeSubscriptionPlan(subscriptionId);
       await this.repository.activateStripeBilling({
         accessRequestId: request.id,
         customerId,
@@ -85,6 +86,7 @@ export class StripeWebhookService {
         tokenExpiresAt: new Date(
           Date.now() + ACTIVATION_LIFETIME_MS,
         ).toISOString(),
+        planKey,
       });
       return { request, token };
     }
@@ -94,9 +96,11 @@ export class StripeWebhookService {
     ) {
       const subscriptionId = stringValue(object.id);
       if (!subscriptionId) throw new Error("Subscription event has no ID.");
+      const planKey = await getStripeSubscriptionPlan(subscriptionId);
       await this.repository.updateStripeBillingStatus(
         subscriptionId,
         mapSubscriptionStatus(String(object.status ?? "")),
+        planKey,
       );
     }
     return undefined;

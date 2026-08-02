@@ -36,6 +36,7 @@ const membership: OrganizationMembership = {
     slug: "buildco",
     timezone: "America/Los_Angeles",
     createdByAuthUserId: principal.id,
+    planKey: "essential",
   },
 };
 
@@ -72,7 +73,10 @@ describe("OrganizationService", () => {
   it("creates an organization for the verified principal", async () => {
     const repository = {
       createOrganization: vi.fn().mockResolvedValue(membership.id),
-      listMemberships: vi.fn().mockResolvedValue([membership]),
+      listMemberships: vi
+        .fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([membership]),
     } as unknown as OrganizationRepository;
     const service = new OrganizationService(repository);
 

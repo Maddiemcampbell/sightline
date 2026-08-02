@@ -49,6 +49,7 @@ export class CustomerProvisioningService {
       companyName: request.companyName,
       requestedSlug: value.slug,
       correlationId: request.correlationId,
+      planKey: value.planKey,
     });
     await this.repository.markStripeCheckoutPending({
       request,

@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { CustomerProvisioningRepository } from "./repository";
+import { getStripeSubscriptionPlan } from "./stripe";
 import { StripeWebhookService } from "./stripe-webhook-service";
 import type { StripeEvent } from "./stripe";
 import type { CustomerAccessRequest } from "./types";
+
+vi.mock("./stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./stripe")>()),
+  getStripeSubscriptionPlan: vi.fn().mockResolvedValue("essential"),
+}));
 
 const request: CustomerAccessRequest = {
   id: "00000000-0000-0000-0000-000000000001",
@@ -68,9 +74,11 @@ describe("Stripe webhook processing", () => {
         accessRequestId: request.id,
         customerId: "cus_test",
         subscriptionId: "sub_test",
+        planKey: "essential",
       }),
     );
     expect(result.activation?.request.id).toBe(request.id);
+    expect(getStripeSubscriptionPlan).toHaveBeenCalledWith("sub_test");
     expect(result.activation?.token).toMatch(/^[a-f0-9]{64}$/);
     expect(fake.finishStripeEvent).toHaveBeenCalledWith(
       "evt_checkout",

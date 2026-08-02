@@ -6,6 +6,8 @@ import { CreateProjectForm } from "@/components/projects/create-project-form";
 import { Card } from "@/components/ui/card";
 import { canCreateProject, canViewProject } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { getOrganizationCapacity } from "@/features/billing/entitlements";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type Props = Readonly<{
   searchParams: Promise<{ welcome?: string }>;
@@ -17,6 +19,10 @@ export default async function NewProjectPage({ searchParams }: Props) {
   const canCreate = canCreateProject(context, {
     organization_id: context.organizationId,
   });
+  const capacity = await getOrganizationCapacity(
+    await createServerSupabaseClient(),
+    context.organizationId,
+  );
   const welcome = (await searchParams).welcome;
 
   return (
@@ -41,8 +47,22 @@ export default async function NewProjectPage({ searchParams }: Props) {
         </p>
       </header>
       <Card className="mt-8 p-5 sm:p-7">
-        {canCreate ? (
+        {canCreate && !capacity.atProjectLimit ? (
           <CreateProjectForm />
+        ) : capacity.atProjectLimit ? (
+          <div>
+            <h2 className="text-lg font-semibold">Project limit reached</h2>
+            <p className="text-muted mt-2 text-sm leading-6">
+              The {capacity.name} plan includes {capacity.maxProjects} active
+              projects. Archive a project before creating another.
+            </p>
+            <Link
+              href="/projects/archived"
+              className="text-deep-green mt-4 inline-block text-sm font-semibold underline"
+            >
+              View archived projects
+            </Link>
+          </div>
         ) : (
           <div>
             <h2 className="text-lg font-semibold">

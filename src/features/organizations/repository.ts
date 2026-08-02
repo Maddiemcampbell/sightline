@@ -16,6 +16,7 @@ function toOrganization(row: {
   slug: string;
   timezone: string;
   created_by_auth_user_id: string | null;
+  plan_key: "essential" | "professional";
 }): Organization {
   return {
     id: row.id,
@@ -23,6 +24,7 @@ function toOrganization(row: {
     slug: row.slug,
     timezone: row.timezone,
     createdByAuthUserId: row.created_by_auth_user_id,
+    planKey: row.plan_key,
   };
 }
 

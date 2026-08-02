@@ -16,11 +16,12 @@ values (
   '', '', '', ''
 );
 
-insert into public.organizations (id, name, slug)
+insert into public.organizations (id, name, slug, plan_key)
 values (
   'fb000000-0000-4000-8000-000000000001',
   'Pagination Tenant',
-  'pagination-tenant'
+  'pagination-tenant',
+  'professional'
 );
 
 insert into public.users (
@@ -52,7 +53,7 @@ create temporary table pagination_projects (
 
 insert into pagination_projects (sequence_number, project_id)
 select sequence_number, gen_random_uuid()
-from generate_series(1, 45) sequence_number;
+from generate_series(1, 10) sequence_number;
 
 insert into public.projects (
   id, organization_id, name, project_number, status,
@@ -63,7 +64,7 @@ select
   'fb000000-0000-4000-8000-000000000001',
   'Load Project ' || lpad(sequence_number::text, 2, '0'),
   'LOAD-' || lpad(sequence_number::text, 2, '0'),
-  case when sequence_number <= 40 then 'active' else 'planning' end
+  case when sequence_number <= 8 then 'active' else 'planning' end
     ::public.project_status,
   10000000,
   sequence_number * 10000
@@ -100,43 +101,43 @@ select set_config(
 select is(
   (public.list_portfolio_projects_page(
     'fb000000-0000-4000-8000-000000000001',
-    '', 'all', 'name', 20, 0
+    '', 'all', 'name', 4, 0
   )->>'total')::integer,
-  45,
+  10,
   'project pagination returns an exact total'
 );
 
 select is(
   jsonb_array_length(public.list_portfolio_projects_page(
     'fb000000-0000-4000-8000-000000000001',
-    '', 'all', 'name', 20, 0
+    '', 'all', 'name', 4, 0
   )->'items'),
-  20,
+  4,
   'project page size is bounded'
 );
 
 select is(
   jsonb_array_length(public.list_portfolio_projects_page(
     'fb000000-0000-4000-8000-000000000001',
-    '', 'all', 'name', 20, 40
+    '', 'all', 'name', 4, 8
   )->'items'),
-  5,
+  2,
   'project final page contains only remaining records'
 );
 
 select is(
   (public.list_portfolio_projects_page(
     'fb000000-0000-4000-8000-000000000001',
-    '', 'planning', 'name', 20, 0
+    '', 'planning', 'name', 4, 0
   )->>'total')::integer,
-  5,
+  2,
   'project stage filtering executes before pagination'
 );
 
 select is(
   (public.list_portfolio_projects_page(
     'fb000000-0000-4000-8000-000000000001',
-    'Project 45', 'all', 'name', 20, 0
+    'Project 10', 'all', 'name', 4, 0
   )->>'total')::integer,
   1,
   'project search executes before pagination'
@@ -146,9 +147,9 @@ select is(
   (public.list_portfolio_risks_page(
     'fb000000-0000-4000-8000-000000000001',
     'active', '', 'all', 'all', 'all', 'all', 'all',
-    'exposure', 20, 0
+    'exposure', 4, 0
   )->>'total')::integer,
-  45,
+  10,
   'risk pagination returns an exact total'
 );
 
@@ -156,9 +157,9 @@ select is(
   jsonb_array_length(public.list_portfolio_risks_page(
     'fb000000-0000-4000-8000-000000000001',
     'active', '', 'all', 'all', 'all', 'all', 'all',
-    'exposure', 20, 0
+    'exposure', 4, 0
   )->'items'),
-  20,
+  4,
   'risk page size is bounded'
 );
 

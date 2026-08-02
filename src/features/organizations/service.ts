@@ -38,6 +38,8 @@ export class OrganizationService {
     input: unknown,
   ): Promise<string> {
     const value = createOrganizationSchema.parse(input);
+    if ((await this.repository.listMemberships(principal.id)).length)
+      throw new Error("PLAN_SINGLE_ORGANIZATION_ONLY");
     const membershipId = await this.repository.createOrganization({
       authUserId: principal.id,
       email: principal.email,
@@ -98,6 +100,8 @@ export class OrganizationService {
     token: string,
   ): Promise<string> {
     invitationTokenSchema.parse(token);
+    if ((await this.repository.listMemberships(principal.id)).length)
+      throw new Error("PLAN_SINGLE_ORGANIZATION_ONLY");
     const membershipId = await this.repository.acceptInvitation({
       tokenHash: hashInvitationToken(token),
       authUserId: principal.id,

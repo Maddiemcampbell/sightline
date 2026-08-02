@@ -1,7 +1,7 @@
 -- Deterministic development seed for Sightline V1.
 
-insert into public.organizations (id, name, slug, timezone)
-values ('10000000-0000-4000-8000-000000000001', 'BuildCo Construction', 'buildco-construction', 'America/Los_Angeles');
+insert into public.organizations (id, name, slug, timezone, plan_key)
+values ('10000000-0000-4000-8000-000000000001', 'BuildCo Construction', 'buildco-construction', 'America/Los_Angeles', 'professional');
 
 update public.organizations
 set industry = 'Commercial construction',
@@ -42,6 +42,13 @@ values
   ('20000000-0000-4000-8000-000000000008', '10000000-0000-4000-8000-000000000001', 'Market Square Mixed-Use Tower', 'BC-25018', 'active', '120 Market Square', 'San Jose', 'CA', '95113', 6850000000, '2025-09-15', '2028-02-18', null),
   ('20000000-0000-4000-8000-000000000009', '10000000-0000-4000-8000-000000000001', 'Harbor Point Office Renewal', 'BC-24008', 'complete', '22 Embarcadero', 'San Francisco', 'CA', '94111', 980000000, '2025-01-13', '2026-06-26', null),
   ('20000000-0000-4000-8000-000000000010', '10000000-0000-4000-8000-000000000001', 'Clearwater Pump Station', 'BC-25020', 'planning', '300 River Service Road', 'Modesto', 'CA', '95354', 1480000000, '2026-09-08', '2027-12-17', null);
+
+update public.projects
+set archived_at = '2026-07-01T00:00:00Z'
+where id in (
+  '20000000-0000-4000-8000-000000000009',
+  '20000000-0000-4000-8000-000000000010'
+);
 
 insert into public.vendors (id, organization_id, name, trade, contact_name, contact_email)
 values

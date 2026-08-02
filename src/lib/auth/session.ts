@@ -92,15 +92,7 @@ export const getCurrentMemberships = cache(
 export const getCurrentMembership = cache(
   async (): Promise<OrganizationMembership | null> => {
     const memberships = await getCurrentMemberships();
-    if (!memberships.length) return null;
-    const preferredOrganizationId = (await cookies()).get(
-      ACTIVE_ORGANIZATION_COOKIE,
-    )?.value;
-    return (
-      memberships.find(
-        (membership) => membership.organizationId === preferredOrganizationId,
-      ) ?? memberships[0]!
-    );
+    return memberships[0] ?? null;
   },
 );
 

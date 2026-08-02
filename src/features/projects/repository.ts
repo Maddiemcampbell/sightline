@@ -12,6 +12,12 @@ export interface ProjectWriter {
       updatedByUserId: string;
     },
   ): Promise<string>;
+  setArchived(input: {
+    organizationId: string;
+    projectId: string;
+    updatedByUserId: string;
+    archived: boolean;
+  }): Promise<void>;
 }
 
 export class ProjectRepository implements ProjectWriter {
@@ -23,25 +29,34 @@ export class ProjectRepository implements ProjectWriter {
       updatedByUserId: string;
     },
   ): Promise<string> {
-    const { data, error } = await this.client
-      .from("projects")
-      .insert({
-        organization_id: input.organizationId,
-        name: input.name,
-        project_number: input.projectNumber,
-        status: "active",
-        address_line_1: input.addressLine1,
-        city: input.city,
-        state_code: input.stateCode,
-        postal_code: input.postalCode,
-        start_date: input.startDate,
-        target_completion_date: input.targetCompletionDate,
-        projected_margin_cents: 0,
-        updated_by_user_id: input.updatedByUserId,
-      })
-      .select("id")
-      .single();
+    const { data, error } = await this.client.rpc("create_entitled_project", {
+      target_organization_id: input.organizationId,
+      principal_application_user_id: input.updatedByUserId,
+      project_name: input.name,
+      project_number_value: input.projectNumber,
+      project_address_line_1: input.addressLine1 || null,
+      project_city: input.city || null,
+      project_state_code: input.stateCode || null,
+      project_postal_code: input.postalCode || null,
+      project_start_date: input.startDate || null,
+      project_target_completion_date: input.targetCompletionDate || null,
+    });
     if (error) throw new Error(error.message);
-    return data.id;
+    return data;
+  }
+
+  async setArchived(input: {
+    organizationId: string;
+    projectId: string;
+    updatedByUserId: string;
+    archived: boolean;
+  }): Promise<void> {
+    const { error } = await this.client.rpc("set_project_archived", {
+      target_organization_id: input.organizationId,
+      target_project_id: input.projectId,
+      principal_application_user_id: input.updatedByUserId,
+      should_archive: input.archived,
+    });
+    if (error) throw new Error(error.message);
   }
 }

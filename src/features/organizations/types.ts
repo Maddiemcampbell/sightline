@@ -4,6 +4,7 @@ export type Organization = Readonly<{
   slug: string;
   timezone: string;
   createdByAuthUserId: string | null;
+  planKey: "essential" | "professional";
 }>;
 
 export type OrganizationMembership = Readonly<{

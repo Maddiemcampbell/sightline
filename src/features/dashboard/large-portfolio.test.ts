@@ -10,6 +10,8 @@ import type { ProjectRow, RiskRow } from "@/lib/supabase/database-row.types";
 function createProjects(count: number): ProjectRow[] {
   return Array.from({ length: count }, (_, index) => ({
     address_line_1: null,
+    archived_at: null,
+    archived_by_user_id: null,
     city: "Sacramento",
     contract_value_cents: 10_000_000,
     created_at: "2026-01-01T00:00:00.000Z",

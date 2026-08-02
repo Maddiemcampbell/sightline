@@ -1,20 +1,14 @@
-import { Building2, ChevronDown } from "lucide-react";
+import { Building2 } from "lucide-react";
 import Link from "next/link";
 
-import { switchOrganizationAction } from "@/app/organization/actions";
 import { SightlineMark } from "@/components/sightline-mark";
-import {
-  getCurrentMembership,
-  getCurrentMemberships,
-  getCurrentUser,
-} from "@/lib/auth/session";
+import { getCurrentMembership, getCurrentUser } from "@/lib/auth/session";
 import { SidebarNavigation } from "@/components/sidebar-navigation";
 
 export async function AppSidebar() {
-  const [principal, currentMembership, memberships] = await Promise.all([
+  const [principal, currentMembership] = await Promise.all([
     getCurrentUser(),
     getCurrentMembership(),
-    getCurrentMemberships(),
   ]);
   const initials = (principal?.email ?? "User")
     .split("@")[0]!
@@ -40,36 +34,21 @@ export async function AppSidebar() {
 
       <div className="border-b border-white/10 px-3 py-3 lg:border-b-0 lg:px-4">
         {currentMembership ? (
-          <form action={switchOrganizationAction} className="relative">
-            <label htmlFor="organization-switcher" className="sr-only">
-              Switch organization
-            </label>
-            <span className="bg-accent/15 text-accent pointer-events-none absolute top-2.5 left-3 z-10 grid size-8 place-items-center rounded-sm">
+          <div className="flex min-h-13 items-center gap-3 rounded-md border border-white/15 bg-white/5 px-3 py-2.5">
+            <span className="bg-accent/15 text-accent grid size-8 shrink-0 place-items-center rounded-sm">
               <Building2 aria-hidden="true" className="size-4" />
             </span>
-            <select
-              id="organization-switcher"
-              name="organizationId"
-              defaultValue={currentMembership.organizationId}
-              className="min-h-13 w-full appearance-none rounded-md border border-white/15 bg-white/5 pr-9 pl-14 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              {memberships.map((membership) => (
-                <option key={membership.id} value={membership.organizationId}>
-                  {membership.organization.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              aria-hidden="true"
-              className="text-muted pointer-events-none absolute top-5 right-3 size-4"
-            />
-            <button
-              type="submit"
-              className="text-accent mt-2 w-full text-right text-xs font-semibold"
-            >
-              Switch organization
-            </button>
-          </form>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {currentMembership.organization.name}
+              </p>
+              <p className="text-xs text-white/60">
+                {currentMembership.organization.planKey === "professional"
+                  ? "Professional"
+                  : "Essential"}
+              </p>
+            </div>
+          </div>
         ) : (
           <Link
             href="/organizations/new"

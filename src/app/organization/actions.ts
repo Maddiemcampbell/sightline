@@ -47,6 +47,13 @@ function errorState(error: unknown): OrganizationActionState {
     return { error: true, fieldErrors: error.flatten().fieldErrors };
   }
   const message = error instanceof Error ? error.message : "";
+  if (message.includes("PLAN_SINGLE_ORGANIZATION_ONLY")) {
+    return {
+      error: true,
+      message:
+        "Your current plan supports one organization. Leave your current organization before joining another.",
+    };
+  }
   if (message.toLowerCase().includes("slug")) {
     return {
       error: true,
@@ -158,26 +165,10 @@ export async function createOrganizationAction(
 }
 
 export async function switchOrganizationAction(
-  formData: FormData,
+  _formData: FormData,
 ): Promise<void> {
-  const organizationId = z.uuid().parse(formData.get("organizationId"));
-  const principal = await requireAuthenticatedUser();
-  const membership = await new OrganizationRepository(
-    createAdminSupabaseClient(),
-  ).findMembership(principal.id, organizationId);
-  if (!membership) throw new Error("Organization access denied.");
-  await setActiveOrganization(organizationId);
-  await recordAuditEvent({
-    organizationId,
-    actorAuthUserId: principal.id,
-    actorUserId: membership.applicationUserId,
-    action: "settings.updated",
-    resourceType: "active_organization",
-    resourceId: organizationId,
-    metadata: { setting: "activeOrganization" },
-  });
-  revalidatePath("/", "layout");
-  redirect("/");
+  void _formData;
+  throw new Error("Organization switching is not available on launch plans.");
 }
 
 export async function updateOrganizationAction(

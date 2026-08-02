@@ -77,6 +77,14 @@ export async function createProjectAction(
         validationAttempt: Date.now(),
       };
     }
+    if (message.includes("plan_project_limit_reached")) {
+      return {
+        message:
+          "Your plan's active-project limit has been reached. Archive a project or upgrade before creating another.",
+        values,
+        validationAttempt: Date.now(),
+      };
+    }
     return {
       message:
         "The project could not be created. Your organization is unchanged.",

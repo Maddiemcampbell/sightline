@@ -67,13 +67,22 @@ organization Owner and one for the invitee.
    organization, membership, storage allocation, or scheduled work.
 2. Review the request in `/internal/admin/provisioning`. Complete payment with
    the real billing provider; never use mock approval in production.
-3. Configure Stripe Checkout with `STRIPE_SECRET_KEY` and a recurring
-   `STRIPE_PRICE_ID`. Register `https://<app-origin>/api/stripe/webhook` for
+3. Configure Stripe Checkout with `STRIPE_SECRET_KEY` and recurring
+   `STRIPE_ESSENTIAL_PRICE_ID` and `STRIPE_PROFESSIONAL_PRICE_ID` values. Register `https://<app-origin>/api/stripe/webhook` for
    `checkout.session.completed`, `customer.subscription.updated`, and
    `customer.subscription.deleted`, then set its signing secret as
    `STRIPE_WEBHOOK_SECRET`.
 4. Treat Checkout return URLs as display-only. Only a verified webhook may
    activate billing and issue the private Owner invitation.
+
+## Launch plan entitlements
+
+- Essential includes five active projects.
+- Professional includes ten active projects.
+- Archived projects do not consume capacity; restore is blocked at the plan limit.
+- Both launch plans support one organization per user and do not expose organization switching.
+- Downgrades preserve all projects but block create/restore while active usage exceeds the new limit.
+
 5. Confirm receipt of the private Owner activation email, sender domain,
    SPF/DKIM alignment, branding, HTTPS URL, and absence of link rewriting.
 6. Open the activation link once and establish Owner credentials. Confirm the

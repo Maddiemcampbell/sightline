@@ -29,6 +29,7 @@ describe("ProjectService onboarding creation", () => {
   it("creates an organization-owned project for an Owner", async () => {
     const repository: ProjectWriter = {
       create: vi.fn().mockResolvedValue("project-id"),
+      setArchived: vi.fn(),
     };
     await expect(
       new ProjectService(repository).create(context, input),
@@ -45,6 +46,7 @@ describe("ProjectService onboarding creation", () => {
   it("creates a project when every optional form field is blank", async () => {
     const repository: ProjectWriter = {
       create: vi.fn().mockResolvedValue("project-id"),
+      setArchived: vi.fn(),
     };
 
     await expect(
@@ -75,6 +77,7 @@ describe("ProjectService onboarding creation", () => {
   it("allows Administrators and denies lower organization roles", async () => {
     const repository: ProjectWriter = {
       create: vi.fn().mockResolvedValue("project-id"),
+      setArchived: vi.fn(),
     };
     await expect(
       new ProjectService(repository).create(
@@ -93,7 +96,10 @@ describe("ProjectService onboarding creation", () => {
   });
 
   it("rejects a completion date before the start date", async () => {
-    const repository: ProjectWriter = { create: vi.fn() };
+    const repository: ProjectWriter = {
+      create: vi.fn(),
+      setArchived: vi.fn(),
+    };
     await expect(
       new ProjectService(repository).create(context, {
         ...input,

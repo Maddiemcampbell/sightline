@@ -24,6 +24,8 @@ import { projectFiltersSchema } from "@/features/portfolio/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
 import { canCreateProject } from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
+import { getOrganizationCapacity } from "@/features/billing/entitlements";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -38,6 +40,10 @@ export default async function ProjectsPage({ searchParams }: Props) {
   });
   const filters = projectFiltersSchema.parse(await searchParams);
   const result = await getProjects(filters);
+  const capacity = await getOrganizationCapacity(
+    await createServerSupabaseClient(),
+    context.organizationId,
+  );
   const projects = result.items;
   const {
     activeCount: activeProjects,
@@ -67,7 +73,13 @@ export default async function ProjectsPage({ searchParams }: Props) {
             <Sparkles aria-hidden="true" className="size-4" />
             Open Daily Brief
           </Link>
-          {canCreate ? (
+          <Link
+            href="/projects/archived"
+            className="border-border bg-surface text-deep-green hover:bg-background inline-flex min-h-10 w-fit items-center rounded-md border px-4 text-sm font-semibold"
+          >
+            Archived
+          </Link>
+          {canCreate && !capacity.atProjectLimit ? (
             <Link
               href="/projects/new"
               className="bg-deep-green hover:bg-ink inline-flex min-h-10 w-fit items-center gap-2 rounded-md px-4 text-sm font-semibold text-white"
@@ -78,6 +90,11 @@ export default async function ProjectsPage({ searchParams }: Props) {
           ) : null}
         </div>
       </header>
+      <p className="text-muted mt-4 text-sm">
+        {capacity.name} plan · {capacity.activeProjects} of{" "}
+        {capacity.maxProjects}
+        active projects
+      </p>
 
       <section
         aria-label="Portfolio summary"

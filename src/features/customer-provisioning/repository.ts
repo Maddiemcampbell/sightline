@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import type { Json } from "@/lib/supabase/database.types";
+import type { PlanKey } from "@/features/billing/entitlements";
 import type {
   AccessRequestStatus,
   BillingStatus,
@@ -126,7 +127,7 @@ export class CustomerProvisioningRepository {
         access_request_id: input.request.id,
         event_type: "subscription.activated",
         processing_status: "processed",
-        safe_metadata: { planKey: "design_partner", simulated: true },
+        safe_metadata: { planKey: "essential", simulated: true },
         correlation_id: input.request.correlationId,
       });
     if (eventError) throw new Error(eventError.message);
@@ -205,6 +206,7 @@ export class CustomerProvisioningRepository {
     subscriptionId: string;
     tokenHash: string;
     tokenExpiresAt: string;
+    planKey: PlanKey;
   }) {
     const { error: billingError } = await this.client
       .from("organization_billing_accounts")
@@ -212,6 +214,7 @@ export class CustomerProvisioningRepository {
         provider_customer_id: input.customerId,
         provider_subscription_id: input.subscriptionId,
         status: "active",
+        plan_key: input.planKey,
       })
       .eq("access_request_id", input.accessRequestId)
       .eq("provider", "stripe");
@@ -232,10 +235,11 @@ export class CustomerProvisioningRepository {
   async updateStripeBillingStatus(
     subscriptionId: string,
     status: BillingStatus,
+    planKey: PlanKey,
   ) {
     const { error } = await this.client
       .from("organization_billing_accounts")
-      .update({ status })
+      .update({ status, plan_key: planKey })
       .eq("provider", "stripe")
       .eq("provider_subscription_id", subscriptionId);
     if (error) throw new Error(error.message);

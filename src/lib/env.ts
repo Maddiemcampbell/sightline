@@ -19,7 +19,8 @@ const serverEnvSchema = publicEnvSchema.extend({
   BILLING_PROVIDER: z.enum(["mock", "stripe"]).optional(),
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-  STRIPE_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_ESSENTIAL_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_PROFESSIONAL_PRICE_ID: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -48,16 +49,18 @@ export function getServerEnv(): ServerEnv {
     BILLING_PROVIDER: process.env.BILLING_PROVIDER,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-    STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
+    STRIPE_ESSENTIAL_PRICE_ID: process.env.STRIPE_ESSENTIAL_PRICE_ID,
+    STRIPE_PROFESSIONAL_PRICE_ID: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
   });
   if (
     parsed.BILLING_PROVIDER === "stripe" &&
     (!parsed.STRIPE_SECRET_KEY ||
       !parsed.STRIPE_WEBHOOK_SECRET ||
-      !parsed.STRIPE_PRICE_ID)
+      !parsed.STRIPE_ESSENTIAL_PRICE_ID ||
+      !parsed.STRIPE_PROFESSIONAL_PRICE_ID)
   ) {
     throw new Error(
-      "Stripe billing requires STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and STRIPE_PRICE_ID.",
+      "Stripe billing requires its secret, webhook secret, and both launch-plan Price IDs.",
     );
   }
   if (

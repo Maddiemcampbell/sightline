@@ -58,7 +58,8 @@ separately before launch. Login, password recovery, and trusted activation
 remain available.
 
 Production must use `BILLING_PROVIDER=stripe` together with
-`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRICE_ID`; deployment is intentionally
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`STRIPE_ESSENTIAL_PRICE_ID`, and `STRIPE_PROFESSIONAL_PRICE_ID`; deployment is intentionally
 blocked until that adapter exists. Never enable mock approval in a customer
 environment. Neither Sightline nor its billing-event ledger stores card
 numbers, bank details, credentials, full provider payloads, or payment secrets.

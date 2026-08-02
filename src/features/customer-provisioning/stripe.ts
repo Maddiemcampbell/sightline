@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { getServerEnv } from "@/lib/env";
+import type { PlanKey } from "@/features/billing/entitlements";
 
 const STRIPE_API = "https://api.stripe.com/v1";
 const SIGNATURE_TOLERANCE_SECONDS = 300;
@@ -20,15 +21,20 @@ export async function createStripeCheckoutSession(input: {
   companyName: string;
   requestedSlug: string;
   correlationId: string;
+  planKey: PlanKey;
 }) {
   const env = getServerEnv();
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_PRICE_ID)
+  const priceId =
+    input.planKey === "professional"
+      ? env.STRIPE_PROFESSIONAL_PRICE_ID
+      : env.STRIPE_ESSENTIAL_PRICE_ID;
+  if (!env.STRIPE_SECRET_KEY || !priceId)
     throw new Error("Stripe Checkout is not configured.");
   const body = new URLSearchParams({
     mode: "subscription",
     customer_email: input.ownerEmail,
     client_reference_id: input.accessRequestId,
-    "line_items[0][price]": env.STRIPE_PRICE_ID,
+    "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
     success_url: `${env.APP_URL}/internal/admin/provisioning?checkout=success`,
     cancel_url: `${env.APP_URL}/internal/admin/provisioning?checkout=cancelled`,
@@ -36,8 +42,10 @@ export async function createStripeCheckoutSession(input: {
     "metadata[correlation_id]": input.correlationId,
     "metadata[requested_slug]": input.requestedSlug,
     "metadata[company_name]": input.companyName.slice(0, 500),
+    "metadata[plan_key]": input.planKey,
     "subscription_data[metadata][access_request_id]": input.accessRequestId,
     "subscription_data[metadata][correlation_id]": input.correlationId,
+    "subscription_data[metadata][plan_key]": input.planKey,
   });
   const response = await fetch(`${STRIPE_API}/checkout/sessions`, {
     method: "POST",
@@ -60,6 +68,28 @@ export async function createStripeCheckoutSession(input: {
   if (typeof result.id !== "string" || typeof result.url !== "string")
     throw new Error("Stripe returned an invalid Checkout session.");
   return { id: result.id, url: result.url };
+}
+
+export async function getStripeSubscriptionPlan(
+  subscriptionId: string,
+): Promise<PlanKey> {
+  const env = getServerEnv();
+  if (!env.STRIPE_SECRET_KEY) throw new Error("Stripe is not configured.");
+  const response = await fetch(
+    `${STRIPE_API}/subscriptions/${subscriptionId}`,
+    {
+      headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+      cache: "no-store",
+    },
+  );
+  const subscription = (await response.json()) as Record<string, unknown>;
+  if (!response.ok) throw new Error("Stripe subscription lookup failed.");
+  const items = subscription.items as
+    { data?: Array<{ price?: { id?: string } }> } | undefined;
+  const priceId = items?.data?.[0]?.price?.id;
+  if (priceId === env.STRIPE_ESSENTIAL_PRICE_ID) return "essential";
+  if (priceId === env.STRIPE_PROFESSIONAL_PRICE_ID) return "professional";
+  throw new Error("Stripe subscription uses an unrecognized Price.");
 }
 
 export function verifyStripeEvent(

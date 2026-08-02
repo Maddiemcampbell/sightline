@@ -10,6 +10,7 @@ import {
 export default async function NewOrganizationPage() {
   await requireAuthenticatedUser();
   const memberships = await getCurrentMemberships();
+  if (memberships.length) redirect("/");
 
   return (
     <div className="mx-auto max-w-2xl px-[var(--page-gutter)] py-10">
@@ -22,29 +23,14 @@ export default async function NewOrganizationPage() {
           Projects, risks, documents, actions, evidence, AI conversations,
           activity, and Daily Briefs will belong to this organization.
         </p>
-        {!memberships.length ? (
-          <p className="bg-soft-green text-deep-green mt-5 rounded-md p-4 text-sm leading-6">
-            Have an invitation? Open the invitation link you received instead.
-            Sightline will preserve it through login and email verification.
-          </p>
-        ) : null}
+        <p className="bg-soft-green text-deep-green mt-5 rounded-md p-4 text-sm leading-6">
+          Have an invitation? Open the invitation link you received instead.
+          Sightline will preserve it through login and email verification.
+        </p>
       </header>
       <Card className="mt-7">
         <OrganizationProfileForm mode="create" />
       </Card>
-      {memberships.length ? (
-        <form
-          action={async () => {
-            "use server";
-            redirect("/");
-          }}
-          className="mt-5"
-        >
-          <button className="text-deep-green text-sm font-semibold underline">
-            Return to current organization
-          </button>
-        </form>
-      ) : null}
     </div>
   );
 }

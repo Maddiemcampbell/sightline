@@ -47,6 +47,8 @@ const input = (
       project_number: "A",
       status: "active",
       address_line_1: null,
+      archived_at: null,
+      archived_by_user_id: null,
       city: null,
       state_code: null,
       postal_code: null,

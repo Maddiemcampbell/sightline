@@ -21,7 +21,9 @@ export const approveMockBillingSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
 });
 
-export const startStripeCheckoutSchema = approveMockBillingSchema;
+export const startStripeCheckoutSchema = approveMockBillingSchema.extend({
+  planKey: z.enum(["essential", "professional"]),
+});
 
 export const ownerActivationSchema = z
   .object({

@@ -92,6 +92,7 @@ export async function startStripeCheckoutAction(
   const parsed = startStripeCheckoutSchema.safeParse({
     accessRequestId: requestId,
     slug: formData.get("slug"),
+    planKey: formData.get("planKey"),
   });
   if (!parsed.success)
     return { fieldErrors: parsed.error.flatten().fieldErrors };

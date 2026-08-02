@@ -32,6 +32,8 @@ import { requireActorContext } from "@/lib/auth/request-context";
 import { getProjectResource } from "@/lib/auth/project-access";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { RiskRow } from "@/lib/supabase/database-row.types";
+import { setProjectArchivedAction } from "./actions";
+import { canCreateProject } from "@/lib/auth/authorization";
 
 type Props = { params: Promise<{ projectId: string }> };
 
@@ -59,6 +61,9 @@ export default async function ProjectPage({ params }: Props) {
   );
   const canSeeFinancials = canViewFinancialExposure(context);
   const project = detail.project;
+  const canManageProjectLifecycle = canCreateProject(context, {
+    organization_id: context.organizationId,
+  });
   const location = [project.address_line_1, project.city, project.state_code]
     .filter(Boolean)
     .join(", ");
@@ -130,6 +135,19 @@ export default async function ProjectPage({ params }: Props) {
               }}
               className="size-10"
             />
+            {canManageProjectLifecycle ? (
+              <form
+                action={setProjectArchivedAction.bind(
+                  null,
+                  project.id,
+                  !project.archived_at,
+                )}
+              >
+                <button className="border-border min-h-10 rounded-md border px-3 text-sm font-semibold">
+                  {project.archived_at ? "Restore project" : "Archive project"}
+                </button>
+              </form>
+            ) : null}
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <ProjectPill label={statusLabel(project.status)} tone="status" />

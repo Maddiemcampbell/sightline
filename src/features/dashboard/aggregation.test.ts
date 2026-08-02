@@ -44,6 +44,8 @@ function risk(overrides: Partial<RiskRow> = {}): RiskRow {
 function project(overrides: Partial<ProjectRow> = {}): ProjectRow {
   return {
     address_line_1: null,
+    archived_at: null,
+    archived_by_user_id: null,
     city: "Stockton",
     contract_value_cents: 10_000_000,
     created_at: "2026-01-01T00:00:00.000Z",

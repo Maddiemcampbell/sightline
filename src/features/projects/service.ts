@@ -23,4 +23,20 @@ export class ProjectService {
       updatedByUserId: context.userId,
     });
   }
+
+  async setArchived(
+    context: ActorContext,
+    projectId: string,
+    archived: boolean,
+  ): Promise<void> {
+    assertAuthorized(
+      canCreateProject(context, { organization_id: context.organizationId }),
+    );
+    await this.repository.setArchived({
+      organizationId: context.organizationId,
+      projectId,
+      updatedByUserId: context.userId,
+      archived,
+    });
+  }
 }

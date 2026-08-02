@@ -33,6 +33,17 @@ export function StripeCheckoutForm({
           className="mt-1 min-h-9 w-full rounded-md border border-slate-300 px-2 font-normal"
         />
       </label>
+      <label className="block text-xs font-semibold">
+        Plan
+        <select
+          name="planKey"
+          defaultValue="essential"
+          className="mt-1 min-h-9 w-full rounded-md border border-slate-300 px-2 font-normal"
+        >
+          <option value="essential">Essential · 5 projects</option>
+          <option value="professional">Professional · 10 projects</option>
+        </select>
+      </label>
       {state.fieldErrors?.slug?.[0] ? (
         <p role="alert" className="text-danger text-xs">
           {state.fieldErrors.slug[0]}
