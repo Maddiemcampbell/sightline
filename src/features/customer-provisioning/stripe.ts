@@ -12,6 +12,7 @@ export type StripeEvent = Readonly<{
   id: string;
   type: string;
   created: number;
+  livemode: boolean;
   data: { object: Record<string, unknown> };
 }>;
 
@@ -67,6 +68,7 @@ export async function createStripeCheckoutSession(input: {
     );
   if (typeof result.id !== "string" || typeof result.url !== "string")
     throw new Error("Stripe returned an invalid Checkout session.");
+  assertStripeLivemode(result.livemode, env.STRIPE_MODE);
   return { id: result.id, url: result.url };
 }
 
@@ -84,6 +86,7 @@ export async function getStripeSubscriptionPlan(
   );
   const subscription = (await response.json()) as Record<string, unknown>;
   if (!response.ok) throw new Error("Stripe subscription lookup failed.");
+  assertStripeLivemode(subscription.livemode, env.STRIPE_MODE);
   const items = subscription.items as
     { data?: Array<{ price?: { id?: string } }> } | undefined;
   const priceId = items?.data?.[0]?.price?.id;
@@ -128,10 +131,24 @@ export function verifyStripeEvent(
     typeof event.id !== "string" ||
     typeof event.type !== "string" ||
     typeof event.created !== "number" ||
+    typeof event.livemode !== "boolean" ||
     !event.data ||
     !event.data.object ||
     typeof event.data.object !== "object"
   )
     throw new Error("Invalid Stripe webhook event.");
   return event as StripeEvent;
+}
+
+export function assertStripeLivemode(
+  livemode: unknown,
+  configuredMode: "test" | "live" | undefined,
+): void {
+  if (
+    typeof livemode !== "boolean" ||
+    !configuredMode ||
+    livemode !== (configuredMode === "live")
+  ) {
+    throw new Error("Stripe response mode does not match STRIPE_MODE.");
+  }
 }

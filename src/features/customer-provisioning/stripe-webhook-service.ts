@@ -2,10 +2,16 @@ import "server-only";
 
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { getServerEnv } from "@/lib/env";
+
 import { CustomerProvisioningRepository } from "./repository";
 import { hashActivationToken } from "./service";
 import type { BillingStatus, CustomerAccessRequest } from "./types";
-import { getStripeSubscriptionPlan, type StripeEvent } from "./stripe";
+import {
+  assertStripeLivemode,
+  getStripeSubscriptionPlan,
+  type StripeEvent,
+} from "./stripe";
 
 const ACTIVATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1_000;
 
@@ -15,6 +21,7 @@ export class StripeWebhookService {
   constructor(private readonly repository: CustomerProvisioningRepository) {}
 
   async process(event: StripeEvent): Promise<{ activation?: Activation }> {
+    assertStripeLivemode(event.livemode, getServerEnv().STRIPE_MODE);
     const object = event.data.object;
     const metadata = readMetadata(object.metadata);
     const accessRequestId = metadata.access_request_id ?? null;
@@ -31,7 +38,7 @@ export class StripeWebhookService {
       safeMetadata: {
         stripeCreated: event.created,
         objectId: stringValue(object.id),
-        livemode: object.livemode === true,
+        livemode: event.livemode,
       },
     });
     if (!claimed) return {};

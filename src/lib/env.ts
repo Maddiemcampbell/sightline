@@ -17,6 +17,7 @@ const serverEnvSchema = publicEnvSchema.extend({
   OPENAI_MODEL: z.string().min(1).optional(),
   INTERNAL_ADMIN_AUTH_USER_IDS: z.string().optional(),
   BILLING_PROVIDER: z.enum(["mock", "stripe"]).optional(),
+  STRIPE_MODE: z.enum(["test", "live"]).optional(),
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_ESSENTIAL_PRICE_ID: z.string().min(1).optional(),
@@ -47,6 +48,7 @@ export function getServerEnv(): ServerEnv {
     OPENAI_MODEL: process.env.OPENAI_MODEL,
     INTERNAL_ADMIN_AUTH_USER_IDS: process.env.INTERNAL_ADMIN_AUTH_USER_IDS,
     BILLING_PROVIDER: process.env.BILLING_PROVIDER,
+    STRIPE_MODE: process.env.STRIPE_MODE,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_ESSENTIAL_PRICE_ID: process.env.STRIPE_ESSENTIAL_PRICE_ID,
@@ -54,13 +56,24 @@ export function getServerEnv(): ServerEnv {
   });
   if (
     parsed.BILLING_PROVIDER === "stripe" &&
-    (!parsed.STRIPE_SECRET_KEY ||
+    (!parsed.STRIPE_MODE ||
+      !parsed.STRIPE_SECRET_KEY ||
       !parsed.STRIPE_WEBHOOK_SECRET ||
       !parsed.STRIPE_ESSENTIAL_PRICE_ID ||
       !parsed.STRIPE_PROFESSIONAL_PRICE_ID)
   ) {
     throw new Error(
-      "Stripe billing requires its secret, webhook secret, and both launch-plan Price IDs.",
+      "Stripe billing requires a mode, secret, webhook secret, and both launch-plan Price IDs.",
+    );
+  }
+  if (
+    parsed.BILLING_PROVIDER === "stripe" &&
+    parsed.STRIPE_MODE &&
+    parsed.STRIPE_SECRET_KEY &&
+    !parsed.STRIPE_SECRET_KEY.startsWith(`sk_${parsed.STRIPE_MODE}_`)
+  ) {
+    throw new Error(
+      `STRIPE_SECRET_KEY must be a Stripe ${parsed.STRIPE_MODE} mode secret key.`,
     );
   }
   if (

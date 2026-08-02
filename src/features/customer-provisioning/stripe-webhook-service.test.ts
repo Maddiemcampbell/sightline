@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { getServerEnv } from "@/lib/env";
+
 import type { CustomerProvisioningRepository } from "./repository";
 import { getStripeSubscriptionPlan } from "./stripe";
 import { StripeWebhookService } from "./stripe-webhook-service";
@@ -9,6 +11,9 @@ import type { CustomerAccessRequest } from "./types";
 vi.mock("./stripe", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./stripe")>()),
   getStripeSubscriptionPlan: vi.fn().mockResolvedValue("essential"),
+}));
+vi.mock("@/lib/env", () => ({
+  getServerEnv: vi.fn(() => ({ STRIPE_MODE: "test" })),
 }));
 
 const request: CustomerAccessRequest = {
@@ -35,6 +40,7 @@ function checkoutEvent(paymentStatus = "paid"): StripeEvent {
     id: "evt_checkout",
     type: "checkout.session.completed",
     created: 1_700_000_000,
+    livemode: false,
     data: {
       object: {
         id: "cs_test",
@@ -109,5 +115,19 @@ describe("Stripe webhook processing", () => {
       "evt_checkout",
       "failed",
     );
+  });
+
+  it("rejects live events in test mode before claiming them", async () => {
+    vi.mocked(getServerEnv).mockReturnValue({ STRIPE_MODE: "test" } as never);
+    const fake = repository();
+
+    await expect(
+      new StripeWebhookService(
+        fake as unknown as CustomerProvisioningRepository,
+      ).process({ ...checkoutEvent(), livemode: true }),
+    ).rejects.toThrow("response mode does not match");
+
+    expect(fake.claimStripeEvent).not.toHaveBeenCalled();
+    expect(fake.activateStripeBilling).not.toHaveBeenCalled();
   });
 });

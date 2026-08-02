@@ -167,3 +167,16 @@ deployment step.
 Supabase database migrations and production environment values should be
 managed outside the application build and promoted separately for each
 environment.
+
+# Stripe test mode
+
+Set `BILLING_PROVIDER=stripe`, `STRIPE_MODE=test`, an `sk_test_` secret key,
+the webhook signing secret, and test-mode Price IDs for both launch plans.
+Stripe responses and webhook events are rejected if their mode does not match
+`STRIPE_MODE`; production environment validation requires `STRIPE_MODE=live`
+and an `sk_live_` key.
+
+For local webhook testing, run `stripe listen --forward-to
+localhost:3000/api/stripe/webhook` and copy the emitted `whsec_` value into
+`STRIPE_WEBHOOK_SECRET`. Keep the request body unmodified because webhook
+signature verification uses Stripe's raw payload.

@@ -9,6 +9,7 @@ const required = [
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
   "BILLING_PROVIDER",
+  "STRIPE_MODE",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
   "STRIPE_ESSENTIAL_PRICE_ID",
@@ -79,6 +80,17 @@ if (process.env.SIGHTLINE_E2E === "true") {
 if (process.env.BILLING_PROVIDER !== "stripe") {
   errors.push(
     "BILLING_PROVIDER must be stripe in production; mock billing is local/test-only.",
+  );
+}
+if (process.env.STRIPE_MODE !== "live") {
+  errors.push("STRIPE_MODE must be live in production.");
+}
+if (
+  process.env.STRIPE_SECRET_KEY &&
+  !process.env.STRIPE_SECRET_KEY.startsWith("sk_live_")
+) {
+  errors.push(
+    "STRIPE_SECRET_KEY must be a live mode secret key in production.",
   );
 }
 if (!process.env.INTERNAL_ADMIN_AUTH_USER_IDS?.trim()) {
