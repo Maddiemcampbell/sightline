@@ -32,10 +32,19 @@ simulated identifiers and can run only outside production (except isolated E2E
 builds). `BILLING_PROVIDER=mock` causes production environment validation to
 fail, and the provider itself also rejects production execution.
 
-When the business billing account is ready, implement a Stripe adapter using
-hosted Checkout and verified webhooks. Stripe events should map into the same
-billing statuses and sanitized event ledger. Webhook IDs must provide
-idempotency; browser redirects must never grant provisioning eligibility.
+With `BILLING_PROVIDER=stripe`, a platform operator creates a hosted Checkout
+session from the provisioning queue. The request remains `payment_pending`
+until Stripe sends a signature-verified `checkout.session.completed` event to
+`POST /api/stripe/webhook`. The handler verifies the raw request body with a
+five-minute replay window, claims the Stripe event ID idempotently, stores only
+safe metadata, and then maps the subscription into the provider-neutral billing
+account. Browser success and cancel redirects never grant provisioning
+eligibility.
+
+The webhook also maps `customer.subscription.updated` and
+`customer.subscription.deleted` into provider-neutral billing states. Configure
+Stripe to deliver those three event types. The Checkout price must be a
+recurring Price, and the webhook signing secret must come from that endpoint.
 
 Do not migrate simulated subscriptions as real financial agreements. Create a
 real Stripe customer/subscription through an explicit commercial process and
@@ -48,7 +57,8 @@ local configuration does this, but hosted project settings must be verified
 separately before launch. Login, password recovery, and trusted activation
 remain available.
 
-Production must use `BILLING_PROVIDER=stripe`; deployment is intentionally
+Production must use `BILLING_PROVIDER=stripe` together with
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `STRIPE_PRICE_ID`; deployment is intentionally
 blocked until that adapter exists. Never enable mock approval in a customer
 environment. Neither Sightline nor its billing-event ledger stores card
 numbers, bank details, credentials, full provider payloads, or payment secrets.

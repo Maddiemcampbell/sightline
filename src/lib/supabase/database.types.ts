@@ -298,6 +298,8 @@ export type Database = {
           provider: "mock" | "stripe";
           provider_customer_id: string | null;
           provider_subscription_id: string | null;
+          provider_checkout_session_id: string | null;
+          checkout_url: string | null;
           status:
             "pending" | "active" | "past_due" | "cancelled" | "payment_failed";
           plan_key: string;
@@ -1323,6 +1325,16 @@ export type Database = {
       }>;
     };
     Functions: {
+      claim_stripe_billing_event: {
+        Args: {
+          supplied_provider_event_id: string;
+          supplied_event_type: string;
+          supplied_access_request_id: string | null;
+          supplied_correlation_id: string;
+          supplied_safe_metadata: Json;
+        };
+        Returns: boolean;
+      };
       complete_customer_owner_activation: {
         Args: {
           supplied_activation_token_hash: string;

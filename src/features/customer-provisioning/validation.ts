@@ -21,6 +21,8 @@ export const approveMockBillingSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
 });
 
+export const startStripeCheckoutSchema = approveMockBillingSchema;
+
 export const ownerActivationSchema = z
   .object({
     token: z.string().regex(/^[a-f0-9]{64}$/),

@@ -8,6 +8,7 @@ import { requirePlatformPermission } from "@/features/platform-admin/authorizati
 import { getServerEnv } from "@/lib/env";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { MockApprovalForm } from "./mock-approval-form";
+import { StripeCheckoutForm } from "./stripe-checkout-form";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function CustomerProvisioningPage({
     (env.BILLING_PROVIDER ?? "mock") === "mock" &&
     (process.env.NODE_ENV !== "production" ||
       process.env.SIGHTLINE_E2E === "true");
+  const stripeWorkflowEnabled = env.BILLING_PROVIDER === "stripe";
   await recordPlatformAuditEvent({
     operator,
     action: "platform.customer_provisioning.list_view",
@@ -90,7 +92,7 @@ export default async function CustomerProvisioningPage({
                   "State",
                   "Billing",
                   "Correlation ID",
-                  "Mock workflow",
+                  "Billing workflow",
                 ].map((label) => (
                   <th key={label} className="px-4 py-3">
                     {label}
@@ -135,6 +137,14 @@ export default async function CustomerProvisioningPage({
                           request.requestedSlug ?? slugify(request.companyName)
                         }
                         rotate={request.status === "ready_for_owner"}
+                      />
+                    ) : stripeWorkflowEnabled ? (
+                      <StripeCheckoutForm
+                        requestId={request.id}
+                        defaultSlug={
+                          request.requestedSlug ?? slugify(request.companyName)
+                        }
+                        checkoutUrl={request.checkoutUrl}
                       />
                     ) : (
                       <span className="text-xs text-slate-500">

@@ -67,24 +67,31 @@ organization Owner and one for the invitee.
    organization, membership, storage allocation, or scheduled work.
 2. Review the request in `/internal/admin/provisioning`. Complete payment with
    the real billing provider; never use mock approval in production.
-3. Confirm receipt of the private Owner activation email, sender domain,
+3. Configure Stripe Checkout with `STRIPE_SECRET_KEY` and a recurring
+   `STRIPE_PRICE_ID`. Register `https://<app-origin>/api/stripe/webhook` for
+   `checkout.session.completed`, `customer.subscription.updated`, and
+   `customer.subscription.deleted`, then set its signing secret as
+   `STRIPE_WEBHOOK_SECRET`.
+4. Treat Checkout return URLs as display-only. Only a verified webhook may
+   activate billing and issue the private Owner invitation.
+5. Confirm receipt of the private Owner activation email, sender domain,
    SPF/DKIM alignment, branding, HTTPS URL, and absence of link rewriting.
-4. Open the activation link once and establish Owner credentials. Confirm the
+6. Open the activation link once and establish Owner credentials. Confirm the
    organization and first Owner membership are created exactly once.
-5. Create the first project. Confirm it opens and remains after a fresh login.
-6. Invite the second inbox from Team settings. Confirm receipt of the Sightline
+7. Create the first project. Confirm it opens and remains after a fresh login.
+8. Invite the second inbox from Team settings. Confirm receipt of the Sightline
    invitation email and that the displayed fallback link matches the message.
-7. In a separate private browser session, open the invitation and establish
+9. In a separate private browser session, open the invitation and establish
    credentials through its token-bound setup page.
-8. Accept the invitation. Confirm the membership and active organization are
-   created once, including after refresh or a repeated submission.
-9. Verify the invitee cannot accept while authenticated as the Owner and that
-   Switch accounts returns to the same invitation.
-10. Request a password reset for each account. Confirm the recovery link opens
+10. Accept the invitation. Confirm the membership and active organization are
+    created once, including after refresh or a repeated submission.
+11. Verify the invitee cannot accept while authenticated as the Owner and that
+    Switch accounts returns to the same invitation.
+12. Request a password reset for each account. Confirm the recovery link opens
     `/reset-password`, including for an account without another membership.
-11. Confirm expired and already-used confirmation, invitation, and recovery
+13. Confirm expired and already-used confirmation, invitation, and recovery
     links show safe errors.
-12. Inspect Supabase Auth logs, Resend delivery events, Sightline audit records,
+14. Inspect Supabase Auth logs, Resend delivery events, Sightline audit records,
     and application error reporting for the same test timestamps.
 
 Record message IDs and timestamps, but do not put raw links, tokens, passwords,

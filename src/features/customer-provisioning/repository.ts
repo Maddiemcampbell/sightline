@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
+import type { Json } from "@/lib/supabase/database.types";
 import type {
   AccessRequestStatus,
   BillingStatus,
@@ -131,6 +132,115 @@ export class CustomerProvisioningRepository {
     if (eventError) throw new Error(eventError.message);
   }
 
+  async markStripeCheckoutPending(input: {
+    request: CustomerAccessRequest;
+    slug: string;
+    checkoutSessionId: string;
+    checkoutUrl: string;
+    operatorId: string;
+  }) {
+    const { error: billingError } = await this.client
+      .from("organization_billing_accounts")
+      .upsert(
+        {
+          access_request_id: input.request.id,
+          provider: "stripe",
+          status: "pending",
+          billing_email: input.request.ownerEmail,
+          provider_checkout_session_id: input.checkoutSessionId,
+          checkout_url: input.checkoutUrl,
+        },
+        { onConflict: "access_request_id" },
+      );
+    if (billingError) throw new Error(billingError.message);
+    const { error: requestError } = await this.client
+      .from("customer_access_requests")
+      .update({
+        requested_slug: input.slug,
+        status: "payment_pending",
+        reviewed_by_operator_id: input.operatorId,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", input.request.id)
+      .in("status", ["submitted", "payment_pending", "failed"]);
+    if (requestError) throw new Error(requestError.message);
+  }
+
+  async claimStripeEvent(input: {
+    eventId: string;
+    eventType: string;
+    accessRequestId: string | null;
+    correlationId: string;
+    safeMetadata: Json;
+  }) {
+    const { data, error } = await this.client.rpc(
+      "claim_stripe_billing_event",
+      {
+        supplied_provider_event_id: input.eventId,
+        supplied_event_type: input.eventType,
+        supplied_access_request_id: input.accessRequestId,
+        supplied_correlation_id: input.correlationId,
+        supplied_safe_metadata: input.safeMetadata,
+      },
+    );
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async finishStripeEvent(
+    eventId: string,
+    status: "processed" | "failed" | "ignored",
+  ) {
+    const { error } = await this.client
+      .from("billing_provider_events")
+      .update({ processing_status: status })
+      .eq("provider", "stripe")
+      .eq("provider_event_id", eventId);
+    if (error) throw new Error(error.message);
+  }
+
+  async activateStripeBilling(input: {
+    accessRequestId: string;
+    customerId: string;
+    subscriptionId: string;
+    tokenHash: string;
+    tokenExpiresAt: string;
+  }) {
+    const { error: billingError } = await this.client
+      .from("organization_billing_accounts")
+      .update({
+        provider_customer_id: input.customerId,
+        provider_subscription_id: input.subscriptionId,
+        status: "active",
+      })
+      .eq("access_request_id", input.accessRequestId)
+      .eq("provider", "stripe");
+    if (billingError) throw new Error(billingError.message);
+    const { error: requestError } = await this.client
+      .from("customer_access_requests")
+      .update({
+        status: "ready_for_owner",
+        activation_token_hash: input.tokenHash,
+        activation_expires_at: input.tokenExpiresAt,
+        activation_consumed_at: null,
+      })
+      .eq("id", input.accessRequestId)
+      .eq("status", "payment_pending");
+    if (requestError) throw new Error(requestError.message);
+  }
+
+  async updateStripeBillingStatus(
+    subscriptionId: string,
+    status: BillingStatus,
+  ) {
+    const { error } = await this.client
+      .from("organization_billing_accounts")
+      .update({ status })
+      .eq("provider", "stripe")
+      .eq("provider_subscription_id", subscriptionId);
+    if (error) throw new Error(error.message);
+  }
+
   async startAttempt(request: CustomerAccessRequest) {
     const { data, error } = await this.client
       .from("customer_provisioning_attempts")
@@ -180,7 +290,9 @@ export class CustomerProvisioningRepository {
     if (!rows.length) return [];
     const { data: billing, error } = await this.client
       .from("organization_billing_accounts")
-      .select("access_request_id,provider,status")
+      .select(
+        "access_request_id,provider,status,checkout_url,provider_checkout_session_id",
+      )
       .in(
         "access_request_id",
         rows.map((row) => row.id),
@@ -206,6 +318,8 @@ export class CustomerProvisioningRepository {
         requestedAt: row.requested_at,
         billingProvider: account?.provider ?? null,
         billingStatus: (account?.status as BillingStatus | undefined) ?? null,
+        checkoutUrl: account?.checkout_url ?? null,
+        checkoutSessionId: account?.provider_checkout_session_id ?? null,
       };
     });
   }

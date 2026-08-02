@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(18);
 
 select has_table('public', 'customer_access_requests', 'access requests exist before tenants');
 select has_table('public', 'organization_billing_accounts', 'provider-neutral billing accounts exist');
@@ -42,6 +42,48 @@ select ok(
       and pg_get_constraintdef(oid) like '%platform.provisioning.manage%'
   ),
   'customer provisioning has a dedicated platform capability'
+);
+select has_column(
+  'public', 'organization_billing_accounts', 'provider_checkout_session_id',
+  'billing accounts retain the Stripe Checkout session identifier'
+);
+select has_function(
+  'public', 'claim_stripe_billing_event',
+  array['text', 'text', 'uuid', 'uuid', 'jsonb'],
+  'Stripe webhook events have an idempotent claim function'
+);
+select function_privs_are(
+  'public', 'claim_stripe_billing_event',
+  array['text', 'text', 'uuid', 'uuid', 'jsonb'],
+  'authenticated', array[]::text[],
+  'customer sessions cannot claim billing events'
+);
+select is(
+  public.claim_stripe_billing_event(
+    'evt_idempotency_test', 'checkout.session.completed', null,
+    '00000000-0000-0000-0000-000000000001'::uuid, '{"safe":true}'::jsonb
+  ),
+  true,
+  'the first delivery claims a Stripe event'
+);
+select is(
+  public.claim_stripe_billing_event(
+    'evt_idempotency_test', 'checkout.session.completed', null,
+    '00000000-0000-0000-0000-000000000001'::uuid, '{"safe":true}'::jsonb
+  ),
+  false,
+  'a duplicate processed or in-flight delivery is ignored'
+);
+update public.billing_provider_events
+set processing_status = 'failed'
+where provider = 'stripe' and provider_event_id = 'evt_idempotency_test';
+select is(
+  public.claim_stripe_billing_event(
+    'evt_idempotency_test', 'checkout.session.completed', null,
+    '00000000-0000-0000-0000-000000000001'::uuid, '{"retry":true}'::jsonb
+  ),
+  true,
+  'a failed Stripe event can be reclaimed for retry'
 );
 
 select * from finish();

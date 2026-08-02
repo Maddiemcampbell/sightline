@@ -4,11 +4,13 @@ import { createHash, randomBytes } from "node:crypto";
 
 import type { PlatformOperator } from "@/features/platform-admin/types";
 import type { RequestPrincipal } from "@/lib/auth/session";
-import { getBillingProvider } from "./billing-provider";
+import { getBillingProvider, getBillingProviderName } from "./billing-provider";
 import { CustomerProvisioningRepository } from "./repository";
+import { createStripeCheckoutSession } from "./stripe";
 import {
   approveMockBillingSchema,
   requestCustomerAccessSchema,
+  startStripeCheckoutSchema,
 } from "./validation";
 
 const ACTIVATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1_000;
@@ -29,6 +31,33 @@ export class CustomerProvisioningService {
       ...(value.companySize ? { companySize: value.companySize } : {}),
       ...(value.message ? { message: value.message } : {}),
     });
+  }
+
+  async startStripeCheckout(operator: PlatformOperator, input: unknown) {
+    const value = startStripeCheckoutSchema.parse(input);
+    const request = await this.repository.get(value.accessRequestId);
+    if (
+      !request ||
+      !["submitted", "payment_pending", "failed"].includes(request.status)
+    )
+      throw new Error("Access request is unavailable.");
+    if (getBillingProviderName() !== "stripe")
+      throw new Error("Stripe billing is not configured.");
+    const session = await createStripeCheckoutSession({
+      accessRequestId: request.id,
+      ownerEmail: request.ownerEmail,
+      companyName: request.companyName,
+      requestedSlug: value.slug,
+      correlationId: request.correlationId,
+    });
+    await this.repository.markStripeCheckoutPending({
+      request,
+      slug: value.slug,
+      checkoutSessionId: session.id,
+      checkoutUrl: session.url,
+      operatorId: operator.id,
+    });
+    return { request, checkoutUrl: session.url };
   }
 
   list(status?: Parameters<CustomerProvisioningRepository["list"]>[0]) {

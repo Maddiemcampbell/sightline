@@ -5,9 +5,13 @@ import { MockBillingProvider } from "./mock-billing-provider";
 import type { BillingProvider } from "./types";
 
 export function getBillingProvider(): BillingProvider {
-  const configured = getServerEnv().BILLING_PROVIDER ?? "mock";
+  const configured = getBillingProviderName();
   if (configured === "mock") return new MockBillingProvider();
   throw new Error(
-    "Stripe billing is configured but its provider adapter is not implemented yet.",
+    "Stripe approvals are accepted only through verified webhooks.",
   );
+}
+
+export function getBillingProviderName() {
+  return getServerEnv().BILLING_PROVIDER ?? "mock";
 }

@@ -26,6 +26,8 @@ export type CustomerAccessRequest = Readonly<{
   requestedAt: string;
   billingProvider: "mock" | "stripe" | null;
   billingStatus: BillingStatus | null;
+  checkoutUrl: string | null;
+  checkoutSessionId: string | null;
 }>;
 
 export interface BillingProvider {

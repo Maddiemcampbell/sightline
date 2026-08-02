@@ -9,6 +9,9 @@ const required = [
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
   "BILLING_PROVIDER",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "STRIPE_PRICE_ID",
 ];
 
 const errors = [];

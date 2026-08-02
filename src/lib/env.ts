@@ -17,6 +17,9 @@ const serverEnvSchema = publicEnvSchema.extend({
   OPENAI_MODEL: z.string().min(1).optional(),
   INTERNAL_ADMIN_AUTH_USER_IDS: z.string().optional(),
   BILLING_PROVIDER: z.enum(["mock", "stripe"]).optional(),
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  STRIPE_PRICE_ID: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -43,7 +46,20 @@ export function getServerEnv(): ServerEnv {
     OPENAI_MODEL: process.env.OPENAI_MODEL,
     INTERNAL_ADMIN_AUTH_USER_IDS: process.env.INTERNAL_ADMIN_AUTH_USER_IDS,
     BILLING_PROVIDER: process.env.BILLING_PROVIDER,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
   });
+  if (
+    parsed.BILLING_PROVIDER === "stripe" &&
+    (!parsed.STRIPE_SECRET_KEY ||
+      !parsed.STRIPE_WEBHOOK_SECRET ||
+      !parsed.STRIPE_PRICE_ID)
+  ) {
+    throw new Error(
+      "Stripe billing requires STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and STRIPE_PRICE_ID.",
+    );
+  }
   if (
     process.env.NODE_ENV === "production" &&
     process.env.SIGHTLINE_E2E !== "true" &&
