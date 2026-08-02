@@ -39,8 +39,8 @@ export default async function InvitationPage({ params }: InvitationPageProps) {
           Join {preview.organization.name}
         </h1>
         <p className="text-muted mt-3 leading-6">
-          This invitation was issued to {preview.invitation.email}. Initial
-          memberships have owner access.
+          This invitation was issued to {preview.invitation.email} with the{" "}
+          {preview.invitation.role.toLowerCase()} role.
         </p>
         <div className="mt-6">
           {unavailable ? (

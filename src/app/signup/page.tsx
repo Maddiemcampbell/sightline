@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
-import { AuthForm } from "@/components/auth/auth-form";
 import { resolveOnboardingDestination } from "@/lib/auth/onboarding";
 import { safeRedirectPath } from "@/lib/auth/redirects";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -21,11 +20,11 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
 
   return (
     <AuthCard
-      title="Create your account"
-      description="Use your work email to get started with Sightline."
+      title="Account creation is invite-only"
+      description="Sightline creates customer accounts only through approved owner activations and organization invitations."
       footer={
         <>
-          Already have an account?{" "}
+          Already invited?{" "}
           <Link
             href={`/login?next=${encodeURIComponent(next)}`}
             className="text-deep-green font-semibold underline-offset-4 hover:underline"
@@ -35,7 +34,17 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
         </>
       }
     >
-      <AuthForm mode="signup" next={next} />
+      <div className="space-y-3">
+        <Link
+          href="/request-access"
+          className="bg-deep-green block rounded-md px-4 py-3 text-center font-semibold text-white"
+        >
+          Request access
+        </Link>
+        <p className="text-center text-sm text-slate-500">
+          If you received an invitation, use its private setup link.
+        </p>
+      </div>
     </AuthCard>
   );
 }

@@ -259,7 +259,75 @@ export type Database = {
           | "platform.support.write"
           | "platform.flags.manage"
           | "platform.releases.read"
-          | "platform.admin.manage";
+          | "platform.admin.manage"
+          | "platform.provisioning.manage";
+      }>;
+      customer_access_requests: Table<
+        Timestamped & {
+          id: string;
+          company_name: string;
+          requested_slug: string | null;
+          owner_name: string;
+          owner_email: string;
+          company_size: string | null;
+          message: string | null;
+          status:
+            | "submitted"
+            | "payment_pending"
+            | "ready_for_owner"
+            | "provisioning"
+            | "provisioned"
+            | "rejected"
+            | "cancelled"
+            | "failed";
+          organization_id: string | null;
+          activation_token_hash: string | null;
+          activation_expires_at: string | null;
+          activation_consumed_at: string | null;
+          reviewed_by_operator_id: string | null;
+          reviewed_at: string | null;
+          correlation_id: string;
+          requested_at: string;
+        }
+      >;
+      organization_billing_accounts: Table<
+        Timestamped & {
+          id: string;
+          access_request_id: string;
+          organization_id: string | null;
+          provider: "mock" | "stripe";
+          provider_customer_id: string | null;
+          provider_subscription_id: string | null;
+          status:
+            "pending" | "active" | "past_due" | "cancelled" | "payment_failed";
+          plan_key: string;
+          billing_email: string;
+          current_period_end: string | null;
+          cancelled_at: string | null;
+        }
+      >;
+      billing_provider_events: Table<{
+        id: string;
+        provider: "mock" | "stripe";
+        provider_event_id: string;
+        access_request_id: string | null;
+        event_type: string;
+        processing_status: "received" | "processed" | "failed" | "ignored";
+        safe_metadata: Json;
+        correlation_id: string;
+        occurred_at: string;
+        created_at: string;
+      }>;
+      customer_provisioning_attempts: Table<{
+        id: string;
+        access_request_id: string;
+        trigger_source: "owner_activation" | "retry";
+        status: "started" | "succeeded" | "failed";
+        failure_code: string | null;
+        correlation_id: string;
+        started_at: string;
+        completed_at: string | null;
+        created_at: string;
       }>;
       platform_audit_logs: Table<{
         action: string;
@@ -1255,6 +1323,13 @@ export type Database = {
       }>;
     };
     Functions: {
+      complete_customer_owner_activation: {
+        Args: {
+          supplied_activation_token_hash: string;
+          principal_auth_user_id: string;
+        };
+        Returns: string;
+      };
       create_organization_for_user: {
         Args: {
           organization_name: string;

@@ -104,48 +104,12 @@ export async function signup(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const parsed = z
-    .object({
-      email: emailSchema,
-      password: passwordSchema,
-      confirmPassword: z.string(),
-      next: z.string().optional(),
-    })
-    .refine((value) => value.password === value.confirmPassword, {
-      path: ["confirmPassword"],
-      message: "Passwords do not match.",
-    })
-    .safeParse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-      confirmPassword: formData.get("confirmPassword"),
-      next: formData.get("next")?.toString(),
-    });
-  if (!parsed.success) return validationState(parsed.error);
-
-  const next = safeRedirectPath(parsed.data.next, "/");
-  const client = await createServerSupabaseClient();
-  const { data, error } = await client.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${siteUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
-    },
-  });
-  if (error) return { message: "The account could not be created." };
-
-  if (data.session && data.user) {
-    await recordPrincipalAuditEvent({
-      actorAuthUserId: data.user.id,
-      action: "auth.login",
-      resourceType: "session",
-      metadata: { authenticationMethod: "password_signup" },
-    });
-    await completeAuthentication(next, "signup");
-  }
-  const query = new URLSearchParams({ email: parsed.data.email });
-  if (next !== "/") query.set("next", next);
-  redirect(`/verify-email?${query.toString()}`);
+  void _state;
+  void formData;
+  return {
+    message:
+      "Account creation is invite-only. Request access or use the private setup link in your invitation email.",
+  };
 }
 
 export async function resendVerificationEmail(

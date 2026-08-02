@@ -16,6 +16,7 @@ const serverEnvSchema = publicEnvSchema.extend({
   OPENAI_API_KEY: z.string().min(1).optional(),
   OPENAI_MODEL: z.string().min(1).optional(),
   INTERNAL_ADMIN_AUTH_USER_IDS: z.string().optional(),
+  BILLING_PROVIDER: z.enum(["mock", "stripe"]).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -41,7 +42,15 @@ export function getServerEnv(): ServerEnv {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_MODEL: process.env.OPENAI_MODEL,
     INTERNAL_ADMIN_AUTH_USER_IDS: process.env.INTERNAL_ADMIN_AUTH_USER_IDS,
+    BILLING_PROVIDER: process.env.BILLING_PROVIDER,
   });
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.SIGHTLINE_E2E !== "true" &&
+    parsed.BILLING_PROVIDER === "mock"
+  ) {
+    throw new Error("Mock billing cannot be enabled in production.");
+  }
   if (
     process.env.NODE_ENV === "production" &&
     process.env.SIGHTLINE_E2E !== "true" &&

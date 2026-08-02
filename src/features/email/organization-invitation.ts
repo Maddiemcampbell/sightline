@@ -27,7 +27,7 @@ export async function sendOrganizationInvitation(input: {
   if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
     throw new Error("Transactional email is not configured.");
   }
-  const invitationUrl = `${env.APP_URL}/invitations/${input.token}`;
+  const invitationUrl = `${env.APP_URL}/invitations/${input.token}/setup`;
   const message = renderOrganizationInvitation({
     organizationName: input.organizationName,
     role: input.role,

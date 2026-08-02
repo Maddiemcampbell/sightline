@@ -29,12 +29,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       description="Log in to your Sightline workspace."
       footer={
         <>
-          New to Sightline?{" "}
+          Interested in Sightline?{" "}
           <Link
-            href={`/signup?next=${encodeURIComponent(next)}`}
+            href="/request-access"
             className="text-deep-green font-semibold underline-offset-4 hover:underline"
           >
-            Create an account
+            Request access
           </Link>
         </>
       }

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("preserves a protected onboarding destination through login and signup", async ({
+test("preserves a protected destination through login while signup stays closed", async ({
   browser,
 }) => {
   const context = await browser.newContext({
@@ -10,8 +10,8 @@ test("preserves a protected onboarding destination through login and signup", as
   await page.goto("/projects/new");
   await expect(page).toHaveURL(/\/login\?next=%2Fprojects%2Fnew$/);
   await expect(
-    page.getByRole("link", { name: "Create an account" }),
-  ).toHaveAttribute("href", "/signup?next=%2Fprojects%2Fnew");
+    page.getByRole("link", { name: "Request access" }),
+  ).toHaveAttribute("href", "/request-access");
   await context.close();
 });
 

@@ -33,6 +33,7 @@ const permissions = [
   "platform.flags.manage",
   "platform.releases.read",
   "platform.admin.manage",
+  "platform.provisioning.manage",
 ];
 
 const authUserId = await ensureAuthUser();

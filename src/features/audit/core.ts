@@ -32,7 +32,10 @@ export type AuditAction =
   | "data_export.failed"
   | "data_export.downloaded"
   | "automation.schedule_updated"
-  | "automation.manual_run";
+  | "automation.manual_run"
+  | "customer.access_requested"
+  | "organization.provisioned"
+  | "customer.owner_activated";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;

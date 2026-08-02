@@ -12,6 +12,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform.flags.manage",
   "platform.releases.read",
   "platform.admin.manage",
+  "platform.provisioning.manage",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];

@@ -35,7 +35,8 @@ Preview must use a non-production Supabase project.
 
 In the hosted Supabase Dashboard:
 
-1. Enable email/password signup and require email confirmation.
+1. Disable general and email signup. Customer identities are created only by
+   trusted, token-bound Owner activation or organization invitation flows.
 2. Set Site URL to the exact value of `APP_URL`.
 3. Add `${APP_URL}/auth/callback` to the production redirect allowlist. Add
    preview origins separately; avoid wildcard production origins.
@@ -48,8 +49,9 @@ In the hosted Supabase Dashboard:
 7. Set the minimum password length to 12 and require uppercase, lowercase,
    digits, and symbols.
 8. Keep refresh-token rotation and double-confirm email changes enabled.
-9. Review signup, recovery, verification, and email-delivery rate limits.
-10. Enable CAPTCHA before exposing public signup.
+9. Review recovery, verification, and email-delivery rate limits.
+10. Add distributed rate limiting and CAPTCHA to `/request-access` before broad
+    public exposure.
 11. Review confirmation and recovery templates. Templates using a custom
     redirect must honor Supabase's `RedirectTo` value.
 
@@ -61,19 +63,19 @@ emails is separate from Supabase Auth SMTP. Both configurations must pass.
 Use two controlled, real inboxes on different addresses: one for the
 organization Owner and one for the invitee.
 
-1. Open a private browser session at `${APP_URL}/signup`.
-2. Create the Owner account and confirm that no protected page is available
-   before verification.
-3. Confirm receipt, sender domain, SPF/DKIM alignment, branding, HTTPS callback
-   URL, and absence of link rewriting.
-4. Open the confirmation link once. Confirm organization creation appears and
-   refreshing does not create a redirect loop.
-5. Create an organization, then create the first project. Confirm the project
-   opens and remains after a fresh login.
+1. Submit `/request-access` and confirm that it creates no Auth user,
+   organization, membership, storage allocation, or scheduled work.
+2. Review the request in `/internal/admin/provisioning`. Complete payment with
+   the real billing provider; never use mock approval in production.
+3. Confirm receipt of the private Owner activation email, sender domain,
+   SPF/DKIM alignment, branding, HTTPS URL, and absence of link rewriting.
+4. Open the activation link once and establish Owner credentials. Confirm the
+   organization and first Owner membership are created exactly once.
+5. Create the first project. Confirm it opens and remains after a fresh login.
 6. Invite the second inbox from Team settings. Confirm receipt of the Sightline
    invitation email and that the displayed fallback link matches the message.
-7. In a separate private browser session, open the invitation, choose signup,
-   and verify that the invitation destination survives email verification.
+7. In a separate private browser session, open the invitation and establish
+   credentials through its token-bound setup page.
 8. Accept the invitation. Confirm the membership and active organization are
    created once, including after refresh or a repeated submission.
 9. Verify the invitee cannot accept while authenticated as the Owner and that

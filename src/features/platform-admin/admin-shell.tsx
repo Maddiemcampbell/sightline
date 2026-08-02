@@ -5,6 +5,7 @@ import {
   Building2,
   CircleAlert,
   ClipboardList,
+  CreditCard,
   Gauge,
   HeartPulse,
   PackageCheck,
@@ -35,6 +36,12 @@ const navigation = [
     "platform.organizations.read",
   ],
   ["/internal/admin/users", "Users", Users, "platform.users.read"],
+  [
+    "/internal/admin/provisioning",
+    "Provisioning",
+    CreditCard,
+    "platform.provisioning.manage",
+  ],
   [
     "/internal/admin/customer-health",
     "Customer Health",

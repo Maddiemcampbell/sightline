@@ -8,6 +8,7 @@ const required = [
   "APP_URL",
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
+  "BILLING_PROVIDER",
 ];
 
 const errors = [];
@@ -70,6 +71,11 @@ if (
 }
 if (process.env.SIGHTLINE_E2E === "true") {
   errors.push("SIGHTLINE_E2E must not be enabled in production.");
+}
+if (process.env.BILLING_PROVIDER !== "stripe") {
+  errors.push(
+    "BILLING_PROVIDER must be stripe in production; mock billing is local/test-only.",
+  );
 }
 if (!process.env.INTERNAL_ADMIN_AUTH_USER_IDS?.trim()) {
   warnings.push(

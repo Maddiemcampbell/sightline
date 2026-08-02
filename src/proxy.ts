@@ -14,6 +14,7 @@ const MAX_COOKIE_CHUNKS = 8;
 const PUBLIC_ROUTES = new Set([
   "/login",
   "/signup",
+  "/request-access",
   "/forgot-password",
   "/reset-password",
   "/verify-email",
@@ -28,7 +29,12 @@ function cookieName(key: string, index: number): string {
 }
 
 function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.has(pathname) || pathname.startsWith("/api/cron/");
+  return (
+    PUBLIC_ROUTES.has(pathname) ||
+    pathname.startsWith("/activate/") ||
+    /^\/invitations\/[^/]+\/setup$/.test(pathname) ||
+    pathname.startsWith("/api/cron/")
+  );
 }
 
 export async function proxy(request: NextRequest) {

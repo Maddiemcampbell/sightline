@@ -1,23 +1,25 @@
 # Onboarding reliability
 
-Sightline resolves onboarding on the server after every successful password
-login, auto-confirmed signup, and email callback. The resolver validates the
-requested destination, loads authenticated memberships, selects the preferred
-or first organization, and checks whether that organization has a project.
+Sightline is invite-only. Public access requests create no Auth identity or
+tenant. After billing eligibility is established, a private token-bound Owner
+activation atomically creates the organization and first Owner membership.
+Team invitations use a separate token-bound credential setup flow. Sightline
+then resolves onboarding on the server after successful login or activation.
 
 The resulting flow is:
 
 1. An unauthenticated protected request is redirected to `/login` with a safe
    relative `next` path.
-2. Login and signup links preserve that path. Signup also places it in the
-   verification callback URL.
+2. Login preserves that path. `/signup` explains the invite-only model and
+   links to `/request-access`; it cannot create an account.
 3. An account without a verified email is sent to `/verify-email`. Verification
    emails can be resent with a generic response, and the original destination
    remains intact.
 4. A verified invitation link is handled before organization creation. The
    invitation RPC remains the atomic membership boundary. A mismatched account
    must log out before continuing as the invited address.
-5. A verified user without memberships is sent to `/organizations/new`.
+5. A trusted activation account without memberships is sent to the relevant
+   activation or support recovery path; anonymous users cannot self-provision.
 6. Organization creation atomically creates the Owner membership, selects the
    organization in an HTTP-only cookie, and opens `/projects/new`.
 7. An organization without projects opens the first-project experience. Only
