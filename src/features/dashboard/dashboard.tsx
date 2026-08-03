@@ -122,13 +122,13 @@ export function Dashboard({ view }: { view: DashboardView }) {
           {filteredView.intelligence.portfolioWatch.length ? (
             <p className="text-muted mt-1 text-sm leading-6 sm:text-base">
               Sightline found{" "}
-              <mark className="signal-highlight">
+              <span>
                 {filteredView.intelligence.portfolioWatch.length} portfolio
                 signal
                 {filteredView.intelligence.portfolioWatch.length === 1
                   ? ""
                   : "s"}
-              </mark>{" "}
+              </span>{" "}
               that currently{" "}
               {filteredView.intelligence.portfolioWatch.length === 1
                 ? "deserves"
@@ -226,54 +226,48 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
           icon={ShieldAlert}
           tone={summary.projectsAtRisk ? "warning" : "positive"}
         />
-        <OverviewMetric
-          label="Budget variance"
-          value={
-            !view.canViewFinancials
-              ? "Restricted for your role"
-              : budgetVariance?.valueCents === null || !budgetVariance
-                ? "Not available"
-                : formatCompactCurrency(budgetVariance.valueCents)
-          }
-          detail={
-            !view.canViewFinancials
-              ? "Not available for your role"
-              : budgetVariance
-                ? `${budgetVariance.quality} data · positive is under budget`
-                : "Financial inputs are missing"
-          }
-          icon={CircleDollarSign}
-          tone={
-            budgetVariance?.valueCents !== null &&
-            budgetVariance &&
-            budgetVariance.valueCents < 0
-              ? "warning"
-              : "positive"
-          }
-        />
-        <OverviewMetric
-          label="Forecasted margin"
-          value={
-            !view.canViewFinancials
-              ? "—"
-              : summary.forecastMarginPercent === null
-                ? "—"
-                : `${summary.forecastMarginPercent}%`
-          }
-          detail={
-            !view.canViewFinancials
-              ? "Restricted for your role"
-              : summary.forecastMarginPercent === null
-                ? "No active-project forecast for this scope"
-                : "Projected active-project margin"
-          }
-          icon={TrendingUp}
-          tone={
-            view.canViewFinancials && summary.forecastMarginPercent !== null
-              ? "positive"
-              : "neutral"
-          }
-        />
+        {view.canViewFinancials ? (
+          <>
+            <OverviewMetric
+              label="Budget variance"
+              value={
+                budgetVariance?.valueCents === null || !budgetVariance
+                  ? "Not available"
+                  : formatCompactCurrency(budgetVariance.valueCents)
+              }
+              detail={
+                budgetVariance
+                  ? `${budgetVariance.quality} data · positive is under budget`
+                  : "Financial inputs are missing"
+              }
+              icon={CircleDollarSign}
+              tone={
+                budgetVariance?.valueCents !== null &&
+                budgetVariance &&
+                budgetVariance.valueCents < 0
+                  ? "warning"
+                  : "positive"
+              }
+            />
+            <OverviewMetric
+              label="Forecasted margin"
+              value={
+                summary.forecastMarginPercent === null
+                  ? "—"
+                  : `${summary.forecastMarginPercent}%`
+              }
+              detail={
+                summary.forecastMarginPercent === null
+                  ? "No active-project forecast for this scope"
+                  : "Projected active-project margin"
+              }
+              icon={TrendingUp}
+              tone={
+                summary.forecastMarginPercent !== null ? "positive" : "neutral"
+              }
+            />
+          </>
+        ) : null}
       </div>
     </section>
   );

@@ -44,9 +44,6 @@ const reports = [
 
 export default async function ReportsPage() {
   const { financialAnalytics, riskAnalytics } = await getReportsData();
-  const financialSummary = financialAnalytics
-    ? `${financialAnalytics.portfolio.projectsOverBudget} over budget · ${financialAnalytics.portfolio.projectsMissingFinancialData} missing financial data · ${financialAnalytics.cashFlow.confidence} forecast confidence`
-    : "Restricted for your role";
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
@@ -65,24 +62,29 @@ export default async function ReportsPage() {
         aria-label="Available report definitions"
         className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
-        {reports.map(({ title, description, icon: Icon }) => (
-          <Card key={title} className="flex min-h-52 flex-col">
-            <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-md">
-              <Icon className="size-5" aria-hidden="true" />
-            </span>
-            <h2 className="mt-5 text-lg font-semibold">{title}</h2>
-            <p className="text-muted mt-2 flex-1 text-sm leading-6">
-              {description}
-            </p>
-            <span className="text-muted border-border mt-5 border-t pt-4 text-xs font-semibold">
-              {title === "Financial Performance"
-                ? financialSummary
-                : title === "Risk Trends"
-                  ? `${riskAnalytics.summary.activeRisks} active · ${riskAnalytics.summary.highCriticalRisks} high/critical · ${riskAnalytics.metadata.quality} data`
-                  : "Report generation coming later"}
-            </span>
-          </Card>
-        ))}
+        {reports
+          .filter(
+            ({ title }) =>
+              title !== "Financial Performance" || financialAnalytics,
+          )
+          .map(({ title, description, icon: Icon }) => (
+            <Card key={title} className="flex min-h-52 flex-col">
+              <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-md">
+                <Icon className="size-5" aria-hidden="true" />
+              </span>
+              <h2 className="mt-5 text-lg font-semibold">{title}</h2>
+              <p className="text-muted mt-2 flex-1 text-sm leading-6">
+                {description}
+              </p>
+              <span className="text-muted border-border mt-5 border-t pt-4 text-xs font-semibold">
+                {title === "Financial Performance"
+                  ? `${financialAnalytics!.portfolio.projectsOverBudget} over budget · ${financialAnalytics!.portfolio.projectsMissingFinancialData} missing financial data · ${financialAnalytics!.cashFlow.confidence} forecast confidence`
+                  : title === "Risk Trends"
+                    ? `${riskAnalytics.summary.activeRisks} active · ${riskAnalytics.summary.highCriticalRisks} high/critical · ${riskAnalytics.metadata.quality} data`
+                    : "Report generation coming later"}
+              </span>
+            </Card>
+          ))}
       </section>
       <section
         className="border-border bg-surface mt-6 rounded-xl border p-6"

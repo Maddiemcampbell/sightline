@@ -201,47 +201,41 @@ export default async function ProjectPage({ params }: Props) {
             aria-label="Project summary"
             className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
           >
-            <Summary
-              label="Contract value"
-              value={
-                canSeeFinancials && project.contract_value_cents !== null
-                  ? formatMoney(project.contract_value_cents)
-                  : canSeeFinancials
-                    ? "Not set"
-                    : "Restricted"
-              }
-              detail="Current contract"
-              icon={BriefcaseBusiness}
-            />
-            <Summary
-              label="Projected margin"
-              value={
-                canSeeFinancials
-                  ? formatMoney(project.projected_margin_cents)
-                  : "Restricted"
-              }
-              detail={
-                canSeeFinancials && project.contract_value_cents
-                  ? `${(
-                      (project.projected_margin_cents /
-                        project.contract_value_cents) *
-                      100
-                    ).toFixed(1)}% forecast`
-                  : "Role-based financial access"
-              }
-              icon={TrendingUp}
-            />
-            <Summary
-              label="Profit at risk"
-              value={
-                canSeeFinancials
-                  ? formatMoney(detail.profitAtRiskCents)
-                  : "Restricted"
-              }
-              detail={`${elevatedRisks} elevated risk${elevatedRisks === 1 ? "" : "s"}`}
-              icon={CircleDollarSign}
-              warning={detail.profitAtRiskCents > 0}
-            />
+            {canSeeFinancials ? (
+              <>
+                <Summary
+                  label="Contract value"
+                  value={
+                    project.contract_value_cents !== null
+                      ? formatMoney(project.contract_value_cents)
+                      : "Not set"
+                  }
+                  detail="Current contract"
+                  icon={BriefcaseBusiness}
+                />
+                <Summary
+                  label="Projected margin"
+                  value={formatMoney(project.projected_margin_cents)}
+                  detail={
+                    project.contract_value_cents
+                      ? `${(
+                          (project.projected_margin_cents /
+                            project.contract_value_cents) *
+                          100
+                        ).toFixed(1)}% forecast`
+                      : "Contract value is not set"
+                  }
+                  icon={TrendingUp}
+                />
+                <Summary
+                  label="Profit at risk"
+                  value={formatMoney(detail.profitAtRiskCents)}
+                  detail={`${elevatedRisks} elevated risk${elevatedRisks === 1 ? "" : "s"}`}
+                  icon={CircleDollarSign}
+                  warning={detail.profitAtRiskCents > 0}
+                />
+              </>
+            ) : null}
             <Summary
               label="Open risks"
               value={String(openRisks.length)}
@@ -350,11 +344,11 @@ export default async function ProjectPage({ params }: Props) {
                     </div>
                     <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                       <RiskPill severity={risk.severity} />
-                      <span className="text-muted text-xs tabular-nums">
-                        {canSeeFinancials
-                          ? `${formatMoney(risk.potential_exposure_cents)} exposure`
-                          : "Exposure restricted"}
-                      </span>
+                      {canSeeFinancials ? (
+                        <span className="text-muted text-xs tabular-nums">
+                          {formatMoney(risk.potential_exposure_cents)} exposure
+                        </span>
+                      ) : null}
                       <span className="text-muted text-xs tabular-nums">
                         {risk.confidence_score}% confidence
                       </span>
@@ -612,9 +606,11 @@ function RiskExposure({
       </p>
       <div className="mt-1 flex items-end justify-between gap-4">
         <h2 className="text-lg font-semibold">Current risk mix</h2>
-        <p className="text-sm font-semibold tabular-nums">
-          {canSeeFinancials ? formatMoney(totalExposure) : "Restricted"}
-        </p>
+        {canSeeFinancials ? (
+          <p className="text-sm font-semibold tabular-nums">
+            {formatMoney(totalExposure)}
+          </p>
+        ) : null}
       </div>
       {risks.length ? (
         <ul className="mt-6 space-y-4">

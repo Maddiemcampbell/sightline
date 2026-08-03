@@ -84,21 +84,6 @@ a {
   box-shadow: var(--shadow-surface);
 }
 
-.signal-highlight {
-  padding-inline: 0.12em;
-  border-radius: 0.14em;
-  background: linear-gradient(
-    to bottom,
-    transparent 14%,
-    color-mix(in srgb, var(--color-accent) 88%, transparent) 14%,
-    color-mix(in srgb, var(--color-accent) 88%, transparent) 90%,
-    transparent 90%
-  );
-  color: inherit;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

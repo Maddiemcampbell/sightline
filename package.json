@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "npm run db:reset && supabase test db && playwright test",
+    "test:e2e": "npm run db:reset && node scripts/ensure-local-supabase.mjs && supabase test db && playwright test",
     "test:e2e:no-reset": "playwright test",
     "dev:bootstrap-users": "node --env-file=.env.local scripts/bootstrap-local-users.mjs",
     "dev:bootstrap-platform-operator": "node --env-file=.env.local scripts/bootstrap-local-platform-operator.mjs",

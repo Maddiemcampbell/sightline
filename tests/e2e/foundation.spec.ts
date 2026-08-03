@@ -136,6 +136,46 @@ test("filters projects with shareable URL parameters", async ({ page }) => {
 
 test("opens a risk detail with evidence and actions", async ({ page }) => {
   await page.goto("/risks");
+  const riskFilters = page.getByRole("form", { name: "Risk filters" });
+  await expect(
+    riskFilters.locator('select[name="category"] option'),
+  ).toHaveText([
+    "All Categories",
+    "Insurance",
+    "Schedule",
+    "Documentation",
+    "Contract",
+    "Safety",
+    "Financial",
+    "Vendor",
+    "Weather",
+    "Other",
+  ]);
+  await expect(riskFilters.locator('select[name="status"] option')).toHaveText([
+    "All Statuses",
+    "Monitoring",
+    "Action Needed",
+    "In Progress",
+    "Resolved",
+    "Dismissed",
+  ]);
+  await expect(
+    riskFilters.locator('select[name="severity"] option'),
+  ).toHaveText(["All Severities", "Low", "Medium", "High", "Critical"]);
+  await expect(riskFilters.locator('select[name="due"] option')).toHaveText([
+    "All Due Dates",
+    "Overdue",
+    "Next 7 Days",
+    "Next 30 Days",
+    "No Due Date",
+  ]);
+  await expect(riskFilters.locator('select[name="sort"] option')).toHaveText([
+    "Highest Exposure",
+    "Highest Confidence",
+    "Highest Severity",
+    "Due Date",
+    "Most Recently Detected",
+  ]);
   await page.getByRole("link", { name: "View risk" }).first().click();
 
   await expect(page).toHaveURL(/\/risks\/[0-9a-f-]+$/);
@@ -444,8 +484,14 @@ test("uploads, edits, and archives document metadata", async ({ page }) => {
   );
   await main.getByRole("button", { name: "Upload document" }).click();
   const response = await uploadResponse;
-  expect(response.status()).toBe(201);
-  const payload = (await response.json()) as { documentId?: string };
+  const payload = (await response.json()) as {
+    documentId?: string;
+    error?: string;
+  };
+  expect(
+    response.status(),
+    `Document upload failed: ${payload.error ?? "no API error returned"}`,
+  ).toBe(201);
   expect(payload.documentId).toMatch(/^[0-9a-f-]{36}$/);
   if (!payload.documentId) throw new Error("Upload returned no document ID.");
   await page.goto(`/documents/${payload.documentId}`);

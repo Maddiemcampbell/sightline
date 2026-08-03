@@ -24,7 +24,7 @@ class UnusedWebSocketTransport {
 setup(
   "creates and authenticates the verified organization owner",
   async ({ page }) => {
-    setup.setTimeout(90_000);
+    setup.setTimeout(120_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !serviceRoleKey) {

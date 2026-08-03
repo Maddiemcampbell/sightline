@@ -93,35 +93,41 @@ export default async function RisksPage({ searchParams }: Props) {
           value={filters.category}
           label="Category"
           options={[
-            "all",
-            "insurance",
-            "schedule",
-            "documentation",
-            "contract",
-            "safety",
-            "financial",
-            "vendor",
-            "weather",
-            "other",
+            ["all", "All Categories"],
+            ["insurance", "Insurance"],
+            ["schedule", "Schedule"],
+            ["documentation", "Documentation"],
+            ["contract", "Contract"],
+            ["safety", "Safety"],
+            ["financial", "Financial"],
+            ["vendor", "Vendor"],
+            ["weather", "Weather"],
+            ["other", "Other"],
           ]}
         />
         <Select
           name="severity"
           value={filters.severity}
           label="Severity"
-          options={["all", "low", "medium", "high", "critical"]}
+          options={[
+            ["all", "All Severities"],
+            ["low", "Low"],
+            ["medium", "Medium"],
+            ["high", "High"],
+            ["critical", "Critical"],
+          ]}
         />
         <Select
           name="status"
           value={filters.status}
           label="Status"
           options={[
-            "all",
-            "monitoring",
-            "action_needed",
-            "in_progress",
-            "resolved",
-            "dismissed",
+            ["all", "All Statuses"],
+            ["monitoring", "Monitoring"],
+            ["action_needed", "Action Needed"],
+            ["in_progress", "In Progress"],
+            ["resolved", "Resolved"],
+            ["dismissed", "Dismissed"],
           ]}
         />
         <label className="relative">
@@ -137,13 +143,25 @@ export default async function RisksPage({ searchParams }: Props) {
           name="due"
           value={filters.due}
           label="Due date"
-          options={["all", "overdue", "7_days", "30_days", "none"]}
+          options={[
+            ["all", "All Due Dates"],
+            ["overdue", "Overdue"],
+            ["7_days", "Next 7 Days"],
+            ["30_days", "Next 30 Days"],
+            ["none", "No Due Date"],
+          ]}
         />
         <Select
           name="sort"
           value={filters.sort}
           label="Sort"
-          options={["exposure", "confidence", "severity", "due", "detected"]}
+          options={[
+            ["exposure", "Highest Exposure"],
+            ["confidence", "Highest Confidence"],
+            ["severity", "Highest Severity"],
+            ["due", "Due Date"],
+            ["detected", "Most Recently Detected"],
+          ]}
         />
         <button className="bg-deep-green h-10 rounded-md px-5 text-sm font-semibold text-white xl:col-start-4">
           Apply filters
@@ -258,7 +276,7 @@ function Select({
   name: string;
   value: string;
   label: string;
-  options: readonly string[];
+  options: ReadonlyArray<readonly [value: string, label: string]>;
 }) {
   return (
     <label>
@@ -268,11 +286,9 @@ function Select({
         defaultValue={value}
         className="border-border h-10 w-full rounded-md border px-3 text-sm"
       >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option === "all"
-              ? `All ${label.toLowerCase()}s`
-              : option.replace("_", " ")}
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
           </option>
         ))}
       </select>

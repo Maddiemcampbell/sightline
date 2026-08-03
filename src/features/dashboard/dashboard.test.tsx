@@ -283,7 +283,9 @@ describe("company dashboard", () => {
       />,
     );
 
-    expect(markup).toContain("Restricted");
+    expect(markup).not.toContain("Budget variance");
+    expect(markup).not.toContain("Forecasted margin");
+    expect(markup).not.toContain("Restricted");
     expect(markup).not.toContain("$");
   });
 

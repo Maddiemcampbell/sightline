@@ -22,7 +22,10 @@ import { Pagination } from "@/features/portfolio/pagination-controls";
 import { ProjectsAssistant } from "@/features/portfolio/projects-assistant";
 import { projectFiltersSchema } from "@/features/portfolio/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
-import { canCreateProject } from "@/lib/auth/authorization";
+import {
+  canCreateProject,
+  canViewFinancialExposure,
+} from "@/lib/auth/authorization";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { getOrganizationCapacity } from "@/features/billing/entitlements";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -35,10 +38,16 @@ const fallbackImage = "/images/project-fallback-architecture-v2.png";
 
 export default async function ProjectsPage({ searchParams }: Props) {
   const context = await requireActorContext();
+  const canSeeFinancials = canViewFinancialExposure(context);
   const canCreate = canCreateProject(context, {
     organization_id: context.organizationId,
   });
-  const filters = projectFiltersSchema.parse(await searchParams);
+  const requestedFilters = projectFiltersSchema.parse(await searchParams);
+  const filters =
+    !canSeeFinancials &&
+    (requestedFilters.sort === "exposure" || requestedFilters.sort === "margin")
+      ? { ...requestedFilters, sort: "name" as const }
+      : requestedFilters;
   const result = await getProjects(filters);
   const capacity = await getOrganizationCapacity(
     await createServerSupabaseClient(),
@@ -113,26 +122,26 @@ export default async function ProjectsPage({ searchParams }: Props) {
           icon={ShieldAlert}
           warning={atRiskProjects > 0}
         />
-        <SummaryMetric
-          label="Represented exposure"
-          value={
-            projects.some((project) => project.exposureCents !== null)
-              ? formatMoney(totalExposure)
-              : "Restricted"
-          }
-          detail="Across current filtered results"
-          icon={CircleDollarSign}
-        />
-        <SummaryMetric
-          label="Average forecast margin"
-          value={
-            averageMargin === null
-              ? "Not available"
-              : `${averageMargin.toFixed(1)}%`
-          }
-          detail="Projects with available financials"
-          icon={ArrowUpRight}
-        />
+        {canSeeFinancials ? (
+          <>
+            <SummaryMetric
+              label="Represented exposure"
+              value={formatMoney(totalExposure)}
+              detail="Across current filtered results"
+              icon={CircleDollarSign}
+            />
+            <SummaryMetric
+              label="Average forecast margin"
+              value={
+                averageMargin === null
+                  ? "Not available"
+                  : `${averageMargin.toFixed(1)}%`
+              }
+              detail="Projects with available financials"
+              icon={ArrowUpRight}
+            />
+          </>
+        ) : null}
       </section>
 
       <form
@@ -174,8 +183,12 @@ export default async function ProjectsPage({ searchParams }: Props) {
             defaultValue={filters.sort}
             className="border-border bg-surface h-10 w-full rounded-md border px-3 text-sm"
           >
-            <option value="exposure">Highest exposure</option>
-            <option value="margin">Lowest margin</option>
+            {canSeeFinancials ? (
+              <>
+                <option value="exposure">Highest exposure</option>
+                <option value="margin">Lowest margin</option>
+              </>
+            ) : null}
             <option value="name">Name</option>
             <option value="activity">Recent activity</option>
           </select>
@@ -189,9 +202,6 @@ export default async function ProjectsPage({ searchParams }: Props) {
       <div className="mt-6 flex items-center justify-between gap-4">
         <p className="text-muted text-sm">
           {result.total} project{result.total === 1 ? "" : "s"}
-        </p>
-        <p className="text-muted hidden text-xs sm:block">
-          Financial details respect your organization role.
         </p>
       </div>
 
@@ -226,8 +236,14 @@ export default async function ProjectsPage({ searchParams }: Props) {
             />
           ) : (
             <>
-              <ProjectTable projects={projects} />
-              <ProjectCards projects={projects} />
+              <ProjectTable
+                projects={projects}
+                canSeeFinancials={canSeeFinancials}
+              />
+              <ProjectCards
+                projects={projects}
+                canSeeFinancials={canSeeFinancials}
+              />
               <Pagination
                 path="/projects"
                 page={result.page}
@@ -277,13 +293,18 @@ function SummaryMetric({
   );
 }
 
-function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
+function ProjectTable({
+  projects,
+  canSeeFinancials,
+}: {
+  projects: readonly ProjectListView[];
+  canSeeFinancials: boolean;
+}) {
   const columns = [
     "Project",
     "Health",
     "Status",
-    "Budget",
-    "Forecast margin",
+    ...(canSeeFinancials ? ["Budget", "Forecast margin"] : []),
     "Schedule",
     "Risk score",
     "AI summary",
@@ -299,8 +320,12 @@ function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
             <col className="w-[18%]" />
             <col className="w-[8%]" />
             <col className="w-[8%]" />
-            <col className="w-[11%]" />
-            <col className="w-[11%]" />
+            {canSeeFinancials ? (
+              <>
+                <col className="w-[11%]" />
+                <col className="w-[11%]" />
+              </>
+            ) : null}
             <col className="w-[10%]" />
             <col className="w-[9%]" />
             <col className="w-[25%]" />
@@ -359,20 +384,24 @@ function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
                 <td className="px-4 py-4">
                   <ProjectBadge kind={project.stage} />
                 </td>
-                <td className="px-4 py-4">
-                  <FinancialValue value={project.contractValueCents} />
-                  <p className="text-muted mt-1 text-[0.6875rem]">
-                    Current contract
-                  </p>
-                </td>
-                <td className="px-4 py-4">
-                  <FinancialValue value={project.projectedMarginCents} />
-                  <p className="text-muted mt-1 text-[0.6875rem] tabular-nums">
-                    {project.forecastMarginPercent === null
-                      ? "Margin unavailable"
-                      : `${project.forecastMarginPercent.toFixed(1)}% forecast`}
-                  </p>
-                </td>
+                {canSeeFinancials ? (
+                  <>
+                    <td className="px-4 py-4">
+                      <FinancialValue value={project.contractValueCents} />
+                      <p className="text-muted mt-1 text-[0.6875rem]">
+                        Current contract
+                      </p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <FinancialValue value={project.projectedMarginCents} />
+                      <p className="text-muted mt-1 text-[0.6875rem] tabular-nums">
+                        {project.forecastMarginPercent === null
+                          ? "Margin unavailable"
+                          : `${project.forecastMarginPercent.toFixed(1)}% forecast`}
+                      </p>
+                    </td>
+                  </>
+                ) : null}
                 <td className="px-4 py-4">
                   <Schedule project={project} />
                 </td>
@@ -403,7 +432,13 @@ function ProjectTable({ projects }: { projects: readonly ProjectListView[] }) {
   );
 }
 
-function ProjectCards({ projects }: { projects: readonly ProjectListView[] }) {
+function ProjectCards({
+  projects,
+  canSeeFinancials,
+}: {
+  projects: readonly ProjectListView[];
+  canSeeFinancials: boolean;
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:hidden">
       {projects.map((project) => (
@@ -431,17 +466,21 @@ function ProjectCards({ projects }: { projects: readonly ProjectListView[] }) {
               <ProjectBadge kind={project.health} />
             </div>
             <dl className="border-border mt-5 grid grid-cols-2 gap-4 border-y py-4">
-              <Metric label="Forecast margin">
-                <FinancialValue value={project.projectedMarginCents} />
-              </Metric>
+              {canSeeFinancials ? (
+                <Metric label="Forecast margin">
+                  <FinancialValue value={project.projectedMarginCents} />
+                </Metric>
+              ) : null}
               <Metric label="Open risks">
                 <span className="font-semibold tabular-nums">
                   {project.openRiskCount}
                 </span>
               </Metric>
-              <Metric label="Exposure">
-                <FinancialValue value={project.exposureCents} />
-              </Metric>
+              {canSeeFinancials ? (
+                <Metric label="Exposure">
+                  <FinancialValue value={project.exposureCents} />
+                </Metric>
+              ) : null}
               <Metric label="Risk score">
                 <span className="font-semibold tabular-nums">
                   {project.riskScore}/100

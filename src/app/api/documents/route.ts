@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     );
   }
 
+  let stage = "request_validation";
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     // Authorization is complete above. Keep the resulting organization-scoped
     // mutation on one trusted client so local Auth refreshes cannot split the
     // file upload from its metadata and activity records.
+    stage = "storage_upload";
     const client = createAdminSupabaseClient();
     const documentId = crypto.randomUUID();
     const storagePath = organizationStoragePath(
@@ -87,6 +89,7 @@ export async function POST(request: Request) {
       });
     if (storageError) throw new Error(storageError.message);
 
+    stage = "document_insert";
     const { error: documentError } = await client.from("documents").insert({
       id: documentId,
       organization_id: context.organizationId,
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
       throw new Error(documentError.message);
     }
 
+    stage = "activity_insert";
     const { error: activityError } = await client
       .from("document_activities")
       .insert({
@@ -136,6 +140,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ documentId }, { status: 201 });
   } catch (error) {
+    console.error("[document-upload] Upload failed", {
+      stage,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     const message = publicUploadError(error);
     return NextResponse.json({ error: message }, { status: 400 });
   }

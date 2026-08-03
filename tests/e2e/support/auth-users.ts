@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 
 type AdminClient = ReturnType<typeof createClient>;
 
+const AUTH_READY_TIMEOUT_MS = 45_000;
+const MAX_RETRY_DELAY_MS = 5_000;
+
 export async function ensureE2eAuthUser({
   admin,
   id,
@@ -14,11 +17,10 @@ export async function ensureE2eAuthUser({
   password: string;
 }) {
   let lastError = "Supabase Auth did not return a user.";
-  const retryDelays = [0, 250, 500, 1_000, 2_000, 4_000] as const;
+  const deadline = Date.now() + AUTH_READY_TIMEOUT_MS;
+  let retryDelay = 250;
 
-  for (const delay of retryDelays) {
-    if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
-
+  while (true) {
     // Creating first avoids the local listUsers endpoint, which can be
     // unavailable immediately after a database reset.
     const created = await admin.auth.admin.createUser({
@@ -45,6 +47,13 @@ export async function ensureE2eAuthUser({
       authError("Unable to create Auth user", created.error),
       authError("Unable to read Auth user", existing.error),
     ].join("; ");
+
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolve) =>
+      setTimeout(resolve, Math.min(retryDelay, remaining)),
+    );
+    retryDelay = Math.min(retryDelay * 2, MAX_RETRY_DELAY_MS);
   }
 
   throw new Error(lastError);
@@ -61,6 +70,9 @@ function authError(
 ) {
   if (!error) return `${prefix}: unknown error`;
   const detail =
-    error.message || error.code || error.name || "Auth service unavailable";
+    (error.message && error.message !== "{}" ? error.message : null) ||
+    error.code ||
+    error.name ||
+    "Auth service unavailable";
   return `${prefix}: ${detail}${error.status ? ` (${error.status})` : ""}`;
 }
