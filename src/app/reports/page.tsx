@@ -1,49 +1,26 @@
-import {
-  BarChart3,
-  CircleDollarSign,
-  FileChartColumn,
-  ListChecks,
-  ShieldAlert,
-} from "lucide-react";
+import { CircleDollarSign, ShieldAlert } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { getReportsData } from "@/features/reports/data";
-
-const reports = [
-  {
-    title: "Executive Summary",
-    description:
-      "A concise leadership view of portfolio changes, priorities, and supporting evidence.",
-    icon: FileChartColumn,
-  },
-  {
-    title: "Portfolio Health",
-    description:
-      "Project-level health signals and patterns across authorized work.",
-    icon: BarChart3,
-  },
-  {
-    title: "Risk Trends",
-    description:
-      "Changes in risk volume, severity, categories, and resolution outcomes.",
-    icon: ShieldAlert,
-  },
-  {
-    title: "Overdue Actions",
-    description:
-      "Outstanding responses organized by project, owner, priority, and due date.",
-    icon: ListChecks,
-  },
-  {
-    title: "Financial Performance",
-    description:
-      "Permission-aware portfolio financial reporting once calculations are approved.",
-    icon: CircleDollarSign,
-  },
-] as const;
+import { buildAvailableReportCards } from "@/features/reports/presentation";
 
 export default async function ReportsPage() {
   const { financialAnalytics, riskAnalytics } = await getReportsData();
+  const reports = buildAvailableReportCards({
+    risk: {
+      activeRisks: riskAnalytics.summary.activeRisks,
+      highCriticalRisks: riskAnalytics.summary.highCriticalRisks,
+      quality: riskAnalytics.metadata.quality,
+    },
+    financial: financialAnalytics
+      ? {
+          projectsOverBudget: financialAnalytics.portfolio.projectsOverBudget,
+          projectsMissingFinancialData:
+            financialAnalytics.portfolio.projectsMissingFinancialData,
+          forecastConfidence: financialAnalytics.cashFlow.confidence,
+        }
+      : null,
+  });
   return (
     <div className="mx-auto max-w-[90rem] px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
@@ -54,20 +31,17 @@ export default async function ReportsPage() {
           Reports
         </h1>
         <p className="text-muted mt-2 max-w-2xl leading-6">
-          Reusable report definitions will live here. No unverified calculations
-          or generated reports are presented in this foundation.
+          Review current risk and financial performance across the projects you
+          are authorized to access.
         </p>
       </header>
       <section
         aria-label="Available report definitions"
         className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
-        {reports
-          .filter(
-            ({ title }) =>
-              title !== "Financial Performance" || financialAnalytics,
-          )
-          .map(({ title, description, icon: Icon }) => (
+        {reports.map(({ kind, title, description, summary }) => {
+          const Icon = kind === "financial" ? CircleDollarSign : ShieldAlert;
+          return (
             <Card key={title} className="flex min-h-52 flex-col">
               <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-md">
                 <Icon className="size-5" aria-hidden="true" />
@@ -77,14 +51,11 @@ export default async function ReportsPage() {
                 {description}
               </p>
               <span className="text-muted border-border mt-5 border-t pt-4 text-xs font-semibold">
-                {title === "Financial Performance"
-                  ? `${financialAnalytics!.portfolio.projectsOverBudget} over budget · ${financialAnalytics!.portfolio.projectsMissingFinancialData} missing financial data · ${financialAnalytics!.cashFlow.confidence} forecast confidence`
-                  : title === "Risk Trends"
-                    ? `${riskAnalytics.summary.activeRisks} active · ${riskAnalytics.summary.highCriticalRisks} high/critical · ${riskAnalytics.metadata.quality} data`
-                    : "Report generation coming later"}
+                {summary}
               </span>
             </Card>
-          ))}
+          );
+        })}
       </section>
       <section
         className="border-border bg-surface mt-6 rounded-xl border p-6"
