@@ -28,6 +28,19 @@ class UnusedWebSocketTransport {
   }
 }
 
+test("restricts the design system inventory to platform operators", async ({
+  page,
+}) => {
+  await page.goto("/design-system");
+  await expect(
+    page.getByRole("heading", { name: "Design system", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Internal development tooling")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Primary navigation" }),
+  ).toHaveCount(0);
+});
+
 test("shows content-free customer health metrics", async ({ page }) => {
   await page.goto("/internal/admin/customer-health");
   await expect(

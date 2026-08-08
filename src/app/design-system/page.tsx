@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/page-header";
 import { RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { requirePlatformPermission } from "@/features/platform-admin/authorization";
 
 function SpecimenSection({
   title,
@@ -36,7 +37,12 @@ function SpecimenSection({
   );
 }
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
+  await requirePlatformPermission(
+    "platform.dashboard.read",
+    "design_system",
+    "component_inventory",
+  );
   return (
     <div className="mx-auto w-full max-w-[var(--content-width)] px-[var(--page-gutter)] py-8 lg:py-10">
       <div className="bg-soft-amber text-warning mb-5 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
