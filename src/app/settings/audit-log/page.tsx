@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { getAuditLogViewer } from "@/features/audit/data";
+import { auditExportHref, filterAuditRecords } from "@/features/audit/export";
 
 export const dynamic = "force-dynamic";
 
@@ -10,20 +11,7 @@ export default async function SettingsAuditLogPage({
 }) {
   const filters = await searchParams;
   const records = await getAuditLogViewer(250);
-  const query = filters.q?.trim().toLowerCase() ?? "";
-  const filtered = records.filter(
-    (record) =>
-      (!query ||
-        `${record.action} ${record.actor} ${record.resourceType} ${record.correlationId}`
-          .toLowerCase()
-          .includes(query)) &&
-      (!filters.outcome ||
-        filters.outcome === "all" ||
-        record.outcome === filters.outcome) &&
-      (!filters.action ||
-        filters.action === "all" ||
-        record.action === filters.action),
-  );
+  const filtered = filterAuditRecords(records, filters);
   const actions = [...new Set(records.map((record) => record.action))].sort();
   return (
     <div className="space-y-6">
@@ -77,14 +65,12 @@ export default async function SettingsAuditLogPage({
             Apply filters
           </button>
         </form>
-        <button
-          type="button"
-          disabled
-          title="Audit export will be introduced in a later release."
-          className="text-muted mt-4 rounded-md border px-3 py-2 text-xs font-semibold disabled:opacity-60"
+        <a
+          href={auditExportHref(filters)}
+          className="text-deep-green border-border mt-4 inline-flex rounded-md border px-3 py-2 text-xs font-semibold"
         >
-          Export CSV — coming later
-        </button>
+          Export CSV
+        </a>
       </Card>
       <Card className="overflow-x-auto p-0">
         <table className="w-full min-w-[60rem] text-left text-sm">
