@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
 import { ClientObservability } from "@/features/observability/client-observability";
+import { isPlatformAdminSurface } from "@/features/platform-admin/routes";
 import { getCurrentMembership, getCurrentUser } from "@/lib/auth/session";
 import "./globals.css";
 
@@ -32,7 +33,7 @@ export default async function RootLayout({
 }>) {
   const pathname = (await headers()).get("x-sightline-pathname") ?? "/";
   const isPublic = PUBLIC_ROUTES.has(pathname);
-  const isPlatformAdmin = pathname.startsWith("/internal/admin");
+  const isPlatformAdmin = isPlatformAdminSurface(pathname);
   const user = await getCurrentUser();
 
   if (!isPublic && !user) {
