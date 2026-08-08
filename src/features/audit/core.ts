@@ -36,7 +36,12 @@ export type AuditAction =
   | "automation.manual_run"
   | "customer.access_requested"
   | "organization.provisioned"
-  | "customer.owner_activated";
+  | "customer.owner_activated"
+  | "integration.procore_connected"
+  | "integration.procore_disconnected"
+  | "integration.procore_sync_requested"
+  | "integration.procore_project_mapped"
+  | "integration.procore_sync_failed";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;

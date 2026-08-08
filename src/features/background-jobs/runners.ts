@@ -16,6 +16,10 @@ import { FinancialSnapshotService } from "@/features/financial-analytics/snapsho
 import { refreshPortfolioIntelligence } from "@/features/portfolio-intelligence/service";
 import { RiskSnapshotService } from "@/features/risk-analytics/snapshot-service";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import {
+  syncProcoreConnection,
+  syncQueuedProcoreJobs,
+} from "@/features/procore/sync";
 
 export async function runPortfolioRefresh(organizationId: string) {
   const [intelligence, financialSnapshot, riskSnapshot] = await Promise.all([
@@ -117,6 +121,39 @@ export async function runScheduledOrganizationJobs(
   return summarizeOutcomes(outcomes);
 }
 
+export async function runQueuedProcoreSyncJobs() {
+  const client = createAdminSupabaseClient();
+  const queued = await syncQueuedProcoreJobs();
+  const outcomes: OrganizationJobOutcome[] = [];
+  for (const job of queued) {
+    const connection = await client
+      .from("integration_connections")
+      .select("id")
+      .eq("organization_id", job.organization_id)
+      .eq("provider", "procore")
+      .neq("status", "disconnected")
+      .maybeSingle();
+    if (connection.error) throw new Error(connection.error.message);
+    if (!connection.data) continue;
+    outcomes.push(
+      await executeOrganizationJob(
+        {
+          organizationId: job.organization_id,
+          jobType: "procore_sync",
+          source: "manual",
+          idempotencyKey: job.idempotency_key,
+          maxAttempts: job.max_attempts,
+        },
+        () =>
+          syncProcoreConnection(connection.data!.id, job.organization_id).then(
+            (metrics) => metrics as OrganizationJobMetrics,
+          ),
+      ),
+    );
+  }
+  return summarizeOutcomes(outcomes);
+}
+
 function jobWorker(
   jobType: OrganizationJobType,
   organizationId: string,
@@ -124,7 +161,22 @@ function jobWorker(
 ) {
   return jobType === "portfolio_refresh"
     ? runPortfolioRefresh(organizationId)
-    : runDailyExecutiveBrief(organizationId, now);
+    : jobType === "daily_executive_brief"
+      ? runDailyExecutiveBrief(organizationId, now)
+      : syncProcoreConnectionForOrganization(organizationId);
+}
+
+async function syncProcoreConnectionForOrganization(organizationId: string) {
+  const connection = await createAdminSupabaseClient()
+    .from("integration_connections")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("provider", "procore")
+    .eq("status", "active")
+    .maybeSingle();
+  if (connection.error) throw new Error(connection.error.message);
+  if (!connection.data) return { skipped: true, projectsDiscovered: 0 };
+  return syncProcoreConnection(connection.data.id, organizationId);
 }
 
 function summarizeOutcomes(outcomes: readonly OrganizationJobOutcome[]) {

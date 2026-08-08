@@ -370,7 +370,8 @@ export type Database = {
           error_message: string | null;
           id: string;
           idempotency_key: string;
-          job_type: "portfolio_refresh" | "daily_executive_brief";
+          job_type:
+            "portfolio_refresh" | "daily_executive_brief" | "procore_sync";
           max_attempts: number;
           metrics: Json;
           next_retry_at: string | null;
@@ -628,7 +629,8 @@ export type Database = {
           first_detected_at: string;
           id: string;
           job_run_id: string | null;
-          job_type: "portfolio_refresh" | "daily_executive_brief";
+          job_type:
+            "portfolio_refresh" | "daily_executive_brief" | "procore_sync";
           last_detected_at: string;
           occurrence_count: number;
           organization_id: string;
@@ -979,6 +981,95 @@ export type Database = {
           name: string;
           organization_id: string;
           provider: DatabaseEnums["integration_provider"];
+        }
+      >;
+      integration_connections: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          provider: DatabaseEnums["integration_provider"];
+          company_id: string;
+          company_name: string;
+          environment: "sandbox" | "production";
+          status:
+            | "pending"
+            | "active"
+            | "degraded"
+            | "permission_error"
+            | "authentication_error"
+            | "sync_error"
+            | "disconnected";
+          installation_reference: string | null;
+          last_attempted_sync_at: string | null;
+          last_successful_sync_at: string | null;
+          current_error: string | null;
+        }
+      >;
+      integration_credentials: Table<
+        Timestamped & {
+          id: string;
+          connection_id: string;
+          organization_id: string;
+          credential_type: "procore_dmsa_client_credentials";
+          encrypted_client_id: string;
+          encrypted_client_secret: string;
+          encryption_key_version: string;
+          rotated_at: string;
+        }
+      >;
+      integration_project_mappings: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          connection_id: string;
+          sightline_project_id: string | null;
+          procore_company_id: string;
+          procore_project_id: string;
+          procore_project_name: string;
+          procore_project_number: string | null;
+          mapping_status:
+            "suggested" | "mapped" | "created" | "skipped" | "unmapped";
+          mapping_method:
+            | "existing_external_mapping"
+            | "exact_number"
+            | "exact_name"
+            | "normalized_name"
+            | "manual"
+            | "created"
+            | "skipped";
+          approved_by_user_id: string | null;
+          last_discovered_at: string;
+        }
+      >;
+      integration_sync_cursors: Table<
+        Timestamped & {
+          id: string;
+          connection_id: string;
+          organization_id: string;
+          resource_type: string;
+          cursor: string | null;
+          high_water_mark: string | null;
+          last_attempted_at: string | null;
+          last_completed_at: string | null;
+          metadata: Json;
+        }
+      >;
+      integration_external_records: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          connection_id: string;
+          provider: DatabaseEnums["integration_provider"];
+          resource_type: string;
+          external_id: string;
+          procore_project_id: string | null;
+          sightline_project_id: string | null;
+          sightline_record_id: string | null;
+          external_updated_at: string | null;
+          source_url: string | null;
+          content_checksum: string | null;
+          first_observed_at: string;
+          last_observed_at: string;
         }
       >;
       documents: Table<

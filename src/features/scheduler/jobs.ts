@@ -4,12 +4,29 @@ import {
   customerDataExportsHandler,
   dailyBriefHandler,
   portfolioRefreshHandler,
+  procoreSyncHandler,
   privacyCleanupHandler,
   riskDetectionHandler,
 } from "./handlers";
 import { SchedulerRegistry } from "./registry";
 
 export const schedulerRegistry = new SchedulerRegistry([
+  {
+    key: "procore-sync",
+    name: "Procore synchronization",
+    description:
+      "Process queued Procore project and financial synchronization work.",
+    cron: "*/5 * * * *",
+    enabled: true,
+    timeoutMs: 20 * 60_000,
+    retry: {
+      maximumRetries: 2,
+      backoffMs: 5 * 60_000,
+      maximumBackoffMs: 30 * 60_000,
+    },
+    concurrency: "forbid",
+    handler: procoreSyncHandler,
+  },
   {
     key: "risk-detection",
     name: "Risk detection",

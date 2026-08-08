@@ -1,6 +1,9 @@
 import "server-only";
 
-import { runScheduledOrganizationJobs } from "@/features/background-jobs/runners";
+import {
+  runQueuedProcoreSyncJobs,
+  runScheduledOrganizationJobs,
+} from "@/features/background-jobs/runners";
 import { DataExportWorker } from "@/features/data-exports/worker";
 import { enqueueDueScheduledDataExports } from "@/features/data-exports/schedule-service";
 import { detectLongRunningJobs } from "@/features/job-monitoring/alerts";
@@ -81,5 +84,15 @@ export const customerDataExportsHandler: SchedulerHandler = async () => {
     failed: summary.exports.filter((item) => item.status === "failed").length,
     retrying: summary.exports.filter((item) => item.status === "retrying")
       .length,
+  };
+};
+
+export const procoreSyncHandler: SchedulerHandler = async () => {
+  const summary = await runQueuedProcoreSyncJobs();
+  return {
+    attempted: summary.attempted,
+    succeeded: summary.succeeded,
+    failed: summary.failed,
+    skipped: summary.skipped,
   };
 };

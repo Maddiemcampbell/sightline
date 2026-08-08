@@ -1,9 +1,12 @@
 import { Blocks, CheckCircle2, Clock3, PlugZap } from "lucide-react";
+import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { canManageIntegrations } from "@/lib/auth/authorization";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { ProcoreConnectionForm } from "./procore-connection-form";
+import { disconnectProcoreAction, syncProcoreAction } from "./actions";
 
 const catalog = [
   {
@@ -42,12 +45,19 @@ export default async function IntegrationsPage() {
   const context = await requireActorContext();
   const client = await createServerSupabaseClient();
   const result = await client
-    .from("integration_sources")
-    .select("id,name,provider,is_active,last_synced_at")
+    .from("integration_connections")
+    .select("*")
     .eq("organization_id", context.organizationId)
-    .order("name");
+    .eq("provider", "procore")
+    .maybeSingle();
   if (result.error) throw new Error(result.error.message);
-  const sources = result.data ?? [];
+  const mappings = result.data
+    ? await client
+        .from("integration_project_mappings")
+        .select("id,mapping_status")
+        .eq("organization_id", context.organizationId)
+        .eq("connection_id", result.data.id)
+    : { data: [] };
   const canManage = canManageIntegrations(context);
 
   return (
@@ -69,9 +79,10 @@ export default async function IntegrationsPage() {
         className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
         {catalog.map((integration) => {
-          const providers: readonly string[] = integration.providers;
-          const connected = sources.filter((source) =>
-            providers.includes(source.provider),
+          const connected =
+            integration.name === "Procore" && result.data ? [result.data] : [];
+          const isConnected = connected.some(
+            (source) => source.status === "active",
           );
           return (
             <Card key={integration.name} className="flex min-h-56 flex-col">
@@ -81,39 +92,90 @@ export default async function IntegrationsPage() {
                 </span>
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    connected.some((source) => source.is_active)
+                    isConnected
                       ? "bg-soft-green text-deep-green"
                       : "bg-background text-muted"
                   }`}
                 >
-                  {connected.some((source) => source.is_active) ? (
+                  {isConnected ? (
                     <CheckCircle2 className="size-3.5" aria-hidden="true" />
                   ) : (
                     <Clock3 className="size-3.5" aria-hidden="true" />
                   )}
-                  {connected.some((source) => source.is_active)
-                    ? "Connected"
-                    : "Not connected"}
+                  {isConnected ? "Connected" : "Not connected"}
                 </span>
               </div>
               <h2 className="mt-5 text-lg font-semibold">{integration.name}</h2>
               <p className="text-muted mt-2 flex-1 text-sm leading-6">
                 {integration.description}
               </p>
-              {connected[0]?.last_synced_at && (
+              {connected[0]?.last_successful_sync_at && (
                 <p className="text-muted mt-3 text-xs">
                   Last synchronized{" "}
-                  {new Date(connected[0].last_synced_at).toLocaleString()}
+                  {new Date(
+                    connected[0].last_successful_sync_at,
+                  ).toLocaleString()}
                 </p>
               )}
-              <button
-                type="button"
-                disabled
-                className="border-border mt-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 text-xs font-semibold disabled:opacity-60"
-              >
-                <PlugZap className="size-4" aria-hidden="true" />
-                {canManage ? "Setup coming later" : "Manager access required"}
-              </button>
+              {integration.name === "Procore" && canManage ? (
+                result.data ? (
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+                      <p className="font-semibold">
+                        {result.data.company_name}
+                      </p>
+                      <p className="mt-1 capitalize">
+                        {result.data.environment} ·{" "}
+                        {result.data.status.replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1">
+                        {mappings.data?.filter((mapping) =>
+                          ["mapped", "created"].includes(
+                            mapping.mapping_status,
+                          ),
+                        ).length ?? 0}{" "}
+                        mapped projects
+                      </p>
+                      {result.data.current_error ? (
+                        <p className="mt-2 text-red-700">
+                          {result.data.current_error}
+                        </p>
+                      ) : null}
+                    </div>
+                    <form action={disconnectProcoreAction}>
+                      <button
+                        type="submit"
+                        className="border-border inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 text-xs font-semibold"
+                      >
+                        <PlugZap className="size-4" aria-hidden="true" />{" "}
+                        Disconnect
+                      </button>
+                    </form>
+                    <form action={syncProcoreAction}>
+                      <button
+                        type="submit"
+                        className="bg-deep-green inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 text-xs font-semibold text-white"
+                      >
+                        Sync now
+                      </button>
+                    </form>
+                    <Link
+                      href="/integrations/procore/projects"
+                      className="inline-flex min-h-10 items-center rounded-md border px-4 text-xs font-semibold"
+                    >
+                      Manage projects
+                    </Link>
+                  </div>
+                ) : (
+                  <ProcoreConnectionForm />
+                )
+              ) : (
+                <p className="text-muted mt-4 text-xs">
+                  {canManage
+                    ? "Setup available soon"
+                    : "Manager access required"}
+                </p>
+              )}
             </Card>
           );
         })}

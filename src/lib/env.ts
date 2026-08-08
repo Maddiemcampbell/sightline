@@ -22,6 +22,11 @@ const serverEnvSchema = publicEnvSchema.extend({
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_ESSENTIAL_PRICE_ID: z.string().min(1).optional(),
   STRIPE_PROFESSIONAL_PRICE_ID: z.string().min(1).optional(),
+  PROCORE_API_ENVIRONMENT: z.enum(["sandbox", "production"]).optional(),
+  PROCORE_SANDBOX_APP_VERSION_KEY: z.string().min(1).optional(),
+  PROCORE_CLIENT_ID: z.string().min(1).optional(),
+  PROCORE_CLIENT_SECRET: z.string().min(1).optional(),
+  PROCORE_CREDENTIAL_ENCRYPTION_KEY: z.string().min(32).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -53,6 +58,13 @@ export function getServerEnv(): ServerEnv {
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_ESSENTIAL_PRICE_ID: process.env.STRIPE_ESSENTIAL_PRICE_ID,
     STRIPE_PROFESSIONAL_PRICE_ID: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
+    PROCORE_API_ENVIRONMENT: process.env.PROCORE_API_ENVIRONMENT,
+    PROCORE_SANDBOX_APP_VERSION_KEY:
+      process.env.PROCORE_SANDBOX_APP_VERSION_KEY,
+    PROCORE_CLIENT_ID: process.env.PROCORE_CLIENT_ID,
+    PROCORE_CLIENT_SECRET: process.env.PROCORE_CLIENT_SECRET,
+    PROCORE_CREDENTIAL_ENCRYPTION_KEY:
+      process.env.PROCORE_CREDENTIAL_ENCRYPTION_KEY,
   });
   if (
     parsed.BILLING_PROVIDER === "stripe" &&
