@@ -547,6 +547,58 @@ export type Database = {
         body: string;
         created_at: string;
       }>;
+      feature_requests: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          reporting_user_id: string;
+          title: string;
+          description: string;
+          use_case: string | null;
+          desired_outcome: string | null;
+          relevant_route: string | null;
+          relevant_feature: string | null;
+          customer_priority: "critical" | "high" | "medium" | "low" | null;
+          diagnostic_consent: boolean;
+          application_version: string;
+          environment: string;
+          browser_os: string | null;
+          viewport_width: number | null;
+          viewport_height: number | null;
+          correlation_id: string;
+          idempotency_key: string;
+          status:
+            | "new"
+            | "under_review"
+            | "planned"
+            | "in_progress"
+            | "released"
+            | "declined"
+            | "duplicate";
+          assigned_operator_id: string | null;
+          resolution_notes: string | null;
+          related_release_id: string | null;
+          external_issue_reference: string | null;
+          resolved_at: string | null;
+        }
+      >;
+      feature_request_attachments: Table<{
+        id: string;
+        feature_request_id: string;
+        organization_id: string;
+        storage_path: string;
+        original_filename: string;
+        mime_type: "image/jpeg" | "image/png" | "image/webp";
+        size_bytes: number;
+        created_at: string;
+      }>;
+      feature_request_internal_notes: Table<{
+        id: string;
+        feature_request_id: string;
+        operator_id: string;
+        body: string;
+        created_at: string;
+      }>;
       application_error_reports: Table<{
         application_user_id: string | null;
         application_version: string;

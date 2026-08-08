@@ -144,6 +144,65 @@ test("shows a clear confirmation after a bug report is accepted", async ({
     });
 });
 
+test("submits a feature request and preserves inline validation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help and support" }).click();
+  await page.getByRole("menuitem", { name: /Request a feature/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Request a feature" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Title").fill("Export portfolio snapshots");
+  await dialog.getByLabel("What would you like to see?").fill("short");
+  await dialog.getByRole("button", { name: "Send request" }).click();
+  await expect(
+    dialog.getByText("Describe the feature in at least 10 characters."),
+  ).toBeVisible();
+  await expect(dialog.getByLabel("Title")).toHaveValue(
+    "Export portfolio snapshots",
+  );
+  await expect(dialog.getByLabel("What would you like to see?")).toBeFocused();
+});
+
+test("submits a feature request to the customer queue", async ({ page }) => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const admin = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { transport: UnusedWebSocketTransport as never },
+  });
+  const title = `Portfolio export request ${Date.now()}`;
+  await page.goto("/");
+  await page.getByRole("button", { name: "Help and support" }).click();
+  await page.getByRole("menuitem", { name: /Request a feature/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Request a feature" });
+  await dialog.getByLabel("Title").fill(title);
+  await dialog
+    .getByLabel("What would you like to see?")
+    .fill("Allow portfolio snapshots to be exported as a spreadsheet.");
+  await dialog
+    .getByLabel("What problem would this solve?")
+    .fill("Executives need to share a point-in-time view with stakeholders.");
+  await dialog.getByRole("button", { name: "Send request" }).click();
+  await expect(dialog.getByRole("status")).toHaveText(
+    "Thanks — your feature request was sent to the Sightline team.",
+  );
+  await expect
+    .poll(async () => {
+      const { data, error } = await admin
+        .from("feature_requests")
+        .select("description,status")
+        .eq("title", title)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data;
+    })
+    .toEqual({
+      description: "Allow portfolio snapshots to be exported as a spreadsheet.",
+      status: "new",
+    });
+});
+
 test("closes search only from its X button or backdrop", async ({ page }) => {
   await page.goto("/");
 

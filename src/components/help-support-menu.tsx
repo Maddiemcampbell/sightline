@@ -5,6 +5,7 @@ import {
   CircleHelp,
   Headphones,
   Info,
+  Lightbulb,
   Keyboard,
   ScrollText,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useHeaderDropdown } from "@/components/header-dropdown-context";
 import { BugReportDialog } from "@/components/bug-report-dialog";
+import { FeatureRequestDialog } from "@/components/feature-request-dialog";
 
 export const helpMenuItems = [
   {
@@ -49,6 +51,7 @@ export const helpMenuItems = [
 
 export function HelpSupportMenu() {
   const [reportOpen, setReportOpen] = useState(false);
+  const [featureRequestOpen, setFeatureRequestOpen] = useState(false);
   const { rootRef, open, close, toggle } = useHeaderDropdown("help");
   const firstItemRef = useRef<HTMLButtonElement>(null);
 
@@ -125,6 +128,28 @@ export function HelpSupportMenu() {
               </span>
             </span>
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              close();
+              setFeatureRequestOpen(true);
+            }}
+            className="hover:bg-background flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left"
+          >
+            <Lightbulb
+              className="text-deep-green mt-0.5 size-4 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="block text-sm font-semibold">
+                Request a feature
+              </span>
+              <span className="text-muted mt-0.5 block text-xs">
+                Share an idea that could improve Sightline.
+              </span>
+            </span>
+          </button>
           {helpMenuItems.map(({ label, detail, href, icon: Icon }) => (
             <Link
               key={label}
@@ -156,6 +181,10 @@ export function HelpSupportMenu() {
         </div>
       )}
       <BugReportDialog open={reportOpen} onClose={() => setReportOpen(false)} />
+      <FeatureRequestDialog
+        open={featureRequestOpen}
+        onClose={() => setFeatureRequestOpen(false)}
+      />
     </div>
   );
 }

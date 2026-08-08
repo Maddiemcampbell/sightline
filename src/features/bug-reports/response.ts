@@ -11,6 +11,21 @@ export function bugReportFailureMessage(
   status: number,
   body: BugReportFailureBody,
 ): string {
+  return supportSubmissionFailureMessage(status, body, "report");
+}
+
+export function featureRequestFailureMessage(
+  status: number,
+  body: BugReportFailureBody,
+): string {
+  return supportSubmissionFailureMessage(status, body, "feature request");
+}
+
+function supportSubmissionFailureMessage(
+  status: number,
+  body: BugReportFailureBody,
+  noun: "report" | "feature request",
+): string {
   if (body.message) return body.message;
   if (status === 422 && body.fieldErrors)
     return "Check the highlighted fields and try again.";
@@ -18,6 +33,6 @@ export function bugReportFailureMessage(
     return "Your session expired. Refresh the page, sign in, and try again.";
   if (status === 403)
     return "Sightline could not verify this request. Refresh the page and try again.";
-  const base = "We could not save the report. Try again.";
+  const base = `We could not save the ${noun}. Try again.`;
   return body.reference ? `${base} Reference: ${body.reference}` : base;
 }

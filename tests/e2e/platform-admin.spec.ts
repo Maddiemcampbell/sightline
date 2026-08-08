@@ -64,6 +64,18 @@ test("shows content-free customer health metrics", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("shows the feature request queue to support operators", async ({
+  page,
+}) => {
+  await page.goto("/internal/admin/feature-requests");
+  await expect(
+    page.getByRole("heading", { name: "Feature requests", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Request" }),
+  ).toBeVisible();
+});
+
 test("searches and inspects connected customer records with an audit trail", async ({
   page,
 }) => {
