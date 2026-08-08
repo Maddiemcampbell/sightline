@@ -19,17 +19,21 @@ test("shows privacy retention controls and confirmed deletion workflows", async 
     main.getByText("Customers retain ownership of their uploaded documents."),
   ).toBeVisible();
   await expect(
-    main.getByRole("heading", { name: "Current AI processing policy" }),
+    main.getByRole("heading", { name: "AI processing controls" }),
   ).toBeVisible();
   await expect(
     main.getByRole("heading", { name: "Organization export history" }),
   ).toBeVisible();
-  const privacyPolicyResource = main
-    .getByText("Privacy Policy", { exact: true })
-    .locator("..");
-  await expect(privacyPolicyResource).toContainText(
-    "Placeholder · Counsel review required",
+  await expect(main.getByText(/placeholder/i)).toHaveCount(0);
+  await expect(main.getByText(/not yet published/i)).toHaveCount(0);
+  await expect(main.getByText(/pending legal approval/i)).toHaveCount(0);
+  await expect(main.getByText("Privacy Policy", { exact: true })).toHaveCount(
+    0,
   );
+  await expect(main.getByText("Terms of Service", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(main.getByText("Documents under review")).toHaveCount(0);
   await expect(
     main.getByRole("heading", { name: "Data retention", exact: true }),
   ).toBeVisible();

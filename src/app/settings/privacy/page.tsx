@@ -84,25 +84,13 @@ export default async function PrivacySettingsPage() {
       </section>
 
       <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-muted text-xs font-semibold uppercase">
-              Current policies
-            </p>
-            <h2 className="mt-2 text-xl font-semibold">
-              How Sightline processes data
-            </h2>
-          </div>
-          <div className="text-muted text-right text-xs">
-            <p>
-              Last privacy policy update:{" "}
-              <strong className="text-foreground">Not yet published</strong>
-            </p>
-            <p className="mt-1">
-              Last terms update:{" "}
-              <strong className="text-foreground">Not yet published</strong>
-            </p>
-          </div>
+        <div>
+          <p className="text-muted text-xs font-semibold uppercase">
+            Data handling
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">
+            How Sightline processes organization data
+          </h2>
         </div>
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
           <PolicySummary
@@ -116,17 +104,17 @@ export default async function PrivacySettingsPage() {
             ]}
           />
           <PolicySummary
-            title="Current data retention policy"
+            title="Configured data retention"
             items={[
               `Archived documents: ${settings.document_retention_days} days`,
               `Activity history: ${settings.activity_retention_days} days`,
               `AI conversations: ${settings.ai_retention_days} days`,
-              `Audit evidence policy: ${settings.audit_retention_days} days (automated purge pending legal approval)`,
+              `Audit evidence: ${settings.audit_retention_days} days`,
               `Deletion grace period: ${settings.soft_delete_grace_days} days`,
             ]}
           />
           <PolicySummary
-            title="Current AI processing policy"
+            title="AI processing controls"
             items={[
               "Customer-authorized organization and project context only",
               "No foundation-model training without explicit permission",
@@ -297,7 +285,7 @@ export default async function PrivacySettingsPage() {
         </p>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div>
         <Card>
           <h2 className="text-lg font-semibold">Security practices</h2>
           <ul className="text-muted mt-4 space-y-3 text-sm">
@@ -329,53 +317,7 @@ export default async function PrivacySettingsPage() {
             Review security settings
           </Link>
         </Card>
-        <Card>
-          <p className="text-muted text-xs font-semibold uppercase">
-            Privacy questions
-          </p>
-          <h2 className="mt-2 text-lg font-semibold">Contact Sightline</h2>
-          <p className="text-muted mt-3 text-sm">
-            Contact{" "}
-            <a
-              className="text-deep-green font-semibold underline"
-              href="mailto:privacy@sightline.app"
-            >
-              privacy@sightline.app
-            </a>{" "}
-            for privacy, data-handling, export, or deletion questions.
-          </p>
-          <p className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-900">
-            Operational placeholder: confirm this monitored privacy inbox and
-            response process before public launch.
-          </p>
-        </Card>
       </div>
-
-      <Card>
-        <p className="text-muted text-xs font-semibold uppercase">
-          Legal and assurance resources
-        </p>
-        <h2 className="mt-2 text-xl font-semibold">Documents under review</h2>
-        <p className="text-muted mt-2 text-sm">
-          The resources below are placeholders, not finalized legal commitments.
-          Publication dates and approved language must be supplied after review
-          by counsel and the appropriate security or accessibility owner.
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            ["Privacy Policy", "Counsel review required"],
-            ["Terms of Service", "Counsel review required"],
-            ["Security Documentation", "Security review required"],
-            ["Subprocessor List", "Counsel and vendor review required"],
-            ["Accessibility Statement", "Accessibility review required"],
-          ].map(([title, status]) => (
-            <div key={title} className="border-border rounded-md border p-4">
-              <p className="font-semibold">{title}</p>
-              <p className="text-muted mt-1 text-xs">Placeholder · {status}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {context.organizationRole === "owner" &&
         pending.every(
