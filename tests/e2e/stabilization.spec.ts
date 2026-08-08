@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+
+class UnusedWebSocketTransport {
+  constructor() {
+    throw new Error("Realtime is not used by bug report tests.");
+  }
+}
 
 test("preserves project values and focuses the first invalid field", async ({
   page,
@@ -86,6 +93,9 @@ test("preserves a customer bug report while showing inline validation", async ({
   await expect(
     dialog.getByText("Describe what happened in at least 10 characters."),
   ).toBeVisible();
+  await expect(dialog.getByRole("status")).toHaveText(
+    "Check the highlighted fields and try again.",
+  );
   await expect(dialog.getByLabel("Title")).toHaveValue(
     "Daily brief does not refresh",
   );
@@ -98,18 +108,18 @@ test("preserves a customer bug report while showing inline validation", async ({
 test("shows a clear confirmation after a bug report is accepted", async ({
   page,
 }) => {
-  await page.route("**/api/bug-reports", (route) =>
-    route.fulfill({
-      status: 201,
-      contentType: "application/json",
-      body: JSON.stringify({ accepted: true }),
-    }),
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const admin = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { transport: UnusedWebSocketTransport as never },
+  });
+  const title = `Evidence panel is not loading ${Date.now()}`;
   await page.goto("/");
   await page.getByRole("button", { name: "Help and support" }).click();
   await page.getByRole("menuitem", { name: /Report a problem/ }).click();
   const dialog = page.getByRole("dialog", { name: "Report a problem" });
-  await dialog.getByLabel("Title").fill("Evidence panel is not loading");
+  await dialog.getByLabel("Title").fill(title);
   await dialog
     .getByLabel("What happened?")
     .fill("The evidence panel remained empty after opening the selected risk.");
@@ -117,6 +127,21 @@ test("shows a clear confirmation after a bug report is accepted", async ({
   await expect(dialog.getByRole("status")).toHaveText(
     "Thanks — your report was sent to the Sightline team.",
   );
+  await expect
+    .poll(async () => {
+      const { data, error } = await admin
+        .from("bug_reports")
+        .select("description,status")
+        .eq("title", title)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data;
+    })
+    .toEqual({
+      description:
+        "The evidence panel remained empty after opening the selected risk.",
+      status: "new",
+    });
 });
 
 test("closes search only from its X button or backdrop", async ({ page }) => {

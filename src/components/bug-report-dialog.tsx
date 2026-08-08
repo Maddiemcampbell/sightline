@@ -4,7 +4,11 @@ import { ImagePlus, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type FieldErrors = Record<string, string[] | undefined>;
+import {
+  bugReportFailureMessage,
+  type BugReportFailureBody,
+  type BugReportFieldErrors,
+} from "@/features/bug-reports/response";
 
 export function BugReportDialog({
   open,
@@ -19,7 +23,7 @@ export function BugReportDialog({
   const [idempotencyKey, setIdempotencyKey] = useState(() =>
     crypto.randomUUID(),
   );
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<BugReportFieldErrors>({});
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -62,16 +66,16 @@ export function BugReportDialog({
         method: "POST",
         body: formData,
       });
-      const body = (await response.json()) as {
-        fieldErrors?: FieldErrors;
-        message?: string;
+      const body = (await response
+        .json()
+        .catch(() => ({}))) as BugReportFailureBody & {
         attachmentWarning?: string;
       };
       if (!response.ok) {
         if (body.fieldErrors) {
           setErrors(body.fieldErrors);
         }
-        setMessage(body.message ?? "We could not save the report. Try again.");
+        setMessage(bugReportFailureMessage(response.status, body));
         return;
       }
       setMessage(
