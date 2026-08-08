@@ -20,35 +20,30 @@ export const helpMenuItems = [
     detail: "Learn how Sightline workflows fit together.",
     href: "/help/documentation",
     icon: BookOpen,
-    placeholder: true,
   },
   {
     label: "Keyboard Shortcuts",
     detail: "Search Sightline with Cmd/Ctrl + K.",
     href: "/help/shortcuts",
     icon: Keyboard,
-    placeholder: true,
   },
   {
     label: "Contact Support",
     detail: "Send a privacy-safe support request.",
     href: "mailto:support@sightline.app?subject=Sightline%20support%20request",
     icon: Headphones,
-    placeholder: false,
   },
   {
     label: "Release Notes",
     detail: "See recent product improvements.",
     href: "/help/releases",
     icon: ScrollText,
-    placeholder: true,
   },
   {
     label: "About Sightline",
     detail: "Profit intelligence for construction.",
     href: "/help/about",
     icon: Info,
-    placeholder: true,
   },
 ] as const;
 
@@ -130,35 +125,26 @@ export function HelpSupportMenu() {
               </span>
             </span>
           </button>
-          {helpMenuItems.map(
-            ({ label, detail, href, icon: Icon, placeholder }) => (
-              <Link
-                key={label}
-                role="menuitem"
-                href={href}
-                onClick={close}
-                className="hover:bg-background flex items-start gap-3 rounded-md px-3 py-2.5"
-              >
-                <Icon
-                  className="text-deep-green mt-0.5 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>
-                  <span className="block text-sm font-semibold">
-                    {label}
-                    {placeholder && (
-                      <span className="text-muted ml-2 text-[0.6rem] font-medium uppercase">
-                        Coming soon
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-muted mt-0.5 block text-xs">
-                    {detail}
-                  </span>
+          {helpMenuItems.map(({ label, detail, href, icon: Icon }) => (
+            <Link
+              key={label}
+              role="menuitem"
+              href={href}
+              onClick={close}
+              className="hover:bg-background flex items-start gap-3 rounded-md px-3 py-2.5"
+            >
+              <Icon
+                className="text-deep-green mt-0.5 size-4 shrink-0"
+                aria-hidden="true"
+              />
+              <span>
+                <span className="block text-sm font-semibold">{label}</span>
+                <span className="text-muted mt-0.5 block text-xs">
+                  {detail}
                 </span>
-              </Link>
-            ),
-          )}
+              </span>
+            </Link>
+          ))}
           <Link
             href="/settings/privacy"
             role="menuitem"
