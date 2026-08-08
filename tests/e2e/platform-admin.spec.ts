@@ -137,10 +137,17 @@ test("denies and audits an active operator without directory capabilities", asyn
 }) => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("Supabase E2E environment is unavailable.");
+  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key || !publishableKey)
+    throw new Error("Supabase E2E environment is unavailable.");
   const admin = adminClient(url, key);
+  const auth = createClient(url, publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    realtime: { transport: UnusedWebSocketTransport as never },
+  });
   const authUserId = await ensureE2eAuthUser({
     admin,
+    auth,
     id: limitedAuthUserId,
     email: limitedEmail,
     password: limitedPassword,
@@ -247,6 +254,8 @@ test("investigates a redacted error with related context and occurrences", async
   const id = crypto.randomUUID();
   const similarId = crypto.randomUUID();
   const releaseId = crypto.randomUUID();
+  const errorName = `E2EInvestigationError-${id}`;
+  const applicationVersion = `e2e-error-release-${releaseId}`;
   const occurredAt = new Date().toISOString();
   const { data: user, error: userError } = await admin
     .from("users")
@@ -257,7 +266,7 @@ test("investigates a redacted error with related context and occurrences", async
   const release = await admin.from("releases").insert({
     id: releaseId,
     release_identifier: `e2e-${releaseId}`,
-    application_version: "e2e-error-release",
+    application_version: applicationVersion,
     environment: "test",
     status: "deployed",
     deployed_at: occurredAt,
@@ -267,19 +276,25 @@ test("investigates a redacted error with related context and occurrences", async
   const reports = await admin
     .from("application_error_reports")
     .insert([
-      errorFixture(id, occurredAt, user.auth_user_id),
+      errorFixture(
+        id,
+        occurredAt,
+        user.auth_user_id,
+        errorName,
+        applicationVersion,
+      ),
       errorFixture(
         similarId,
         new Date(Date.now() - 60_000).toISOString(),
         user.auth_user_id,
+        errorName,
+        applicationVersion,
       ),
     ]);
   if (reports.error) throw new Error(reports.error.message);
 
   await page.goto(`/internal/admin/errors/${id}`);
-  await expect(
-    page.getByRole("heading", { name: "E2EInvestigationError" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: errorName })).toBeVisible();
   await expect(page.getByText("retryCount")).toBeVisible();
   await expect(page.getByText("stack fixture")).toBeVisible();
   await expect(page.getByText("BuildCo Construction")).toBeVisible();
@@ -369,14 +384,16 @@ function errorFixture(
   id: string,
   occurredAt: string,
   authUserId: string | null,
+  errorName: string,
+  applicationVersion: string,
 ) {
   return {
     id,
     source: "server" as const,
     severity: "error" as const,
     environment: "test",
-    application_version: "e2e-error-release",
-    error_name: "E2EInvestigationError",
+    application_version: applicationVersion,
+    error_name: errorName,
     error_message: "A sanitized investigation fixture failed.",
     stack_trace: "Error: stack fixture\\n at safe/service.ts:10:2",
     request_path: "/brief",

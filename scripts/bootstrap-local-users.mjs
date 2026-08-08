@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !serviceRoleKey)
+const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+if (!url || !serviceRoleKey || !publishableKey)
   throw new Error("Local Supabase environment variables are not configured.");
 const host = new URL(url).hostname;
 if (!["127.0.0.1", "localhost"].includes(host))
@@ -15,6 +16,10 @@ class UnusedWebSocketTransport {
 }
 
 const admin = createClient(url, serviceRoleKey, {
+  auth: { persistSession: false, autoRefreshToken: false },
+  realtime: { transport: UnusedWebSocketTransport },
+});
+const auth = createClient(url, publishableKey, {
   auth: { persistSession: false, autoRefreshToken: false },
   realtime: { transport: UnusedWebSocketTransport },
 });
@@ -98,6 +103,7 @@ async function ensureAuthUser(user) {
       email_confirm: true,
     });
     if (error) throw new Error(error.message);
+    await verifyPassword(user.email);
     return existing.id;
   }
   const { data, error } = await admin.auth.admin.createUser({
@@ -108,5 +114,18 @@ async function ensureAuthUser(user) {
   });
   if (error || !data.user)
     throw new Error(error?.message ?? "User not created.");
+  await verifyPassword(user.email);
   return data.user.id;
+}
+
+async function verifyPassword(email) {
+  const { error: loginError } = await auth.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (loginError)
+    throw new Error(
+      `Prepared ${email}, but password authentication failed: ${loginError.message}`,
+    );
+  await auth.auth.signOut();
 }

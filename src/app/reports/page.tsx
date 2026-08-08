@@ -31,8 +31,9 @@ export default async function ReportsPage() {
           Reports
         </h1>
         <p className="text-muted mt-2 max-w-2xl leading-6">
-          Review current risk and financial performance across the projects you
-          are authorized to access.
+          {financialAnalytics
+            ? "Review current risk and financial performance across the projects you are authorized to access."
+            : "Review current risk performance across the projects you are authorized to access."}
         </p>
       </header>
       <section

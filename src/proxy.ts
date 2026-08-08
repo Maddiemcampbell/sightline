@@ -168,7 +168,11 @@ export async function proxy(request: NextRequest) {
     return verification;
   }
 
-  if (user && request.nextUrl.pathname.startsWith("/internal/admin")) {
+  if (
+    user &&
+    (request.nextUrl.pathname.startsWith("/internal/admin") ||
+      request.nextUrl.pathname === "/design-system")
+  ) {
     const { data: operator, error } = await client
       .from("platform_operators")
       .select("id")

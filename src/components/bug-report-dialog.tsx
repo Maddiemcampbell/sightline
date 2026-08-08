@@ -30,6 +30,12 @@ export function BugReportDialog({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  useEffect(() => {
+    if (!Object.values(errors).some((fieldErrors) => fieldErrors?.length))
+      return;
+    formRef.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus();
+  }, [errors]);
+
   async function submit(formData: FormData) {
     setErrors({});
     setMessage("");
@@ -64,11 +70,6 @@ export function BugReportDialog({
       if (!response.ok) {
         if (body.fieldErrors) {
           setErrors(body.fieldErrors);
-          requestAnimationFrame(() =>
-            formRef.current
-              ?.querySelector<HTMLElement>("[aria-invalid=true]")
-              ?.focus(),
-          );
         }
         setMessage(body.message ?? "We could not save the report. Try again.");
         return;

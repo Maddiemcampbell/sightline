@@ -17,6 +17,7 @@ import {
 } from "@/features/audit/service";
 import { getServerEnv } from "@/lib/env";
 import { recordPlatformAuthenticationEvent } from "@/features/platform-admin/audit";
+import { reportError } from "@/features/observability/service";
 
 export type AuthActionState = Readonly<{
   error?: boolean;
@@ -76,28 +77,50 @@ export async function login(
   const client = await createServerSupabaseClient();
   const { data, error } = await client.auth.signInWithPassword(parsed.data);
   if (error) {
-    await recordAuditEvent({
-      organizationId: null,
-      actorAuthUserId: null,
-      actorUserId: null,
-      action: "auth.login",
-      resourceType: "session",
-      outcome: "failed",
-      metadata: { identifierHash: auditIdentifier(parsed.data.email) },
-    });
+    await recordAuthenticationSideEffect(() =>
+      recordAuditEvent({
+        organizationId: null,
+        actorAuthUserId: null,
+        actorUserId: null,
+        action: "auth.login",
+        resourceType: "session",
+        outcome: "failed",
+        metadata: { identifierHash: auditIdentifier(parsed.data.email) },
+      }),
+    );
     return { message: "Email or password is incorrect." };
   }
-  await recordPrincipalAuditEvent({
-    actorAuthUserId: data.user.id,
-    action: "auth.login",
-    resourceType: "session",
-    metadata: { authenticationMethod: "password" },
-  });
-  await recordPlatformAuthenticationEvent(data.user.id, "platform.auth.login");
+  await recordAuthenticationSideEffect(() =>
+    recordPrincipalAuditEvent({
+      actorAuthUserId: data.user.id,
+      action: "auth.login",
+      resourceType: "session",
+      metadata: { authenticationMethod: "password" },
+    }),
+  );
+  await recordAuthenticationSideEffect(() =>
+    recordPlatformAuthenticationEvent(data.user.id, "platform.auth.login"),
+  );
 
   return completeAuthentication(
     safeRedirectPath(formData.get("next")?.toString()),
   );
+}
+
+async function recordAuthenticationSideEffect(
+  operation: () => Promise<void>,
+): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    await reportError({
+      error,
+      source: "server",
+      requestPath: "/login",
+      requestMethod: "POST",
+      metadata: { operation: "authentication_audit" },
+    });
+  }
 }
 
 export async function signup(

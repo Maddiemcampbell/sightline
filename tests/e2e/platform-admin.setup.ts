@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { expect, test as setup } from "@playwright/test";
 
 import { ensureE2eAuthUser } from "./support/auth-users";
+import { loginWithAuthReadiness } from "./support/login";
 
 const authState = "test-results/e2e-platform-auth.json";
 const authUserId = "12000000-0000-4000-8000-000000000003";
@@ -38,14 +39,20 @@ setup(
     setup.setTimeout(120_000);
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceRoleKey)
+    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !serviceRoleKey || !publishableKey)
       throw new Error("Supabase E2E environment is not configured.");
     const admin = createClient(url, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: UnusedWebSocketTransport as never },
     });
+    const auth = createClient(url, publishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { transport: UnusedWebSocketTransport as never },
+    });
     const resolvedAuthUserId = await ensureE2eAuthUser({
       admin,
+      auth,
       id: authUserId,
       email,
       password,
@@ -75,10 +82,12 @@ setup(
       );
     if (grantsError) throw new Error(grantsError.message);
 
-    await page.goto("/login?next=%2Finternal%2Fadmin");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
-    await page.getByRole("button", { name: "Log in" }).click();
+    await loginWithAuthReadiness({
+      page,
+      email,
+      password,
+      destination: "/internal/admin",
+    });
     await expect(page).toHaveURL("/internal/admin");
     await expect(
       page.getByRole("heading", { name: "Overview", exact: true }),

@@ -180,3 +180,9 @@ For local webhook testing, run `stripe listen --forward-to
 localhost:3000/api/stripe/webhook` and copy the emitted `whsec_` value into
 `STRIPE_WEBHOOK_SECRET`. Keep the request body unmodified because webhook
 signature verification uses Stripe's raw payload.
+
+Local test accounts are provisioned automatically after a database reset:
+
+- Owner: `e2e-owner@sightline.local`
+- Contributor: `alex-rivera@sightline.local`
+- Password: `Sightline-E2E-2026!`

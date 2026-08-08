@@ -275,7 +275,7 @@ export default async function PrivacySettingsPage() {
 
       <Card>
         <p className="text-muted text-xs font-semibold uppercase">
-          Placeholder
+          Data governance
         </p>
         <h2 className="mt-2 text-lg font-semibold">Legal hold</h2>
         <p className="text-muted mt-2 text-sm">
