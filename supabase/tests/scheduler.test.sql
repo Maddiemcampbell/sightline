@@ -39,12 +39,12 @@ select lives_ok(
 );
 select is(
   (select count(*)::integer from public.scheduler_job_definitions),
-  5, 'five recurring jobs are registered'
+  6, 'six recurring jobs are registered'
 );
 select is(
   (select count(*)::integer from public.scheduler_job_definitions
    where cron_schedule in ('0 3 * * *', '30 2 * * *', '*/5 * * * *')),
-  5, 'registered dispatcher cadences are persisted'
+  6, 'registered dispatcher cadences are persisted'
 );
 
 insert into public.scheduler_job_executions (
