@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { Session, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 
 import { OrganizationRepository } from "@/features/organizations/repository";
 import type {
@@ -45,17 +45,21 @@ export const getCurrentUser = cache(
   },
 );
 
-export const getCurrentSession = cache(async (): Promise<Session | null> => {
-  const user = await readVerifiedUser();
-  if (!user) return null;
+export const getCurrentSessionExpiresAt = cache(
+  async (): Promise<number | null> => {
+    const client = await createServerSupabaseClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await client.auth.getUser();
+    if (userError || !user) return null;
 
-  const client = await createServerSupabaseClient();
-  const {
-    data: { session },
-  } = await client.auth.getSession();
+    const { data, error } = await client.auth.getClaims();
+    if (error || !data || data.claims.sub !== user.id) return null;
 
-  return session?.user.id === user.id ? session : null;
-});
+    return typeof data.claims.exp === "number" ? data.claims.exp : null;
+  },
+);
 
 export async function requireAuthenticatedUser(
   redirectTo = "/login",

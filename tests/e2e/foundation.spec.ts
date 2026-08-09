@@ -200,7 +200,10 @@ test("records a guided resolution and reopens it with a reason", async ({
   await expect(
     page.getByRole("heading", { name: "Evidence-grounded explanation" }),
   ).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("link", { name: "Ask Sightline" }).click();
+  await page
+    .locator("#main-content")
+    .getByRole("link", { name: "Ask Sightline" })
+    .click();
   const riskQuestion = page
     .locator("#main-content")
     .getByLabel("Question about this risk");

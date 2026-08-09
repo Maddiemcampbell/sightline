@@ -5,14 +5,14 @@ import {
 } from "@/app/settings/admin-actions";
 import { Field, SettingsForm } from "@/features/settings/settings-forms";
 import {
-  getCurrentSession,
+  getCurrentSessionExpiresAt,
   requireAuthenticatedUser,
 } from "@/lib/auth/session";
 
 export default async function SecuritySettingsPage() {
-  const [principal, session] = await Promise.all([
+  const [principal, sessionExpiresAt] = await Promise.all([
     requireAuthenticatedUser(),
-    getCurrentSession(),
+    getCurrentSessionExpiresAt(),
   ]);
   return (
     <div className="space-y-6">
@@ -26,8 +26,8 @@ export default async function SecuritySettingsPage() {
           <p className="font-semibold">Current browser</p>
           <p className="text-muted mt-1 text-sm">
             {principal.email} · Active{" "}
-            {session?.expires_at
-              ? `until ${new Date(session.expires_at * 1000).toLocaleString()}`
+            {sessionExpiresAt
+              ? `until ${new Date(sessionExpiresAt * 1000).toLocaleString()}`
               : "now"}
           </p>
         </div>

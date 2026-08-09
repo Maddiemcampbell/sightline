@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { Card } from "@/components/ui/card";
+import { AboutSightline } from "@/features/help/about-sightline";
+import { ProductGuide } from "@/features/help/product-guide";
 import { helpPages, isHelpPageSlug } from "@/features/help/content";
 import type { HelpPageContent } from "@/features/help/content";
 
@@ -15,6 +17,8 @@ export default async function HelpPage({
 }) {
   const { slug } = await params;
   if (!isHelpPageSlug(slug)) notFound();
+  if (slug === "about") return <AboutSightline />;
+  if (slug === "documentation") return <ProductGuide />;
   const content: HelpPageContent = helpPages[slug];
 
   return (
