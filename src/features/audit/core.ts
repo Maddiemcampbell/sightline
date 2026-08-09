@@ -31,6 +31,7 @@ export type AuditAction =
   | "data_export.completed"
   | "data_export.failed"
   | "data_export.downloaded"
+  | "report.downloaded"
   | "audit_log.exported"
   | "automation.schedule_updated"
   | "automation.manual_run"
