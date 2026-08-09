@@ -7,6 +7,7 @@ import {
   Bot,
   BriefcaseBusiness,
   CalendarClock,
+  CheckCircle2,
   CircleDollarSign,
   FileQuestion,
   ListChecks,
@@ -16,6 +17,7 @@ import {
   TrendingDown,
   TrendingUp,
   XCircle,
+  Clock3,
 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -97,7 +99,7 @@ export function Dashboard({ view }: { view: DashboardView }) {
   );
   return (
     <div className="mx-auto w-full max-w-[96rem] px-[var(--page-gutter)] py-6 lg:py-8">
-      <section className="relative isolate min-h-[15.5rem] overflow-hidden rounded-2xl bg-[#f7f7f1] px-6 py-8 sm:px-8 lg:px-10">
+      <section className="relative isolate overflow-hidden rounded-2xl bg-[#f7f7f1] px-6 py-7 sm:px-8 lg:px-10 lg:py-9">
         <div className="absolute inset-y-0 right-0 -z-10 hidden w-[62%] lg:block">
           <Image
             src="/images/executive-home-construction.png"
@@ -110,8 +112,14 @@ export function Dashboard({ view }: { view: DashboardView }) {
           <div className="absolute inset-0 bg-gradient-to-r from-[#f7f7f1] via-[#f7f7f1]/65 to-[#f7f7f1]/10" />
         </div>
         <div className="max-w-2xl">
-          <p className="text-deep-green text-sm font-semibold">{date}</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-[2.75rem]">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-deep-green text-xs font-semibold tracking-[0.1em] uppercase">
+              Portfolio home
+            </p>
+            <span className="text-muted text-xs">·</span>
+            <p className="text-muted text-xs font-medium">{date}</p>
+          </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl lg:text-[2.6rem]">
             Good morning, {firstName}.
           </h1>
           <p className="text-muted mt-4 text-sm leading-6 sm:text-base">
@@ -155,6 +163,10 @@ export function Dashboard({ view }: { view: DashboardView }) {
         </div>
       </section>
 
+      <MovementSummary view={filteredView} />
+
+      <AttentionQueue view={filteredView} />
+
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0 space-y-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
@@ -165,7 +177,7 @@ export function Dashboard({ view }: { view: DashboardView }) {
             />
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
+          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
             <RiskHeatmap
               analytics={filteredView.riskAnalytics ?? null}
               fallbackRows={filteredView.riskHeatmap}
@@ -183,6 +195,168 @@ export function Dashboard({ view }: { view: DashboardView }) {
 
       <QuickPaths view={filteredView} topRisk={topRisk ?? null} />
     </div>
+  );
+}
+
+function MovementSummary({ view }: { view: DashboardView }) {
+  const changes = [
+    {
+      label: "New risks",
+      value: view.overnight.newRisks.value,
+      detail: comparisonLabel(view.overnight.newRisks),
+      tone: view.overnight.newRisks.value ? "warning" : "neutral",
+    },
+    {
+      label: "Resolved",
+      value: view.overnight.resolvedRisks.value,
+      detail: comparisonLabel(view.overnight.resolvedRisks),
+      tone: view.overnight.resolvedRisks.value ? "positive" : "neutral",
+    },
+    {
+      label: "Overdue actions",
+      value: view.overnight.overdueActions.value,
+      detail: comparisonLabel(view.overnight.overdueActions),
+      tone: view.overnight.overdueActions.value ? "warning" : "neutral",
+    },
+    {
+      label: "Awaiting you",
+      value: view.overnight.awaitingUser.value,
+      detail: comparisonLabel(view.overnight.awaitingUser),
+      tone: view.overnight.awaitingUser.value ? "attention" : "neutral",
+    },
+  ] as const;
+  return (
+    <section
+      aria-labelledby="portfolio-movement"
+      className="border-border bg-surface mt-4 overflow-hidden rounded-xl border"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
+        <div className="flex items-center gap-2">
+          <Clock3 className="text-deep-green size-4" aria-hidden="true" />
+          <h2 id="portfolio-movement" className="text-sm font-semibold">
+            Since your last visit
+          </h2>
+        </div>
+        <span className="text-muted text-xs">
+          Compared with the prior snapshot
+        </span>
+      </div>
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4">
+        {changes.map((change) => (
+          <div
+            key={change.label}
+            className="border-border flex items-center justify-between gap-4 border-b px-5 py-4 sm:border-r xl:border-b-0"
+          >
+            <div>
+              <p className="text-muted text-xs">{change.label}</p>
+              <p className="mt-1 text-xs font-medium">{change.detail}</p>
+            </div>
+            <span
+              className={`grid size-9 place-items-center rounded-full text-sm font-semibold tabular-nums ${
+                change.tone === "warning"
+                  ? "bg-soft-red text-danger"
+                  : change.tone === "positive"
+                    ? "bg-soft-green text-deep-green"
+                    : change.tone === "attention"
+                      ? "bg-soft-amber text-warning"
+                      : "bg-background text-muted"
+              }`}
+            >
+              {change.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AttentionQueue({ view }: { view: DashboardView }) {
+  const priorities = view.priorities.slice(0, 4);
+  return (
+    <section
+      aria-labelledby="needs-attention"
+      className="dashboard-card mt-4 overflow-hidden p-0"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3 px-5 py-5 sm:px-6">
+        <div>
+          <p className="text-deep-green text-xs font-semibold tracking-[0.09em] uppercase">
+            Decision queue
+          </p>
+          <h2 id="needs-attention" className="mt-1 text-xl font-semibold">
+            Needs attention
+          </h2>
+          <p className="text-muted mt-1 text-sm">
+            Highest-ranked risks and actions in the current project scope.
+          </p>
+        </div>
+        <Link
+          href="/brief"
+          className="text-deep-green inline-flex items-center gap-1 text-sm font-semibold"
+        >
+          Review today&apos;s brief{" "}
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
+      {priorities.length ? (
+        <ol className="border-border divide-border divide-y border-t">
+          {priorities.map((priority, index) => (
+            <li key={priority.id}>
+              <Link
+                href={priority.href}
+                className="hover:bg-background grid gap-3 px-5 py-4 sm:grid-cols-[2rem_minmax(0,1fr)_auto] sm:items-center sm:px-6"
+              >
+                <span className="bg-soft-green text-deep-green grid size-7 place-items-center rounded-full text-xs font-semibold">
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase ${priority.kind === "risk" ? "bg-soft-red text-danger" : "bg-soft-amber text-warning"}`}
+                    >
+                      {priority.kind}
+                    </span>
+                    <span className="text-muted text-xs">
+                      {priority.projectName}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-sm font-semibold">
+                    {priority.title}
+                  </p>
+                  <p className="text-muted mt-1 text-xs">
+                    {priority.reason} · {priority.ownerName}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <span className="text-muted text-xs">
+                    {priority.dueAt
+                      ? formatDueUrgency(priority.dueAt, view.generatedAt)
+                      : priority.nextAction}
+                  </span>
+                  <ArrowRight
+                    className="text-muted size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div className="border-border flex items-center gap-3 border-t px-5 py-5 sm:px-6">
+          <CheckCircle2 className="text-deep-green size-5" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold">
+              No priority items need attention
+            </p>
+            <p className="text-muted mt-1 text-xs">
+              Current records do not meet the attention threshold for this
+              scope.
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1064,6 +1238,16 @@ function changeSummary(view: DashboardView) {
   const resolved = view.overnight.resolvedRisks.value;
   const overdue = view.overnight.overdueActions.value;
   return `Since the start of today: ${newRisks} new risk${newRisks === 1 ? "" : "s"}, ${resolved} resolved, and ${overdue} overdue action${overdue === 1 ? "" : "s"}.`;
+}
+
+function comparisonLabel(comparison: {
+  value: number;
+  previousValue: number | null;
+}) {
+  if (comparison.previousValue === null) return "Current snapshot";
+  const difference = comparison.value - comparison.previousValue;
+  if (difference === 0) return "Unchanged";
+  return `${Math.abs(difference)} ${difference > 0 ? "more" : "fewer"}`;
 }
 
 function overdueLabel(dueAt: string | null, generatedAt: string) {

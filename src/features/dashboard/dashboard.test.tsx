@@ -166,6 +166,9 @@ describe("company dashboard", () => {
     const markup = renderToStaticMarkup(<TestDashboard view={view} />);
 
     expect(markup).toContain("Good morning, Matt.");
+    expect(markup).toContain("Portfolio home");
+    expect(markup).toContain("Since your last visit");
+    expect(markup).toContain("Needs attention");
     expect(markup).toContain("Portfolio Watch");
     expect(markup).toContain("Portfolio overview");
     expect(markup).toContain("Top risk drivers");

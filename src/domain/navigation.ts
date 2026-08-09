@@ -9,6 +9,7 @@ import {
   BarChart3,
   Blocks,
   Sparkles,
+  House,
   type LucideIcon,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ export type NavigationItem = Readonly<{
 }>;
 
 export const primaryNavigation: readonly NavigationItem[] = [
+  { href: "/", label: "Home", icon: House },
   { href: "/brief", label: "Daily Brief", icon: Gauge },
   { href: "/ask", label: "Ask Sightline", icon: Sparkles },
   { href: "/projects", label: "Projects", icon: BriefcaseBusiness },

@@ -182,9 +182,11 @@ test("opens a risk detail with evidence and actions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Evidence" })).toBeVisible();
   const actionsLink = page.getByRole("link", { name: "Recommended actions" });
   const actionsHref = await actionsLink.getAttribute("href");
-  expect(actionsHref).toMatch(/\?tab=actions$/);
+  expect(actionsHref).toMatch(/\?tab=actions#risk-section-content$/);
   await page.goto(actionsHref!);
-  await expect(page).toHaveURL(/\?tab=actions$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\?tab=actions#risk-section-content$/, {
+    timeout: 15_000,
+  });
   await expect(
     page.getByRole("heading", { name: "Recommended actions" }),
   ).toBeVisible({ timeout: 15_000 });
@@ -265,9 +267,11 @@ test("records a guided resolution and reopens it with a reason", async ({
   await page.reload();
   const resolutionLink = page.getByRole("link", { name: "Resolution state" });
   const resolutionHref = await resolutionLink.getAttribute("href");
-  expect(resolutionHref).toMatch(/\?tab=resolution$/);
+  expect(resolutionHref).toMatch(/\?tab=resolution#risk-section-content$/);
   await page.goto(resolutionHref!);
-  await expect(page).toHaveURL(/\?tab=resolution$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\?tab=resolution#risk-section-content$/, {
+    timeout: 15_000,
+  });
   const resolutionContent = page.locator("#main-content");
   await expect(
     resolutionContent.getByText("Resolution summary", { exact: true }),

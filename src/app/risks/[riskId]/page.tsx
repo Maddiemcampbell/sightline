@@ -162,51 +162,61 @@ export default async function RiskPage({ params, searchParams }: Props) {
       </section>
       <nav
         aria-label="Risk detail sections"
-        className="border-border mt-7 border-b"
+        className="border-border bg-surface mt-7 rounded-xl border p-2 shadow-sm"
       >
-        <div className="flex gap-5 overflow-x-auto">
-          <TabLink href={`/risks/${riskId}`} active={activeTab === "overview"}>
+        <div className="px-2 pb-2 pt-1">
+          <p className="text-sm font-semibold">Explore this risk</p>
+          <p className="text-muted mt-0.5 text-xs">
+            Choose a section to open its details below.
+          </p>
+        </div>
+        <div className="flex gap-1 overflow-x-auto" role="list">
+          <TabLink
+            href={`/risks/${riskId}#risk-section-content`}
+            active={activeTab === "overview"}
+          >
             Overview
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=evidence`}
+            href={`/risks/${riskId}?tab=evidence#risk-section-content`}
             active={activeTab === "evidence"}
           >
             Evidence ({evidenceExperience.items.length})
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=activity`}
+            href={`/risks/${riskId}?tab=activity#risk-section-content`}
             active={activeTab === "activity"}
           >
             Activity
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=related`}
+            href={`/risks/${riskId}?tab=related#risk-section-content`}
             active={activeTab === "related"}
           >
             Related
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=actions`}
+            href={`/risks/${riskId}?tab=actions#risk-section-content`}
             active={activeTab === "actions"}
           >
             Recommended actions
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=ask`}
+            href={`/risks/${riskId}?tab=ask#risk-section-content`}
             active={activeTab === "ask"}
           >
             Ask Sightline
           </TabLink>
           <TabLink
-            href={`/risks/${riskId}?tab=resolution`}
+            href={`/risks/${riskId}?tab=resolution#risk-section-content`}
             active={activeTab === "resolution"}
           >
             Resolution state
           </TabLink>
         </div>
       </nav>
-      {activeTab === "ask" ? (
+      <section id="risk-section-content" aria-label="Selected risk section">
+        {activeTab === "ask" ? (
         <div className="mt-6">
           <AskSightlinePanel
             riskId={riskId}
@@ -385,7 +395,8 @@ export default async function RiskPage({ params, searchParams }: Props) {
             </Panel>
           </aside>
         </div>
-      )}
+        )}
+      </section>
       <section
         className="border-border mt-8 border-t pt-6"
         aria-label="Presence"
@@ -442,9 +453,10 @@ function TabLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`border-b-2 px-1 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 ${active ? "border-deep-green text-deep-green" : "text-muted border-transparent"}`}
+      className={`inline-flex min-h-11 shrink-0 items-center rounded-lg px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 ${active ? "bg-deep-green text-white shadow-sm" : "text-muted hover:bg-background hover:text-ink"}`}
     >
       {children}
+      {active && <span className="ml-2 text-xs" aria-hidden="true">↓</span>}
     </Link>
   );
 }

@@ -22,9 +22,11 @@ import type { ActionOwner } from "@/features/actions/types";
 export function BriefRiskCard({
   risk,
   actionOwners,
+  attentionState = "act",
 }: {
   risk: BriefRiskView;
   actionOwners: readonly ActionOwner[];
+  attentionState?: "act" | "monitor";
 }) {
   const [acknowledged, setAcknowledged] = useState(risk.acknowledged);
   const [acknowledgementPersisted, setAcknowledgementPersisted] = useState(
@@ -98,6 +100,11 @@ export function BriefRiskCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${attentionState === "act" ? "bg-soft-red text-danger" : "bg-soft-amber text-warning"}`}
+            >
+              {attentionState === "act" ? "Act today" : "Monitor"}
+            </span>
             <RiskBadge level={badgeLevel}>
               {risk.severity === "critical"
                 ? "Critical"
@@ -140,13 +147,14 @@ export function BriefRiskCard({
       <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-2">
         <section>
           <p className="text-muted text-xs font-semibold tracking-wide uppercase">
-            Why it matters
+            Why it matters now
           </p>
           <p className="mt-2 text-sm leading-6">{risk.whyItMatters}</p>
           <div className="bg-background mt-5 rounded-lg border p-4">
             <div className="text-deep-green flex items-center gap-2 text-sm font-semibold">
-              <FileText className="size-4" /> {risk.evidenceTitle}
+              <FileText className="size-4" /> Source evidence
             </div>
+            <p className="mt-2 text-sm font-semibold">{risk.evidenceTitle}</p>
             <p className="text-muted mt-2 text-sm leading-5">
               “{risk.evidenceDetail}”
             </p>
@@ -169,7 +177,7 @@ export function BriefRiskCard({
           </div>
           <div className="bg-soft-green mt-5 rounded-lg p-4">
             <div className="text-deep-green flex items-center gap-2 text-sm font-semibold">
-              <ShieldCheck className="size-4" /> Recommended next action
+              <ShieldCheck className="size-4" /> Recommended next step
             </div>
             <p className="mt-2 text-sm leading-5">{risk.recommendedAction}</p>
             {risk.primaryAction && (

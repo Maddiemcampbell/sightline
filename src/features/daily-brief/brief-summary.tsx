@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { formatMoney } from "@/features/daily-brief/formatters";
 
 type BriefSummaryProps = Readonly<{
@@ -18,18 +17,23 @@ export function BriefSummary(props: BriefSummaryProps) {
   return (
     <section
       aria-label="Brief summary"
-      className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      className="border-border bg-surface mb-6 overflow-hidden rounded-xl border"
     >
-      {metrics.map(([label, value]) => (
-        <Card key={label} className="p-4 sm:p-5">
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">
-            {label}
-          </p>
-          <p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-            {value}
-          </p>
-        </Card>
-      ))}
+      <div className="grid sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(([label, value]) => (
+          <div
+            key={label}
+            className="border-border border-b p-4 sm:border-r sm:p-5 xl:border-b-0"
+          >
+            <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+              {label}
+            </p>
+            <p className="mt-2 text-xl font-semibold tracking-[-0.03em] sm:text-2xl">
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

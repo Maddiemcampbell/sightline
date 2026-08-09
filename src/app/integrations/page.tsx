@@ -1,4 +1,11 @@
-import { Blocks, CheckCircle2, Clock3, PlugZap } from "lucide-react";
+import {
+  Blocks,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  PlugZap,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
@@ -83,7 +90,7 @@ export default async function IntegrationsPage() {
       </header>
       <section
         aria-label="Integration catalog"
-        className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+        className="mt-8 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
         {catalog.map((integration) => {
           const connected =
@@ -96,7 +103,7 @@ export default async function IntegrationsPage() {
             (source) => source.status === "active",
           );
           return (
-            <Card key={integration.name} className="flex min-h-56 flex-col">
+            <Card key={integration.name} className="flex min-h-60 flex-col">
               <div className="flex items-start justify-between gap-3">
                 <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-md">
                   <Blocks className="size-5" aria-hidden="true" />
@@ -117,7 +124,7 @@ export default async function IntegrationsPage() {
                 </span>
               </div>
               <h2 className="mt-5 text-lg font-semibold">{integration.name}</h2>
-              <p className="text-muted mt-2 flex-1 text-sm leading-6">
+              <p className="text-muted mt-2 text-sm leading-6">
                 {integration.description}
               </p>
               {connected[0]?.last_successful_sync_at && (
@@ -130,65 +137,86 @@ export default async function IntegrationsPage() {
               )}
               {integration.name === "Procore" && canManage ? (
                 result.data ? (
-                  <div className="mt-4 space-y-3">
-                    <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-700">
-                      <p className="font-semibold">
-                        {result.data.company_name}
-                      </p>
-                      <p className="mt-1 capitalize">
-                        {result.data.environment} ·{" "}
-                        {result.data.status.replaceAll("_", " ")}
-                      </p>
-                      <p className="mt-1">
-                        {mappings.data?.filter((mapping) =>
-                          ["mapped", "created"].includes(
-                            mapping.mapping_status,
-                          ),
-                        ).length ?? 0}{" "}
-                        mapped projects
-                      </p>
-                      {result.data.current_error ? (
-                        <p className="mt-2 text-red-700">
-                          {result.data.current_error}
+                  <details className="group border-border mt-auto border-t pt-3">
+                    <summary className="text-deep-green flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                      Manage Procore connection
+                      <ChevronDown
+                        className="size-4 transition-transform group-open:rotate-180"
+                        aria-hidden="true"
+                      />
+                    </summary>
+                    <div className="mt-3 space-y-3">
+                      <div className="rounded-md bg-slate-50 p-3 text-xs text-slate-700">
+                        <p className="font-semibold">
+                          {result.data.company_name}
                         </p>
-                      ) : null}
+                        <p className="mt-1 capitalize">
+                          {result.data.environment} ·{" "}
+                          {result.data.status.replaceAll("_", " ")}
+                        </p>
+                        <p className="mt-1">
+                          {mappings.data?.filter((mapping) =>
+                            ["mapped", "created"].includes(
+                              mapping.mapping_status,
+                            ),
+                          ).length ?? 0}{" "}
+                          mapped projects
+                        </p>
+                        {result.data.current_error ? (
+                          <p className="mt-2 text-red-700">
+                            {result.data.current_error}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <form action={syncProcoreAction}>
+                          <button
+                            type="submit"
+                            className="bg-deep-green inline-flex min-h-10 items-center justify-center rounded-md px-4 text-xs font-semibold text-white"
+                          >
+                            Sync now
+                          </button>
+                        </form>
+                        <Link
+                          href="/integrations/procore/projects"
+                          className="border-border inline-flex min-h-10 items-center rounded-md border px-4 text-xs font-semibold"
+                        >
+                          Manage projects
+                        </Link>
+                        <form action={disconnectProcoreAction}>
+                          <button
+                            type="submit"
+                            className="border-border inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 text-xs font-semibold"
+                          >
+                            <PlugZap className="size-4" aria-hidden="true" />
+                            Disconnect
+                          </button>
+                        </form>
+                      </div>
                     </div>
-                    <form action={disconnectProcoreAction}>
-                      <button
-                        type="submit"
-                        className="border-border inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 text-xs font-semibold"
-                      >
-                        <PlugZap className="size-4" aria-hidden="true" />{" "}
-                        Disconnect
-                      </button>
-                    </form>
-                    <form action={syncProcoreAction}>
-                      <button
-                        type="submit"
-                        className="bg-deep-green inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 text-xs font-semibold text-white"
-                      >
-                        Sync now
-                      </button>
-                    </form>
-                    <Link
-                      href="/integrations/procore/projects"
-                      className="inline-flex min-h-10 items-center rounded-md border px-4 text-xs font-semibold"
-                    >
-                      Manage projects
-                    </Link>
-                  </div>
+                  </details>
                 ) : (
-                  <ProcoreConnectionForm />
+                  <details className="group border-border mt-auto border-t pt-3">
+                    <summary className="text-deep-green flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                      Configure Procore
+                      <ChevronDown
+                        className="size-4 transition-transform group-open:rotate-180"
+                        aria-hidden="true"
+                      />
+                    </summary>
+                    <ProcoreConnectionForm />
+                  </details>
                 )
               ) : integration.name === "Microsoft 365" && canManage ? (
                 <Link
                   href="/integrations/microsoft365"
-                  className="border-border mt-4 inline-flex min-h-10 items-center justify-center rounded-md border px-4 text-xs font-semibold"
+                  className="border-border text-deep-green mt-auto flex min-h-10 items-center justify-between gap-3 border-t pt-3 text-sm font-semibold"
                 >
                   Configure Microsoft 365
+                  <ChevronRight className="size-4" aria-hidden="true" />
                 </Link>
               ) : (
-                <p className="text-muted mt-4 text-xs">
+                <p className="text-muted mt-auto pt-4 text-xs">
                   {canManage
                     ? "Setup available soon"
                     : "Manager access required"}
