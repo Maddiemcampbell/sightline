@@ -21,7 +21,7 @@ import {
 
 type SharedAskContextValue = Readonly<{
   messages: readonly SharedAskMessage[];
-  ask: (question: string) => void;
+  ask: (question: string, options?: { openDrawer?: boolean }) => void;
   clearConversation: () => void;
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -81,10 +81,10 @@ export function SharedAskProvider({
   );
 
   const ask = useCallback(
-    (question: string) => {
+    (question: string, options?: { openDrawer?: boolean }) => {
       const trimmed = question.trim();
       if (trimmed.length < 3 || pending) return;
-      setOpen(true);
+      if (options?.openDrawer !== false) setOpen(true);
       setError(null);
       setRetryQuestion(trimmed);
       if (!canUseAi) {

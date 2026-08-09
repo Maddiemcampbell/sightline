@@ -1,6 +1,7 @@
 "use client";
 
 import { Send, Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import {
   useDashboardState,
@@ -11,10 +12,12 @@ import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import { useWorkspaceResources } from "@/features/workspace/workspace-provider";
 
 export function QuickAskComposer() {
+  const pathname = usePathname();
   const { advisorMode, selectedProjectId } = useDashboardState();
   const { quickAskDraft, setQuickAskDraft, stateReady } = useQuickAsk();
   const { canUseAi } = useWorkspaceResources();
   const { ask, pending } = useSharedAsk();
+  if (pathname === "/ask") return null;
   return (
     <section
       aria-label="Quick Ask Sightline"

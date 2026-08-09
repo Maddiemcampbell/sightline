@@ -8,6 +8,7 @@ import {
   History,
   BarChart3,
   Blocks,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -19,6 +20,7 @@ export type NavigationItem = Readonly<{
 
 export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/brief", label: "Daily Brief", icon: Gauge },
+  { href: "/ask", label: "Ask Sightline", icon: Sparkles },
   { href: "/projects", label: "Projects", icon: BriefcaseBusiness },
   { href: "/risks", label: "Risks", icon: ShieldAlert },
   { href: "/actions", label: "Actions", icon: ListChecks },
