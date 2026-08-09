@@ -25,6 +25,8 @@ never values.
 | `OPENAI_API_KEY`                       | Server-only  | Restricted production project key                   |
 | `OPENAI_MODEL`                         | Server-only  | Approved model identifier                           |
 | `INTERNAL_ADMIN_AUTH_USER_IDS`         | Server-only  | Comma-separated platform-operator Auth UUIDs        |
+| `MICROSOFT365_CLIENT_ID`               | Server-only  | Multi-tenant Entra application ID                   |
+| `MICROSOFT365_CLIENT_SECRET`           | Server-only  | Entra application credential                        |
 
 Generate `CRON_SECRET` with a cryptographically secure generator such as
 `openssl rand -base64 48`. Do not reuse Supabase, Resend, OpenAI, or deployment

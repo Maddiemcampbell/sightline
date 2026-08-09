@@ -41,7 +41,12 @@ export type AuditAction =
   | "integration.procore_disconnected"
   | "integration.procore_sync_requested"
   | "integration.procore_project_mapped"
-  | "integration.procore_sync_failed";
+  | "integration.procore_sync_failed"
+  | "integration.microsoft365_connected"
+  | "integration.microsoft365_disconnected"
+  | "integration.microsoft365_library_mapped"
+  | "integration.microsoft365_sync_requested"
+  | "integration.microsoft365_sync_failed";
 
 export type AuditRequestContext = Readonly<{
   ipAddress: string | null;

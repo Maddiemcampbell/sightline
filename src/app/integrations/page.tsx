@@ -51,6 +51,13 @@ export default async function IntegrationsPage() {
     .eq("provider", "procore")
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);
+  const microsoftResult = await client
+    .from("integration_connections")
+    .select("*")
+    .eq("organization_id", context.organizationId)
+    .eq("provider", "sharepoint")
+    .maybeSingle();
+  if (microsoftResult.error) throw new Error(microsoftResult.error.message);
   const mappings = result.data
     ? await client
         .from("integration_project_mappings")
@@ -80,7 +87,11 @@ export default async function IntegrationsPage() {
       >
         {catalog.map((integration) => {
           const connected =
-            integration.name === "Procore" && result.data ? [result.data] : [];
+            integration.name === "Procore" && result.data
+              ? [result.data]
+              : integration.name === "Microsoft 365" && microsoftResult.data
+                ? [microsoftResult.data]
+                : [];
           const isConnected = connected.some(
             (source) => source.status === "active",
           );
@@ -169,6 +180,13 @@ export default async function IntegrationsPage() {
                 ) : (
                   <ProcoreConnectionForm />
                 )
+              ) : integration.name === "Microsoft 365" && canManage ? (
+                <Link
+                  href="/integrations/microsoft365"
+                  className="border-border mt-4 inline-flex min-h-10 items-center justify-center rounded-md border px-4 text-xs font-semibold"
+                >
+                  Configure Microsoft 365
+                </Link>
               ) : (
                 <p className="text-muted mt-4 text-xs">
                   {canManage

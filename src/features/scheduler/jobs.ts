@@ -5,12 +5,29 @@ import {
   dailyBriefHandler,
   portfolioRefreshHandler,
   procoreSyncHandler,
+  microsoft365SyncHandler,
   privacyCleanupHandler,
   riskDetectionHandler,
 } from "./handlers";
 import { SchedulerRegistry } from "./registry";
 
 export const schedulerRegistry = new SchedulerRegistry([
+  {
+    key: "microsoft365-sync",
+    name: "Microsoft 365 synchronization",
+    description:
+      "Process queued SharePoint document library delta synchronization work.",
+    cron: "*/5 * * * *",
+    enabled: true,
+    timeoutMs: 20 * 60_000,
+    retry: {
+      maximumRetries: 2,
+      backoffMs: 5 * 60_000,
+      maximumBackoffMs: 30 * 60_000,
+    },
+    concurrency: "forbid",
+    handler: microsoft365SyncHandler,
+  },
   {
     key: "procore-sync",
     name: "Procore synchronization",

@@ -371,7 +371,10 @@ export type Database = {
           id: string;
           idempotency_key: string;
           job_type:
-            "portfolio_refresh" | "daily_executive_brief" | "procore_sync";
+            | "portfolio_refresh"
+            | "daily_executive_brief"
+            | "procore_sync"
+            | "microsoft365_sync";
           max_attempts: number;
           metrics: Json;
           next_retry_at: string | null;
@@ -630,7 +633,10 @@ export type Database = {
           id: string;
           job_run_id: string | null;
           job_type:
-            "portfolio_refresh" | "daily_executive_brief" | "procore_sync";
+            | "portfolio_refresh"
+            | "daily_executive_brief"
+            | "procore_sync"
+            | "microsoft365_sync";
           last_detected_at: string;
           occurrence_count: number;
           organization_id: string;
@@ -1070,6 +1076,34 @@ export type Database = {
           content_checksum: string | null;
           first_observed_at: string;
           last_observed_at: string;
+        }
+      >;
+      microsoft365_consent_states: Table<{
+        id: string;
+        organization_id: string;
+        requested_by_user_id: string;
+        state_hash: string;
+        expires_at: string;
+        consumed_at: string | null;
+        created_at: string;
+      }>;
+      microsoft365_library_mappings: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          connection_id: string;
+          integration_source_id: string;
+          site_id: string;
+          site_name: string;
+          site_url: string;
+          drive_id: string;
+          drive_name: string;
+          project_id: string | null;
+          selected: boolean;
+          delta_link: string | null;
+          last_attempted_at: string | null;
+          last_completed_at: string | null;
+          last_error: string | null;
         }
       >;
       documents: Table<

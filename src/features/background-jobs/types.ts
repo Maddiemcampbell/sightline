@@ -1,7 +1,10 @@
 import type { Json } from "@/lib/supabase/database.types";
 
 export type OrganizationJobType =
-  "portfolio_refresh" | "daily_executive_brief" | "procore_sync";
+  | "portfolio_refresh"
+  | "daily_executive_brief"
+  | "procore_sync"
+  | "microsoft365_sync";
 export type OrganizationJobSource = "scheduled" | "manual" | "retry";
 export type OrganizationJobMetrics = Readonly<Record<string, Json>>;
 

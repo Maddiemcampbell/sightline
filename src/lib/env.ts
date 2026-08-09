@@ -27,6 +27,8 @@ const serverEnvSchema = publicEnvSchema.extend({
   PROCORE_CLIENT_ID: z.string().min(1).optional(),
   PROCORE_CLIENT_SECRET: z.string().min(1).optional(),
   PROCORE_CREDENTIAL_ENCRYPTION_KEY: z.string().min(32).optional(),
+  MICROSOFT365_CLIENT_ID: z.string().min(1).optional(),
+  MICROSOFT365_CLIENT_SECRET: z.string().min(1).optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -65,6 +67,8 @@ export function getServerEnv(): ServerEnv {
     PROCORE_CLIENT_SECRET: process.env.PROCORE_CLIENT_SECRET,
     PROCORE_CREDENTIAL_ENCRYPTION_KEY:
       process.env.PROCORE_CREDENTIAL_ENCRYPTION_KEY,
+    MICROSOFT365_CLIENT_ID: process.env.MICROSOFT365_CLIENT_ID,
+    MICROSOFT365_CLIENT_SECRET: process.env.MICROSOFT365_CLIENT_SECRET,
   });
   if (
     parsed.BILLING_PROVIDER === "stripe" &&

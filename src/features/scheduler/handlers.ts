@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   runQueuedProcoreSyncJobs,
+  runQueuedMicrosoft365SyncJobs,
   runScheduledOrganizationJobs,
 } from "@/features/background-jobs/runners";
 import { DataExportWorker } from "@/features/data-exports/worker";
@@ -89,6 +90,16 @@ export const customerDataExportsHandler: SchedulerHandler = async () => {
 
 export const procoreSyncHandler: SchedulerHandler = async () => {
   const summary = await runQueuedProcoreSyncJobs();
+  return {
+    attempted: summary.attempted,
+    succeeded: summary.succeeded,
+    failed: summary.failed,
+    skipped: summary.skipped,
+  };
+};
+
+export const microsoft365SyncHandler: SchedulerHandler = async () => {
+  const summary = await runQueuedMicrosoft365SyncJobs();
   return {
     attempted: summary.attempted,
     succeeded: summary.succeeded,

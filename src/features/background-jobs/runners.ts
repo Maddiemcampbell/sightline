@@ -20,6 +20,10 @@ import {
   syncProcoreConnection,
   syncQueuedProcoreJobs,
 } from "@/features/procore/sync";
+import {
+  queuedMicrosoft365Jobs,
+  syncMicrosoft365Connection,
+} from "@/features/microsoft365/sync";
 
 export async function runPortfolioRefresh(organizationId: string) {
   const [intelligence, financialSnapshot, riskSnapshot] = await Promise.all([
@@ -148,6 +152,37 @@ export async function runQueuedProcoreSyncJobs() {
           syncProcoreConnection(connection.data!.id, job.organization_id).then(
             (metrics) => metrics as OrganizationJobMetrics,
           ),
+      ),
+    );
+  }
+  return summarizeOutcomes(outcomes);
+}
+
+export async function runQueuedMicrosoft365SyncJobs() {
+  const client = createAdminSupabaseClient();
+  const queued = await queuedMicrosoft365Jobs();
+  const outcomes: OrganizationJobOutcome[] = [];
+  for (const job of queued) {
+    const connection = await client
+      .from("integration_connections")
+      .select("id")
+      .eq("organization_id", job.organization_id)
+      .eq("provider", "sharepoint")
+      .neq("status", "disconnected")
+      .maybeSingle();
+    if (connection.error) throw new Error(connection.error.message);
+    if (!connection.data) continue;
+    outcomes.push(
+      await executeOrganizationJob(
+        {
+          organizationId: job.organization_id,
+          jobType: "microsoft365_sync",
+          source: job.trigger_source,
+          idempotencyKey: job.idempotency_key,
+          maxAttempts: job.max_attempts,
+        },
+        () =>
+          syncMicrosoft365Connection(connection.data!.id, job.organization_id),
       ),
     );
   }
