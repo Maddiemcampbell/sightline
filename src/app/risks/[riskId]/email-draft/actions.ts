@@ -27,7 +27,11 @@ export async function generateEmailDraftAction(input: unknown) {
           riskId: input.get("riskId"),
           actionId: input.get("actionId") || null,
           recipientRole: input.get("recipientRole"),
+          contactKey: input.get("contactKey") || null,
           desiredTone: input.get("desiredTone"),
+          requestedUrgency: input.get("requestedUrgency"),
+          purpose: input.get("purpose"),
+          length: input.get("length"),
         }
       : input;
   const parsed = generateEmailDraftSchema.parse(raw);

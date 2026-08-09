@@ -363,7 +363,7 @@ test("edits and saves a human-controlled email draft", async ({ page }) => {
   const original = await subject.inputValue();
   await subject.fill("Updated certificate needed before mobilization");
   await main
-    .getByLabel("Known contact")
+    .getByLabel("Email recipient")
     .selectOption("vendor:30000000-0000-4000-8000-000000000001");
   await main.getByRole("button", { name: "Save draft" }).click();
   await expect(main.getByRole("status")).toHaveText("Draft saved.");
@@ -374,6 +374,29 @@ test("edits and saves a human-controlled email draft", async ({ page }) => {
   await subject.fill(original);
   await main.getByRole("button", { name: "Save draft" }).click();
   await expect(main.getByRole("status")).toHaveText("Draft saved.");
+
+  await page.goto(
+    "/risks/60000000-0000-4000-8000-000000000001/email-draft?actionId=80000000-0000-4000-8000-000000000001",
+  );
+  await expect(page.getByText("Overdue response date")).toBeVisible();
+  await page
+    .getByLabel("Recipient")
+    .selectOption("vendor:30000000-0000-4000-8000-000000000001");
+  await page.getByLabel("Purpose").selectOption("escalation");
+  await page.getByLabel("Tone").selectOption("firm");
+  await page.getByLabel("Urgency").selectOption("urgent");
+  await page.getByLabel("Length").selectOption("detailed");
+  await page.getByRole("button", { name: "Generate editable draft" }).click();
+  await expect(page).toHaveURL(/email-draft\?draftId=[0-9a-f-]+$/, {
+    timeout: 30_000,
+  });
+  await expect(page.getByLabel("Email subject")).toHaveValue(
+    /Action required:/,
+  );
+  await expect(page.getByLabel("Email body")).toContainText(
+    "requested response date has passed",
+  );
+  await expect(page.getByText("Template generated")).toBeVisible();
 });
 
 test("adds a risk comment with an organization-user mention", async ({

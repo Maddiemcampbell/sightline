@@ -43,7 +43,11 @@ export class EmailDraftService {
       riskId: string;
       actionId: string | null;
       recipientRole: string;
+      contactKey: string | null;
       desiredTone: EmailDraftInput["desiredTone"];
+      requestedUrgency: EmailDraftInput["requestedUrgency"];
+      purpose: EmailDraftInput["purpose"];
+      length: EmailDraftInput["length"];
     },
   ) {
     const source = await this.repository.contextForRisk(
@@ -55,6 +59,12 @@ export class EmailDraftService {
       throw new Error(
         "At least one evidence record is required to draft an email.",
       );
+    const contacts = buildContacts(source);
+    const contact = request.contactKey
+      ? contacts.find((item) => item.key === request.contactKey)
+      : null;
+    if (request.contactKey && !contact) throw new Error("Contact not found.");
+    const sender = source.users.find((user) => user.id === context.userId);
     const input = emailDraftInputSchema.parse({
       organizationId: context.organizationId,
       riskId: source.risk.id,
@@ -75,8 +85,14 @@ export class EmailDraftService {
       dueDate: normalizeDatabaseTimestamp(
         source.action?.due_at ?? source.risk.due_at,
       ),
-      recipientRole: request.recipientRole,
+      generatedAt: new Date().toISOString(),
+      recipientRole: contact?.role ?? request.recipientRole,
+      recipientName: contact?.name ?? null,
+      senderName: sender?.full_name ?? "Sightline user",
       desiredTone: request.desiredTone,
+      requestedUrgency: request.requestedUrgency,
+      purpose: request.purpose,
+      length: request.length,
     });
     const provider = this.provider ?? configuredProvider();
     const result = await generateEmailDraftWithFallback(provider, input);
@@ -100,6 +116,10 @@ export class EmailDraftService {
       input_tokens: result.usage.inputTokens,
       output_tokens: result.usage.outputTokens,
       total_tokens: result.usage.totalTokens,
+      recipient_user_id: contact?.userId ?? null,
+      recipient_vendor_id: contact?.vendorId ?? null,
+      recipient_name: contact?.name ?? null,
+      recipient_email: contact?.email ?? null,
     });
     await tryRecordAiObservability(this.client, {
       organizationId: context.organizationId,
@@ -143,29 +163,7 @@ export class EmailDraftService {
       draft.risk_id,
       draft.recommended_action_id,
     );
-    const contacts = [
-      ...source.users.map((user) => ({
-        key: `user:${user.id}`,
-        name: user.full_name,
-        email: user.email,
-        role: user.title ?? user.role,
-        userId: user.id,
-        vendorId: null,
-      })),
-      ...(source.vendor?.contact_email
-        ? [
-            {
-              key: `vendor:${source.vendor.id}`,
-              name: source.vendor.contact_name ?? source.vendor.name,
-              email: source.vendor.contact_email,
-              role: `${source.vendor.name} contact`,
-              userId: null,
-              vendorId: source.vendor.id,
-            },
-          ]
-        : []),
-    ];
-    return { draft, risk: source.risk, contacts };
+    return { ...source, draft, contacts: buildContacts(source) };
   }
 
   async save(
@@ -207,6 +205,33 @@ export class EmailDraftService {
     });
     return updated;
   }
+}
+
+function buildContacts(
+  source: Awaited<ReturnType<EmailDraftRepository["contextForRisk"]>>,
+) {
+  return [
+    ...source.users.map((user) => ({
+      key: `user:${user.id}`,
+      name: user.full_name,
+      email: user.email,
+      role: user.title ?? user.role,
+      userId: user.id,
+      vendorId: null,
+    })),
+    ...(source.vendor?.contact_email
+      ? [
+          {
+            key: `vendor:${source.vendor.id}`,
+            name: source.vendor.contact_name ?? source.vendor.name,
+            email: source.vendor.contact_email,
+            role: `${source.vendor.name} contact`,
+            userId: null,
+            vendorId: source.vendor.id,
+          },
+        ]
+      : []),
+  ];
 }
 
 function normalizeDatabaseTimestamp(value: string | null) {

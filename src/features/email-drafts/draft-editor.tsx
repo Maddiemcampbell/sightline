@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Clipboard, Save } from "lucide-react";
+import { Check, Clipboard, Mail, Save } from "lucide-react";
 
 import {
   markEmailDraftSentAction,
@@ -38,6 +38,13 @@ export function DraftEditor({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const locked = status === "manually_sent";
+  const selectedContact = contacts.find(
+    (contact) => contact.key === contactKey,
+  );
+  const dirty =
+    subject !== draft.subject ||
+    body !== draft.body ||
+    contactKey !== initialContact;
 
   function save() {
     setMessage(null);
@@ -62,48 +69,68 @@ export function DraftEditor({
   }
 
   return (
-    <div className="space-y-5">
-      <label className="block text-sm font-semibold">
-        Known contact
-        <select
-          aria-label="Known contact"
-          value={contactKey}
-          disabled={locked || pending}
-          onChange={(event) => setContactKey(event.target.value)}
-          className="border-border bg-surface mt-2 min-h-11 w-full rounded-md border px-3 font-normal"
-        >
-          <option value="">Select a contact</option>
-          {contacts.map((contact) => (
-            <option key={contact.key} value={contact.key}>
-              {contact.name} — {contact.role} ({contact.email})
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block text-sm font-semibold">
-        Subject
-        <input
-          aria-label="Email subject"
-          value={subject}
-          disabled={locked || pending}
-          maxLength={240}
-          onChange={(event) => setSubject(event.target.value)}
-          className="border-border bg-surface mt-2 min-h-11 w-full rounded-md border px-3 font-normal"
-        />
-      </label>
-      <label className="block text-sm font-semibold">
-        Body
-        <textarea
-          aria-label="Email body"
-          value={body}
-          disabled={locked || pending}
-          rows={16}
-          maxLength={10000}
-          onChange={(event) => setBody(event.target.value)}
-          className="border-border bg-surface mt-2 w-full rounded-md border p-3 leading-6 font-normal"
-        />
-      </label>
-      <div className="flex flex-wrap gap-3">
+    <div>
+      <div className="mb-5 flex items-center gap-2">
+        <Mail className="text-deep-green size-5" aria-hidden="true" />
+        <h2 className="font-semibold">Email composer</h2>
+        {dirty && !locked ? (
+          <span className="text-warning ml-auto text-xs font-semibold">
+            Unsaved changes
+          </span>
+        ) : null}
+      </div>
+      <div className="border-border overflow-hidden rounded-lg border">
+        <label className="border-border grid border-b sm:grid-cols-[5rem_1fr] sm:items-center">
+          <span className="text-muted px-4 pt-3 text-sm font-semibold sm:py-3">
+            To
+          </span>
+          <select
+            aria-label="Email recipient"
+            value={contactKey}
+            disabled={locked || pending}
+            onChange={(event) => setContactKey(event.target.value)}
+            className="bg-surface min-h-12 w-full border-0 px-4 font-normal outline-none"
+          >
+            <option value="">Select a contact</option>
+            {contacts.map((contact) => (
+              <option key={contact.key} value={contact.key}>
+                {contact.name} — {contact.role} ({contact.email})
+              </option>
+            ))}
+          </select>
+        </label>
+        {selectedContact ? (
+          <p className="text-muted border-border border-b px-4 pb-3 text-xs sm:pl-[6rem]">
+            {selectedContact.email} · {selectedContact.role}
+          </p>
+        ) : null}
+        <label className="border-border grid border-b sm:grid-cols-[5rem_1fr] sm:items-center">
+          <span className="text-muted px-4 pt-3 text-sm font-semibold sm:py-3">
+            Subject
+          </span>
+          <input
+            aria-label="Email subject"
+            value={subject}
+            disabled={locked || pending}
+            maxLength={240}
+            onChange={(event) => setSubject(event.target.value)}
+            className="bg-surface min-h-12 w-full border-0 px-4 font-normal outline-none"
+          />
+        </label>
+        <label className="block">
+          <span className="sr-only">Body</span>
+          <textarea
+            aria-label="Email body"
+            value={body}
+            disabled={locked || pending}
+            rows={16}
+            maxLength={10000}
+            onChange={(event) => setBody(event.target.value)}
+            className="bg-surface min-h-[28rem] w-full resize-y border-0 p-4 leading-7 font-normal outline-none sm:p-5"
+          />
+        </label>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-3">
         <PrimaryButton
           disabled={locked || pending || !subject.trim() || !body.trim()}
           onClick={save}

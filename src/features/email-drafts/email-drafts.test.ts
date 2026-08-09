@@ -34,8 +34,14 @@ const input = emailDraftInputSchema.parse({
   ],
   requestedAction: "Provide an updated certificate of insurance",
   dueDate: "2026-07-23T17:00:00.000Z",
+  generatedAt: "2026-07-18T17:00:00.000Z",
   recipientRole: "Vendor contact",
+  recipientName: "Jordan Lee",
+  senderName: "Matt Anderson",
   desiredTone: "concise",
+  requestedUrgency: "soon",
+  purpose: "reminder",
+  length: "standard",
 });
 
 describe("AI-assisted email drafting", () => {
@@ -82,8 +88,50 @@ describe("AI-assisted email drafting", () => {
     };
     const result = await generateEmailDraftWithFallback(provider, input);
     expect(result.generationSource).toBe("deterministic_fallback");
-    expect(result.output.body).toContain(input.evidence[0]!.excerpt);
+    expect(result.output.body).toContain(
+      "current policy expires on July 25, 2026",
+    );
     expect(result.output.evidenceIdsUsed).toEqual([input.evidence[0]!.id]);
+    expect(result.output.body).toContain("Hi Jordan,");
+    expect(result.output.body).toContain("Matt Anderson");
+  });
+
+  it("replaces stale response deadlines with overdue language", () => {
+    const output = deterministicEmailDraft({
+      ...input,
+      generatedAt: "2026-08-08T17:00:00.000Z",
+      purpose: "escalation",
+      requestedUrgency: "urgent",
+    });
+
+    expect(output.subject).toMatch(/^Action required:/);
+    expect(output.body).toContain("current policy expired on July 25, 2026");
+    expect(output.body).toContain("requested response date has passed");
+    expect(output.body).not.toContain("respond by July 23, 2026");
+    expect(output.suggestedUrgency).toBe("urgent");
+  });
+
+  it("uses the selected communication controls", () => {
+    const concise = deterministicEmailDraft({
+      ...input,
+      purpose: "initial_request",
+      desiredTone: "collaborative",
+      requestedUrgency: "routine",
+      length: "concise",
+      dueDate: null,
+    });
+    const detailed = deterministicEmailDraft({
+      ...input,
+      purpose: "status_update",
+      desiredTone: "formal",
+      length: "detailed",
+    });
+
+    expect(concise.body).toContain("Thanks for your help,");
+    expect(concise.body).not.toContain(input.evidence[0]!.whyItMatters);
+    expect(detailed.subject).toMatch(/^Status requested:/);
+    expect(detailed.body).toContain(input.evidence[0]!.whyItMatters);
+    expect(detailed.body).toContain("Sincerely,");
   });
 
   it("validates edits and contact selection without accepting tenant identity", () => {
