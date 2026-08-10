@@ -31,7 +31,11 @@ export function AdminShell({
             </p>
           </div>
         </div>
-        <AdminNavigation permissions={[...operator.permissions]} />
+        <AdminNavigation
+          permissions={[...operator.permissions]}
+          displayName={operator.displayName}
+          email={operator.email}
+        />
         <div className="border-deep-green/15 hidden border-t p-4 lg:block">
           <p className="truncate text-sm font-semibold">
             {operator.displayName}

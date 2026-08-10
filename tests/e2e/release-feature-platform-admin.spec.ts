@@ -142,6 +142,20 @@ for (const viewport of [
     ]) {
       await page.goto(path);
       await expect(page.locator("main")).toBeVisible();
+      const menuButton = page.getByRole("button", {
+        name: "Menu",
+        exact: true,
+      });
+      await menuButton.click();
+      const navigationDialog = page.getByRole("dialog", {
+        name: "Platform administration",
+      });
+      await expect(navigationDialog).toBeVisible();
+      await expect(
+        navigationDialog.locator('[aria-current="page"]'),
+      ).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(navigationDialog).toBeHidden();
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
       );

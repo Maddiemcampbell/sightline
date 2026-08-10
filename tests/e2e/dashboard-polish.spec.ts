@@ -58,6 +58,18 @@ for (const viewport of [
     await expect(
       page.getByRole("region", { name: "Quick Ask Sightline" }),
     ).toBeVisible();
+    await expect(page.getByText("Current page", { exact: true })).toBeVisible();
+    const menuButton = page.getByRole("button", { name: "Menu", exact: true });
+    await menuButton.click();
+    const navigationDialog = page.getByRole("dialog", {
+      name: "Navigate Sightline",
+    });
+    await expect(navigationDialog).toBeVisible();
+    await expect(
+      navigationDialog.getByRole("link", { name: "Home", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await page.keyboard.press("Escape");
+    await expect(navigationDialog).toBeHidden();
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       page: document.documentElement.scrollWidth,

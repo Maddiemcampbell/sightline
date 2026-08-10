@@ -62,10 +62,10 @@ export async function AppSidebar() {
         )}
       </div>
 
-      <SidebarNavigation />
+      <SidebarNavigation showOrganizationLinks={Boolean(currentMembership)} />
 
       {currentMembership ? (
-        <div className="flex flex-col gap-2 px-4 pb-3">
+        <div className="hidden flex-col gap-2 px-4 pb-3 lg:flex">
           <Link
             href="/organization"
             className="text-sm font-semibold text-white/65 hover:text-white"
