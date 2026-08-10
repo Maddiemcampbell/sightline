@@ -20,7 +20,7 @@ export function DashboardSkeleton() {
             className="min-h-52 sm:col-span-2"
           />
           <LoadingState
-            label="Loading portfolio risk heatmap"
+            label="Loading risk hotspots"
             rows={6}
             className="min-h-72"
           />

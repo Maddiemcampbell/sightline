@@ -172,7 +172,8 @@ describe("company dashboard", () => {
     expect(markup).toContain("Portfolio Watch");
     expect(markup).toContain("Portfolio overview");
     expect(markup).toContain("Top risk drivers");
-    expect(markup).toContain("Portfolio risk heatmap");
+    expect(markup).toContain("Risk hotspots");
+    expect(markup).toContain("Response readiness");
     expect(markup).toContain("Recent intelligence");
     expect(markup).toContain("Overdue actions");
     expect(markup).toContain("AI assistant");

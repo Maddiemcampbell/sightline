@@ -1,85 +1,11 @@
-import {
-  Activity,
-  Bot,
-  BriefcaseBusiness,
-  Building2,
-  CircleAlert,
-  ClipboardList,
-  CreditCard,
-  Gauge,
-  HeartPulse,
-  PackageCheck,
-  RefreshCw,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  Users,
-  Bug,
-  Lightbulb,
-} from "lucide-react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 
 import { refreshAdminViewAction } from "@/app/internal/admin/actions";
 import { logout } from "@/app/auth/actions";
 import { SightlineMark } from "@/components/sightline-mark";
 import { AdminSearch } from "@/features/platform-admin/admin-search";
-import type {
-  PlatformOperator,
-  PlatformPermission,
-} from "@/features/platform-admin/types";
-
-const navigation = [
-  ["/internal/admin", "Overview", Gauge, "platform.dashboard.read"],
-  [
-    "/internal/admin/organizations",
-    "Organizations",
-    Building2,
-    "platform.organizations.read",
-  ],
-  ["/internal/admin/users", "Users", Users, "platform.users.read"],
-  [
-    "/internal/admin/provisioning",
-    "Provisioning",
-    CreditCard,
-    "platform.provisioning.manage",
-  ],
-  [
-    "/internal/admin/customer-health",
-    "Customer Health",
-    HeartPulse,
-    "platform.organizations.read",
-  ],
-  ["/internal/admin/errors", "Errors", CircleAlert, "platform.support.read"],
-  ["/internal/admin/bugs", "Bug Reports", Bug, "platform.support.read"],
-  [
-    "/internal/admin/feature-requests",
-    "Feature Requests",
-    Lightbulb,
-    "platform.support.read",
-  ],
-  ["/internal/admin/jobs", "Jobs", ClipboardList, "platform.jobs.read"],
-  ["/internal/admin/ai", "AI Usage", Bot, "platform.ai.read"],
-  ["/internal/admin/system", "System Health", Activity, "platform.health.read"],
-  ["/internal/admin/audit", "Audit Log", ScrollText, "platform.audit.read"],
-  [
-    "/internal/admin/releases",
-    "Releases",
-    PackageCheck,
-    "platform.releases.read",
-  ],
-  [
-    "/internal/admin/operators",
-    "Platform Operators",
-    ShieldCheck,
-    "platform.admin.manage",
-  ],
-  ["/internal/admin/settings", "Settings", Settings, "platform.flags.manage"],
-] as const satisfies readonly [
-  string,
-  string,
-  typeof Gauge,
-  PlatformPermission,
-][];
+import { AdminNavigation } from "@/features/platform-admin/admin-navigation";
+import type { PlatformOperator } from "@/features/platform-admin/types";
 
 export function AdminShell({
   operator,
@@ -105,28 +31,7 @@ export function AdminShell({
             </p>
           </div>
         </div>
-        <nav
-          aria-label="Platform administration"
-          className="overflow-x-auto p-3 lg:flex-1 lg:overflow-y-auto"
-        >
-          <ul className="flex min-w-max gap-1 lg:block lg:min-w-0 lg:space-y-1">
-            {navigation
-              .filter(([, , , permission]) =>
-                operator.permissions.has(permission),
-              )
-              .map(([href, label, Icon]) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className="text-deep-green hover:bg-deep-green flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold hover:text-[#D4E87D]"
-                  >
-                    <Icon aria-hidden="true" className="size-4" />
-                    {label}
-                  </Link>
-                </li>
-              ))}
-          </ul>
-        </nav>
+        <AdminNavigation permissions={[...operator.permissions]} />
         <div className="border-deep-green/15 hidden border-t p-4 lg:block">
           <p className="truncate text-sm font-semibold">
             {operator.displayName}
@@ -156,12 +61,6 @@ export function AdminShell({
               <AdminSearch />
             ) : null}
             <div className="ml-auto flex items-center gap-2">
-              <button
-                aria-label="Admin notifications"
-                className="grid size-10 place-items-center rounded-md hover:bg-slate-100"
-              >
-                <BriefcaseBusiness aria-hidden="true" className="size-4" />
-              </button>
               {operator.permissions.has("platform.dashboard.read") ? (
                 <form action={refreshAdminViewAction}>
                   <button

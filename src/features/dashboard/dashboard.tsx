@@ -8,6 +8,7 @@ import {
   BriefcaseBusiness,
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   CircleDollarSign,
   FileQuestion,
   ListChecks,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  UserRoundX,
   XCircle,
   Clock3,
 } from "lucide-react";
@@ -45,7 +47,6 @@ import {
   formatCompactCurrency,
   heatmapCellLabel,
   projectScopeLabel,
-  riskStatusLabel,
 } from "@/features/dashboard/presentation";
 
 const heatmapColumns = [
@@ -169,7 +170,7 @@ export function Dashboard({ view }: { view: DashboardView }) {
 
       <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0 space-y-4">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
+          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
             <PortfolioOverview view={filteredView} />
             <RiskDrivers
               drivers={filteredView.riskDrivers}
@@ -178,10 +179,13 @@ export function Dashboard({ view }: { view: DashboardView }) {
           </div>
 
           <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
-            <RiskHeatmap
-              analytics={filteredView.riskAnalytics ?? null}
-              fallbackRows={filteredView.riskHeatmap}
-            />
+            <div className="min-w-0 space-y-4">
+              <RiskHeatmap
+                analytics={filteredView.riskAnalytics ?? null}
+                fallbackRows={filteredView.riskHeatmap}
+              />
+              <ResponseReadiness view={filteredView} />
+            </div>
             <div className="space-y-4">
               <RecentIntelligence view={filteredView} />
               <OverdueActions view={filteredView} />
@@ -372,6 +376,22 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
     selectedProjectFinancial?.budgetVariance ??
     view.financialAnalytics?.portfolio.netBudgetVariance ??
     null;
+  const riskPercent = summary.activeProjects
+    ? Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round((summary.projectsAtRisk / summary.activeProjects) * 100),
+        ),
+      )
+    : 0;
+  const portfolioStatus =
+    summary.projectsAtRisk === 0
+      ? "No projects currently need attention"
+      : summary.projectsAtRisk === summary.activeProjects
+        ? "Portfolio-wide attention required"
+        : `${summary.projectsAtRisk} projects need attention`;
+  const budgetPosition = formatBudgetPosition(budgetVariance?.valueCents);
   return (
     <section aria-label="Portfolio Watch" className="dashboard-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -383,35 +403,88 @@ function PortfolioOverview({ view }: { view: DashboardView }) {
         </div>
         <ProjectFilter />
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={`mt-4 rounded-xl border p-4 ${
+          summary.projectsAtRisk
+            ? "border-[#edc3bb] bg-[#fff8f6]"
+            : "border-[#bfd8c4] bg-[#f5faf5]"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span
+              className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                summary.projectsAtRisk
+                  ? "bg-[#f8d7d2] text-[#8f281c]"
+                  : "bg-[#dff0e2] text-[#185d2a]"
+              }`}
+            >
+              {summary.projectsAtRisk ? (
+                <ShieldAlert className="size-5" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="size-5" aria-hidden="true" />
+              )}
+            </span>
+            <div>
+              <p className="text-muted text-xs font-semibold tracking-[0.08em] uppercase">
+                Portfolio status
+              </p>
+              <p className="mt-1 text-lg font-semibold">{portfolioStatus}</p>
+              <p className="text-muted mt-1 text-xs leading-5">
+                {summary.projectsAtRisk} of {summary.activeProjects} active
+                projects have an unresolved risk signal.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/risks"
+            className="border-border bg-surface text-deep-green inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border px-3 text-xs font-semibold"
+          >
+            Review risks
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <div
+            className="h-2 flex-1 overflow-hidden rounded-full bg-white ring-1 ring-black/5"
+            role="progressbar"
+            aria-label="Active projects with unresolved risk signals"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={riskPercent}
+          >
+            <div
+              className={`h-full rounded-full ${
+                summary.projectsAtRisk ? "bg-status-high" : "bg-status-low"
+              }`}
+              style={{ width: `${riskPercent}%` }}
+            />
+          </div>
+          <span className="min-w-10 text-right text-xs font-semibold tabular-nums">
+            {riskPercent}%
+          </span>
+        </div>
+      </div>
+      <div
+        className={`mt-3 grid gap-3 ${
+          view.canViewFinancials ? "sm:grid-cols-3" : "sm:grid-cols-1"
+        }`}
+      >
         <OverviewMetric
-          label="Active projects"
+          label="Portfolio size"
           value={String(summary.activeProjects)}
-          detail={`${view.portfolio.length} visible to you`}
+          detail={`${view.portfolio.length} active project${view.portfolio.length === 1 ? "" : "s"} visible to you`}
           icon={BriefcaseBusiness}
-          tone="positive"
-        />
-        <OverviewMetric
-          label="Projects at risk"
-          value={String(summary.projectsAtRisk)}
-          detail={
-            summary.projectsAtRisk ? "Needs attention" : "No active risk signal"
-          }
-          icon={ShieldAlert}
-          tone={summary.projectsAtRisk ? "warning" : "positive"}
+          tone="neutral"
         />
         {view.canViewFinancials ? (
           <>
             <OverviewMetric
               label="Budget variance"
-              value={
-                budgetVariance?.valueCents === null || !budgetVariance
-                  ? "Not available"
-                  : formatCompactCurrency(budgetVariance.valueCents)
-              }
+              value={budgetPosition.value}
               detail={
                 budgetVariance
-                  ? `${budgetVariance.quality} data · positive is under budget`
+                  ? `${budgetPosition.detail} · ${budgetVariance.quality} data`
                   : "Financial inputs are missing"
               }
               icon={CircleDollarSign}
@@ -461,12 +534,14 @@ function OverviewMetric({
   tone: "positive" | "warning" | "neutral";
 }) {
   return (
-    <div className="border-border rounded-lg border p-4">
+    <div className="border-border bg-background/45 rounded-lg border p-3.5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-muted text-xs font-medium">{label}</p>
-        <Icon className="text-muted size-4" aria-hidden="true" />
+        <span className="bg-surface grid size-7 place-items-center rounded-md border">
+          <Icon className="text-muted size-3.5" aria-hidden="true" />
+        </span>
       </div>
-      <p className="mt-5 text-2xl font-semibold tracking-[-0.035em] whitespace-nowrap tabular-nums">
+      <p className="mt-3 text-xl font-semibold tracking-[-0.035em] tabular-nums">
         {value}
       </p>
       <p
@@ -484,6 +559,21 @@ function OverviewMetric({
   );
 }
 
+function formatBudgetPosition(valueCents: number | null | undefined) {
+  if (valueCents === null || valueCents === undefined)
+    return { value: "—", detail: "Budget position unavailable" };
+  if (valueCents === 0) return { value: "On budget", detail: "No variance" };
+  return valueCents > 0
+    ? {
+        value: `${formatCompactCurrency(valueCents)} under`,
+        detail: "Projected under budget",
+      }
+    : {
+        value: `${formatCompactCurrency(Math.abs(valueCents))} over`,
+        detail: "Projected over budget",
+      };
+}
+
 function RiskDrivers({
   drivers,
   canViewFinancials,
@@ -491,52 +581,47 @@ function RiskDrivers({
   drivers: readonly RiskDriver[];
   canViewFinancials: boolean;
 }) {
-  const maxCount = Math.max(1, ...drivers.map((driver) => driver.riskCount));
   return (
-    <section className="dashboard-card p-5">
-      <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
-        Top risk drivers
-      </h2>
+    <section className="dashboard-card h-fit p-5">
+      <div>
+        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+          Top risk drivers
+        </h2>
+        <p className="text-muted mt-1 text-xs leading-5">
+          Categories where active portfolio risk is concentrated.
+        </p>
+      </div>
       {drivers.length ? (
-        <ol className="mt-5 space-y-3">
+        <ol className="mt-4 space-y-2">
           {drivers.map((driver, index) => (
             <li key={driver.category}>
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <Link
-                  href={`/risks?category=${driver.category}`}
-                  className="truncate font-medium hover:underline"
-                >
-                  {driver.label}
-                </Link>
-                <span className="text-muted shrink-0">
-                  #{index + 1} · {driver.riskCount} risk
-                  {driver.riskCount === 1 ? "" : "s"}
+              <Link
+                href={`/risks?category=${driver.category}`}
+                className="border-border hover:border-deep-green hover:bg-background group flex min-h-16 items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors"
+              >
+                <span className="bg-soft-green text-deep-green grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold">
+                  {index + 1}
                 </span>
-              </div>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="bg-background h-2 flex-1 overflow-hidden rounded-full">
-                  <div
-                    className={`h-full rounded-full ${
-                      driver.level === "high"
-                        ? "bg-danger"
-                        : driver.level === "medium"
-                          ? "bg-status-medium"
-                          : "bg-status-low"
-                    }`}
-                    style={{
-                      width: `${Math.max(12, (driver.riskCount / maxCount) * 100)}%`,
-                    }}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">
+                    {driver.label}
+                  </span>
+                  <span className="text-muted mt-0.5 block truncate text-xs">
+                    {driver.riskCount} active risk
+                    {driver.riskCount === 1 ? "" : "s"}
+                    {canViewFinancials && driver.exposureCents
+                      ? ` · ${formatMoney(driver.exposureCents)} exposure`
+                      : ""}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <SeverityBadge severity={driver.level} />
+                  <ArrowRight
+                    className="text-muted size-4 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
                   />
-                </div>
-                <span className="text-muted w-24 text-right text-xs">
-                  {riskStatusLabel(driver.level)}
                 </span>
-              </div>
-              {canViewFinancials && (
-                <p className="sr-only">
-                  {formatMoney(driver.exposureCents)} represented exposure
-                </p>
-              )}
+              </Link>
             </li>
           ))}
         </ol>
@@ -557,7 +642,7 @@ function RiskDrivers({
       )}
       <Link
         href="/risks"
-        className="text-deep-green border-border mt-5 inline-flex w-full items-center justify-between border-t pt-4 text-xs font-semibold"
+        className="text-deep-green border-border mt-4 inline-flex min-h-10 w-full items-center justify-between border-t pt-3 text-xs font-semibold"
       >
         View all risks <ArrowRight className="size-3.5" aria-hidden="true" />
       </Link>
@@ -575,96 +660,177 @@ function RiskHeatmap({
   const categories = analytics?.categories ?? [];
   const rows = analytics?.heatmap ?? [];
   if (!analytics) return <LegacyRiskHeatmap rows={fallbackRows} />;
+  const categoryLabels = new Map(
+    categories.map((category) => [category.id, category.label]),
+  );
+  const hotspots = rows
+    .flatMap((row) =>
+      row.cells
+        .filter((cell) => cell.activeRiskCount > 0)
+        .map((cell) => ({
+          ...cell,
+          projectName: row.projectName,
+          categoryLabel: categoryLabels.get(cell.category) ?? cell.category,
+        })),
+    )
+    .toSorted(
+      (left, right) =>
+        severityRank(right.highestSeverity) -
+          severityRank(left.highestSeverity) ||
+        (right.attentionScore ?? 0) - (left.attentionScore ?? 0) ||
+        right.activeRiskCount - left.activeRiskCount ||
+        left.projectName.localeCompare(right.projectName),
+    );
+  const affectedProjects = new Set(hotspots.map((hotspot) => hotspot.projectId))
+    .size;
   return (
     <section className="dashboard-card overflow-hidden p-5">
-      <div>
-        <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
-          Portfolio risk heatmap
-        </h2>
-        <p className="text-muted mt-1 text-xs">
-          Highest active severity by project and normalized category. Select a
-          cell to inspect its contributing risks.
-        </p>
-      </div>
-      {rows.length ? (
-        <div
-          className="mt-5 overflow-x-auto"
-          tabIndex={0}
-          aria-label="Scrollable portfolio risk heatmap"
-        >
-          <table className="w-full min-w-[34rem] text-left text-xs">
-            <thead>
-              <tr className="text-muted">
-                <th className="bg-surface sticky left-0 z-10 pb-3 font-medium">
-                  Project
-                </th>
-                {categories.map((column) => (
-                  <th
-                    key={column.id}
-                    className="px-3 pb-3 text-center font-medium capitalize"
-                  >
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.projectId} className="border-border border-t">
-                  <th className="bg-surface sticky left-0 z-10 max-w-48 py-3 pr-3 font-medium">
-                    <Link href={`/projects/${row.projectId}`}>
-                      {row.projectName}
-                    </Link>
-                  </th>
-                  {row.cells.map((cell) => (
-                    <td key={cell.category} className="px-3 py-3 text-center">
-                      <Link
-                        href={cell.href}
-                        aria-label={heatmapCellLabel(
-                          row.projectName,
-                          categories.find(
-                            (category) => category.id === cell.category,
-                          )?.label ?? cell.category,
-                          cell,
-                        )}
-                        title={cell.explanation}
-                        className={`inline-flex size-7 items-center justify-center rounded-full text-xs font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                          cell.highestSeverity === "critical" ||
-                          cell.highestSeverity === "high"
-                            ? "bg-status-high"
-                            : cell.highestSeverity === "medium"
-                              ? "bg-status-medium"
-                              : cell.highestSeverity === "low"
-                                ? "bg-status-low"
-                                : "bg-border text-muted"
-                        }`}
-                      >
-                        {cell.activeRiskCount || "–"}
-                      </Link>
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="border-border text-muted mt-4 flex flex-wrap gap-4 border-t pt-4 text-xs">
-            {[
-              ["High priority", "bg-status-high"],
-              ["Medium priority", "bg-status-medium"],
-              ["Low priority", "bg-status-low"],
-              ["No signal", "bg-[#e7e9e3]"],
-            ].map(([label, color]) => (
-              <span key={label} className="flex items-center gap-1.5">
-                <span className={`size-2.5 rounded-full ${color}`} />
-                {label}
-              </span>
-            ))}
-          </div>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+            Risk hotspots
+          </h2>
+          <p className="text-muted mt-1 text-xs leading-5">
+            Projects and risk categories requiring attention, ranked by severity
+            and urgency.
+          </p>
         </div>
+        <Link
+          href="/risks"
+          className="text-deep-green shrink-0 text-xs font-semibold"
+        >
+          View risks
+        </Link>
+      </div>
+      {hotspots.length ? (
+        <>
+          <ol className="mt-5 space-y-2">
+            {hotspots.slice(0, 5).map((hotspot, index) => (
+              <li key={`${hotspot.projectId}:${hotspot.category}`}>
+                <Link
+                  href={hotspot.href}
+                  aria-label={heatmapCellLabel(
+                    hotspot.projectName,
+                    hotspot.categoryLabel,
+                    hotspot,
+                  )}
+                  className="border-border hover:border-deep-green hover:bg-background group flex min-h-16 items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors"
+                >
+                  <span className="bg-soft-green text-deep-green grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold">
+                    {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold">
+                      {hotspot.projectName}
+                    </span>
+                    <span className="text-muted mt-0.5 block truncate text-xs capitalize">
+                      {hotspot.categoryLabel}
+                      {hotspot.assessedExposureCents !== null
+                        ? ` · ${formatCompactCurrency(hotspot.assessedExposureCents)} assessed exposure`
+                        : ""}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <SeverityBadge severity={hotspot.highestSeverity} />
+                    <span className="text-muted hidden text-xs sm:inline">
+                      {hotspot.activeRiskCount} risk
+                      {hotspot.activeRiskCount === 1 ? "" : "s"}
+                    </span>
+                    <ArrowRight
+                      className="text-muted size-4 transition-transform group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+          <p className="text-muted mt-3 text-xs">
+            Showing {Math.min(5, hotspots.length)} of {hotspots.length} active
+            signal{hotspots.length === 1 ? "" : "s"} across {affectedProjects}{" "}
+            project{affectedProjects === 1 ? "" : "s"}.
+          </p>
+          <details className="group border-border mt-4 border-t pt-3">
+            <summary className="text-deep-green flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold [&::-webkit-details-marker]:hidden">
+              View full project-by-category matrix
+              <ChevronDown
+                className="size-4 transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </summary>
+            <p className="bg-soft-blue text-info mt-2 rounded-md px-3 py-2 text-xs font-medium">
+              Scroll horizontally to compare all {categories.length} risk
+              categories →
+            </p>
+            <div
+              className="mt-3 overflow-x-auto pb-2"
+              tabIndex={0}
+              aria-label="Scrollable project-by-category risk matrix"
+            >
+              <table className="w-full min-w-max text-left text-xs">
+                <thead>
+                  <tr className="text-muted">
+                    <th className="bg-surface sticky left-0 z-10 min-w-44 pb-3 font-medium">
+                      Project
+                    </th>
+                    {categories.map((column) => (
+                      <th
+                        key={column.id}
+                        className="min-w-24 px-3 pb-3 text-center font-medium capitalize"
+                      >
+                        {column.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.projectId} className="border-border border-t">
+                      <th className="bg-surface sticky left-0 z-10 max-w-48 py-3 pr-3 font-medium">
+                        <Link href={`/projects/${row.projectId}`}>
+                          {row.projectName}
+                        </Link>
+                      </th>
+                      {row.cells.map((cell) => (
+                        <td
+                          key={cell.category}
+                          className="px-3 py-3 text-center"
+                        >
+                          {cell.activeRiskCount ? (
+                            <Link
+                              href={cell.href}
+                              aria-label={heatmapCellLabel(
+                                row.projectName,
+                                categoryLabels.get(cell.category) ??
+                                  cell.category,
+                                cell,
+                              )}
+                              title={cell.explanation}
+                              className="focus-visible:outline-offset-2"
+                            >
+                              <MatrixSignal cell={cell} />
+                            </Link>
+                          ) : (
+                            <span
+                              className="text-muted inline-flex min-w-12 justify-center rounded-md bg-[#f1f2ef] px-2 py-1 font-semibold"
+                              aria-label={`${row.projectName}, ${categoryLabels.get(cell.category) ?? cell.category}: no active risks`}
+                            >
+                              —
+                            </span>
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </>
       ) : (
         <div className="mt-5 rounded-lg border border-dashed p-5 text-center">
           <p className="text-sm font-semibold">
-            No heatmap data for this scope
+            No active risk hotspots for this scope
           </p>
           <p className="text-muted mt-1 text-xs">
             Choose another accessible project or review the risk register.
@@ -681,6 +847,230 @@ function RiskHeatmap({
   );
 }
 
+function severityRank(severity: string | null) {
+  return severity === "critical"
+    ? 4
+    : severity === "high"
+      ? 3
+      : severity === "medium"
+        ? 2
+        : severity === "low"
+          ? 1
+          : 0;
+}
+
+function severityPresentation(severity: string | null) {
+  if (severity === "critical")
+    return {
+      label: "Critical",
+      symbol: "!",
+      className: "bg-[#f8d7d2] text-[#7a2017] ring-[#d88d83]",
+    };
+  if (severity === "high")
+    return {
+      label: "High",
+      symbol: "H",
+      className: "bg-[#fbe9e6] text-[#8f281c] ring-[#e4aaa2]",
+    };
+  if (severity === "medium")
+    return {
+      label: "Medium",
+      symbol: "M",
+      className: "bg-[#fff2c2] text-[#694d00] ring-[#dfbf55]",
+    };
+  return {
+    label: "Low",
+    symbol: "L",
+    className: "bg-[#e2f3e6] text-[#185d2a] ring-[#8fc89b]",
+  };
+}
+
+function SeverityBadge({ severity }: { severity: string | null }) {
+  const presentation = severityPresentation(severity);
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ring-1 ${presentation.className}`}
+    >
+      <span aria-hidden="true">{presentation.symbol}</span>
+      {presentation.label}
+    </span>
+  );
+}
+
+function MatrixSignal({
+  cell,
+}: {
+  cell: RiskAnalyticsOutput["heatmap"][number]["cells"][number];
+}) {
+  const presentation = severityPresentation(cell.highestSeverity);
+  return (
+    <span
+      className={`inline-flex min-w-12 items-center justify-center gap-1 rounded-md px-2 py-1 font-bold ring-1 ${presentation.className}`}
+      aria-hidden="true"
+    >
+      {presentation.symbol} {cell.activeRiskCount}
+    </span>
+  );
+}
+
+function ResponseReadiness({ view }: { view: DashboardView }) {
+  const ownershipGap = view.work.unownedRisks[0] ?? null;
+  const dueToday = view.work.dueToday[0] ?? null;
+
+  return (
+    <section
+      className="dashboard-card p-5"
+      aria-labelledby="response-readiness"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2
+            id="response-readiness"
+            className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase"
+          >
+            Response readiness
+          </h2>
+          <p className="text-muted mt-1 text-xs leading-5">
+            Whether active portfolio risk has an owner and a response in motion.
+          </p>
+        </div>
+        <Link
+          href="/actions"
+          className="text-deep-green shrink-0 text-xs font-semibold"
+        >
+          View actions
+        </Link>
+      </div>
+      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <ReadinessMetric
+          label="Unassigned risks"
+          value={view.work.unownedRisks.length}
+          icon={UserRoundX}
+          needsAttention={view.work.unownedRisks.length > 0}
+        />
+        <ReadinessMetric
+          label="Due today"
+          value={view.work.dueToday.length}
+          icon={CalendarClock}
+          needsAttention={view.work.dueToday.length > 0}
+        />
+        <ReadinessMetric
+          label="Waiting externally"
+          value={view.work.waitingExternal.length}
+          icon={Clock3}
+        />
+        <ReadinessMetric
+          label="Recently completed"
+          value={view.work.recentlyCompleted.length}
+          icon={CheckCircle2}
+          positive
+        />
+      </dl>
+      {ownershipGap ? (
+        <Link
+          href={`/risks/${ownershipGap.id}`}
+          className="border-border hover:border-deep-green hover:bg-background mt-4 flex min-h-16 items-center justify-between gap-3 rounded-lg border px-4 py-3"
+        >
+          <span className="min-w-0">
+            <span className="text-danger block text-xs font-semibold tracking-[0.06em] uppercase">
+              Next ownership gap
+            </span>
+            <span className="mt-1 block truncate text-sm font-semibold">
+              {ownershipGap.title}
+            </span>
+            <span className="text-muted mt-0.5 block truncate text-xs">
+              {ownershipGap.projectName} · Assign an owner
+            </span>
+          </span>
+          <ArrowRight
+            className="text-muted size-4 shrink-0"
+            aria-hidden="true"
+          />
+        </Link>
+      ) : dueToday ? (
+        <Link
+          href={`/risks/${dueToday.riskId}?tab=actions#risk-section-content`}
+          className="border-border hover:border-deep-green hover:bg-background mt-4 flex min-h-16 items-center justify-between gap-3 rounded-lg border px-4 py-3"
+        >
+          <span className="min-w-0">
+            <span className="text-warning block text-xs font-semibold tracking-[0.06em] uppercase">
+              Due today
+            </span>
+            <span className="mt-1 block truncate text-sm font-semibold">
+              {dueToday.title}
+            </span>
+            <span className="text-muted mt-0.5 block text-xs">
+              Open the action and confirm next steps
+            </span>
+          </span>
+          <ArrowRight
+            className="text-muted size-4 shrink-0"
+            aria-hidden="true"
+          />
+        </Link>
+      ) : (
+        <div className="border-border bg-soft-green mt-4 flex items-center gap-3 rounded-lg border px-4 py-3">
+          <CheckCircle2
+            className="text-status-low size-5 shrink-0"
+            aria-hidden="true"
+          />
+          <div>
+            <p className="text-sm font-semibold">Ownership is covered</p>
+            <p className="text-muted mt-0.5 text-xs">
+              No unassigned risks or actions due today in this scope.
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ReadinessMetric({
+  label,
+  value,
+  icon: Icon,
+  needsAttention = false,
+  positive = false,
+}: {
+  label: string;
+  value: number;
+  icon: typeof ShieldAlert;
+  needsAttention?: boolean;
+  positive?: boolean;
+}) {
+  return (
+    <div className="border-border bg-background/45 rounded-lg border p-3">
+      <div className="flex items-start justify-between gap-2">
+        <dt className="text-muted text-[0.7rem] leading-4 font-medium">
+          {label}
+        </dt>
+        <Icon
+          className={`size-3.5 shrink-0 ${
+            needsAttention
+              ? "text-danger"
+              : positive
+                ? "text-status-low"
+                : "text-muted"
+          }`}
+          aria-hidden="true"
+        />
+      </div>
+      <dd
+        className={`mt-2 text-xl font-semibold tabular-nums ${
+          needsAttention
+            ? "text-danger"
+            : positive
+              ? "text-deep-green"
+              : "text-ink"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 function LegacyRiskHeatmap({
   rows,
 }: {
@@ -689,7 +1079,7 @@ function LegacyRiskHeatmap({
   return (
     <section className="dashboard-card overflow-hidden p-5">
       <h2 className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
-        Portfolio risk heatmap
+        Risk hotspots
       </h2>
       <p className="text-muted mt-1 text-xs">
         Highest unresolved severity by project and risk group.
@@ -791,9 +1181,13 @@ function RecentIntelligence({ view }: { view: DashboardView }) {
             {hypothesis.confidence}% confidence · Review assumptions before
             acting.
           </p>
-          <details className="mt-3 text-xs">
-            <summary className="text-deep-green cursor-pointer font-semibold">
+          <details className="group mt-3 text-xs">
+            <summary className="border-border text-deep-green hover:bg-background flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-md border px-3 font-semibold [&::-webkit-details-marker]:hidden">
               Review hypothesis evidence
+              <ChevronDown
+                className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
             </summary>
             <div className="text-muted mt-2 space-y-2 leading-5">
               {hypothesis.evidence.slice(0, 2).map((evidence) => (

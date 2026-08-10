@@ -14,7 +14,7 @@ test("dashboard modules share the selected accessible project scope", async ({
     page.getByRole("heading", { name: "Top risk drivers" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Portfolio risk heatmap" }),
+    page.getByRole("heading", { name: "Risk hotspots" }),
   ).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Sightline AI assistant" }),
