@@ -58,6 +58,19 @@ for (const viewport of [
     await expect(
       page.getByRole("region", { name: "Quick Ask Sightline" }),
     ).toBeVisible();
+    const quickAskLauncher = page.getByRole("button", {
+      name: "Ask Sightline",
+      exact: true,
+    });
+    await expect(quickAskLauncher).toBeVisible();
+    const quickAskInput = page.getByLabel("Draft a question for Ask Sightline");
+    await expect(quickAskInput).toBeHidden();
+    await quickAskLauncher.click();
+    await expect(quickAskInput).toBeVisible();
+    await expect(quickAskInput).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(quickAskInput).toBeHidden();
+    await expect(quickAskLauncher).toBeVisible();
     await expect(page.getByText("Current page", { exact: true })).toBeVisible();
     const menuButton = page.getByRole("button", { name: "Menu", exact: true });
     await menuButton.click();
