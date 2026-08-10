@@ -175,86 +175,165 @@ export default async function PlatformUsersPage({
 
       <section className="border-border mt-5 overflow-hidden rounded-lg border bg-white shadow-sm">
         {users.items.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[72rem] text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
-                <tr>
-                  {[
-                    "User",
-                    "User ID",
-                    "Status",
-                    "Organizations",
-                    "Last login",
-                    "Created",
-                    "MFA",
-                    "Actions",
-                  ].map((label) => (
-                    <th key={label} className="px-4 py-3 font-semibold">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {users.items.map((user) => (
-                  <tr key={user.id} className="align-top hover:bg-slate-50/70">
-                    <td className="px-4 py-4">
+          <>
+            <div
+              className="divide-y divide-slate-100 md:hidden"
+              aria-label="User results"
+            >
+              {users.items.map((user) => (
+                <article key={user.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <Link
                         href={`/internal/admin/users/${user.id}`}
                         className="font-semibold text-slate-950 hover:underline"
                       >
                         {user.fullName}
                       </Link>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs break-words text-slate-500">
                         {user.email ?? "Email unavailable"}
                       </p>
-                    </td>
-                    <td className="max-w-44 truncate px-4 py-4 font-mono text-xs text-slate-500">
-                      {user.id}
-                    </td>
-                    <td className="px-4 py-4">
-                      <AdminStatusBadge status={user.status} />
-                    </td>
-                    <td className="max-w-64 px-4 py-4">
-                      <p>{user.membershipCount}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">
-                        {user.organizationNames.join(", ") || "No memberships"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {user.lastLoginAt ? (
-                        formatDate(user.lastLoginAt)
-                      ) : (
-                        <UnavailableValue />
-                      )}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {formatDate(user.createdAt)}
-                    </td>
-                    <td className="px-4 py-4">
-                      {user.mfaEnabled ? "Enabled" : "Not enabled"}
-                    </td>
-                    <td className="px-4 py-4">
-                      <details className="relative">
-                        <summary className="cursor-pointer text-xs font-semibold text-slate-700">
-                          Actions
-                        </summary>
-                        <div className="mt-2 flex min-w-28 flex-col items-start gap-2">
-                          <Link
-                            href={`/internal/admin/users/${user.id}`}
-                            className="text-xs font-semibold text-slate-700 hover:underline"
-                          >
-                            View details
-                          </Link>
-                          <CopyIdButton id={user.id} label="Copy ID" />
-                        </div>
-                      </details>
-                    </td>
+                    </div>
+                    <AdminStatusBadge status={user.status} />
+                  </div>
+                  <p className="mt-3 text-sm text-slate-700">
+                    {user.membershipCount}{" "}
+                    {user.membershipCount === 1
+                      ? "organization"
+                      : "organizations"}
+                    <span className="text-slate-400"> · </span>
+                    Last login{" "}
+                    {user.lastLoginAt
+                      ? formatDate(user.lastLoginAt)
+                      : "unavailable"}
+                  </p>
+                  <details className="mt-3 border-t border-slate-100 pt-3">
+                    <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-slate-700">
+                      More details
+                    </summary>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 pb-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-500">Created</dt>
+                        <dd>{formatDate(user.createdAt)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">MFA</dt>
+                        <dd>{user.mfaEnabled ? "Enabled" : "Not enabled"}</dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-xs text-slate-500">
+                          Organizations
+                        </dt>
+                        <dd>
+                          {user.organizationNames.join(", ") ||
+                            "No memberships"}
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-xs text-slate-500">User ID</dt>
+                        <dd className="font-mono text-xs break-all">
+                          {user.id}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="flex items-center gap-4 border-t border-slate-100 pt-3">
+                      <Link
+                        href={`/internal/admin/users/${user.id}`}
+                        className="text-sm font-semibold text-slate-800 hover:underline"
+                      >
+                        View details
+                      </Link>
+                      <CopyIdButton id={user.id} label="Copy ID" />
+                    </div>
+                  </details>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[72rem] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+                  <tr>
+                    {[
+                      "User",
+                      "User ID",
+                      "Status",
+                      "Organizations",
+                      "Last login",
+                      "Created",
+                      "MFA",
+                      "Actions",
+                    ].map((label) => (
+                      <th key={label} className="px-4 py-3 font-semibold">
+                        {label}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.items.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="align-top hover:bg-slate-50/70"
+                    >
+                      <td className="px-4 py-4">
+                        <Link
+                          href={`/internal/admin/users/${user.id}`}
+                          className="font-semibold text-slate-950 hover:underline"
+                        >
+                          {user.fullName}
+                        </Link>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {user.email ?? "Email unavailable"}
+                        </p>
+                      </td>
+                      <td className="max-w-44 truncate px-4 py-4 font-mono text-xs text-slate-500">
+                        {user.id}
+                      </td>
+                      <td className="px-4 py-4">
+                        <AdminStatusBadge status={user.status} />
+                      </td>
+                      <td className="max-w-64 px-4 py-4">
+                        <p>{user.membershipCount}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500">
+                          {user.organizationNames.join(", ") ||
+                            "No memberships"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {user.lastLoginAt ? (
+                          formatDate(user.lastLoginAt)
+                        ) : (
+                          <UnavailableValue />
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {formatDate(user.createdAt)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {user.mfaEnabled ? "Enabled" : "Not enabled"}
+                      </td>
+                      <td className="px-4 py-4">
+                        <details className="relative">
+                          <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+                            Actions
+                          </summary>
+                          <div className="mt-2 flex min-w-28 flex-col items-start gap-2">
+                            <Link
+                              href={`/internal/admin/users/${user.id}`}
+                              className="text-xs font-semibold text-slate-700 hover:underline"
+                            >
+                              View details
+                            </Link>
+                            <CopyIdButton id={user.id} label="Copy ID" />
+                          </div>
+                        </details>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="p-10 text-center">
             <h2 className="font-semibold">

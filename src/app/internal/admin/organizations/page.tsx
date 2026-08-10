@@ -172,94 +172,166 @@ export default async function PlatformOrganizationsPage({
 
       <section className="border-border mt-5 overflow-hidden rounded-lg border bg-white shadow-sm">
         {organizations.items.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[72rem] text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
-                <tr>
-                  {[
-                    "Organization",
-                    "Plan",
-                    "Status",
-                    "Members",
-                    "Active projects",
-                    "Created",
-                    "Last activity",
-                    "Issues",
-                    "Actions",
-                  ].map((label) => (
-                    <th key={label} className="px-4 py-3 font-semibold">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {organizations.items.map((organization) => (
-                  <tr
-                    key={organization.id}
-                    className="align-top hover:bg-slate-50/70"
-                  >
-                    <td className="px-4 py-4">
+          <>
+            <div
+              className="divide-y divide-slate-100 md:hidden"
+              aria-label="Organization results"
+            >
+              {organizations.items.map((organization) => (
+                <article key={organization.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <Link
                         href={`/internal/admin/organizations/${organization.id}`}
                         className="font-semibold text-slate-950 hover:underline"
                       >
                         {organization.name}
                       </Link>
-                      <p className="mt-1 max-w-56 truncate font-mono text-xs text-slate-500">
-                        {organization.id}
+                      <p className="mt-1 text-xs text-slate-500">
+                        {organization.memberCount} members ·{" "}
+                        {organization.activeProjectCount} active projects
                       </p>
-                    </td>
-                    <td className="px-4 py-4">
-                      <UnavailableValue />
-                    </td>
-                    <td className="px-4 py-4">
-                      <AdminStatusBadge status={organization.status} />
-                    </td>
-                    <td className="px-4 py-4">{organization.memberCount}</td>
-                    <td className="px-4 py-4">
-                      {organization.activeProjectCount}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {formatDate(organization.createdAt)}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      {organization.lastActivityAt ? (
-                        formatDate(organization.lastActivityAt)
-                      ) : (
-                        <UnavailableValue />
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      {organization.hasOperationalIssues ? (
-                        <span className="font-semibold text-amber-800">
-                          Needs review
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">No signal</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <details className="relative">
-                        <summary className="cursor-pointer text-xs font-semibold text-slate-700">
-                          Actions
-                        </summary>
-                        <div className="mt-2 flex min-w-28 flex-col items-start gap-2">
-                          <Link
-                            href={`/internal/admin/organizations/${organization.id}`}
-                            className="text-xs font-semibold text-slate-700 hover:underline"
-                          >
-                            View details
-                          </Link>
-                          <CopyIdButton id={organization.id} label="Copy ID" />
-                        </div>
-                      </details>
-                    </td>
+                    </div>
+                    <AdminStatusBadge status={organization.status} />
+                  </div>
+                  {organization.hasOperationalIssues ? (
+                    <p className="mt-3 text-sm font-semibold text-amber-800">
+                      Needs operational review
+                    </p>
+                  ) : null}
+                  <details className="mt-3 border-t border-slate-100 pt-3">
+                    <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-slate-700">
+                      More details
+                    </summary>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 pb-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-500">Created</dt>
+                        <dd>{formatDate(organization.createdAt)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">
+                          Last activity
+                        </dt>
+                        <dd>
+                          {organization.lastActivityAt
+                            ? formatDate(organization.lastActivityAt)
+                            : "Unavailable"}
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-xs text-slate-500">
+                          Organization ID
+                        </dt>
+                        <dd className="font-mono text-xs break-all">
+                          {organization.id}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="flex items-center gap-4 border-t border-slate-100 pt-3">
+                      <Link
+                        href={`/internal/admin/organizations/${organization.id}`}
+                        className="text-sm font-semibold text-slate-800 hover:underline"
+                      >
+                        View details
+                      </Link>
+                      <CopyIdButton id={organization.id} label="Copy ID" />
+                    </div>
+                  </details>
+                </article>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[72rem] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+                  <tr>
+                    {[
+                      "Organization",
+                      "Plan",
+                      "Status",
+                      "Members",
+                      "Active projects",
+                      "Created",
+                      "Last activity",
+                      "Issues",
+                      "Actions",
+                    ].map((label) => (
+                      <th key={label} className="px-4 py-3 font-semibold">
+                        {label}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {organizations.items.map((organization) => (
+                    <tr
+                      key={organization.id}
+                      className="align-top hover:bg-slate-50/70"
+                    >
+                      <td className="px-4 py-4">
+                        <Link
+                          href={`/internal/admin/organizations/${organization.id}`}
+                          className="font-semibold text-slate-950 hover:underline"
+                        >
+                          {organization.name}
+                        </Link>
+                        <p className="mt-1 max-w-56 truncate font-mono text-xs text-slate-500">
+                          {organization.id}
+                        </p>
+                      </td>
+                      <td className="px-4 py-4">
+                        <UnavailableValue />
+                      </td>
+                      <td className="px-4 py-4">
+                        <AdminStatusBadge status={organization.status} />
+                      </td>
+                      <td className="px-4 py-4">{organization.memberCount}</td>
+                      <td className="px-4 py-4">
+                        {organization.activeProjectCount}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {formatDate(organization.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {organization.lastActivityAt ? (
+                          formatDate(organization.lastActivityAt)
+                        ) : (
+                          <UnavailableValue />
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        {organization.hasOperationalIssues ? (
+                          <span className="font-semibold text-amber-800">
+                            Needs review
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">No signal</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <details className="relative">
+                          <summary className="cursor-pointer text-xs font-semibold text-slate-700">
+                            Actions
+                          </summary>
+                          <div className="mt-2 flex min-w-28 flex-col items-start gap-2">
+                            <Link
+                              href={`/internal/admin/organizations/${organization.id}`}
+                              className="text-xs font-semibold text-slate-700 hover:underline"
+                            >
+                              View details
+                            </Link>
+                            <CopyIdButton
+                              id={organization.id}
+                              label="Copy ID"
+                            />
+                          </div>
+                        </details>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <div className="p-10 text-center">
             <h2 className="font-semibold">

@@ -84,10 +84,10 @@ test("searches and inspects connected customer records with an audit trail", asy
   await expect(
     page.getByRole("heading", { name: "Organizations" }),
   ).toBeVisible();
-  await expect(page.getByText("BuildCo Construction")).toBeVisible();
   const organizationLink = page.getByRole("link", {
     name: "BuildCo Construction",
   });
+  await expect(organizationLink).toBeVisible();
   const organizationHref = await organizationLink.getAttribute("href");
   expect(organizationHref).toBe(
     `/internal/admin/organizations/${organizationId}`,
@@ -142,6 +142,31 @@ test("searches and inspects connected customer records with an audit trail", asy
       return count ?? 0;
     })
     .toBeGreaterThanOrEqual(3);
+});
+
+test("uses prioritized cards for customer directories on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.goto("/internal/admin/organizations");
+  const organizations = page.getByLabel("Organization results");
+  await expect(organizations).toBeVisible();
+  await expect(organizations.getByText("BuildCo Construction")).toBeVisible();
+  await organizations.getByText("More details").first().click();
+  await expect(
+    organizations.getByText("Organization ID").first(),
+  ).toBeVisible();
+
+  await page.goto("/internal/admin/users");
+  const users = page.getByLabel("User results");
+  await expect(users).toBeVisible();
+  await users.getByText("More details").first().click();
+  await expect(users.getByText("User ID").first()).toBeVisible();
+
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
 });
 
 test("denies and audits an active operator without directory capabilities", async ({

@@ -102,7 +102,68 @@ export default async function PlatformErrorsPage({
         </button>
       </form>
       <div className="overflow-hidden rounded-lg border bg-white">
-        <div className="overflow-x-auto">
+        <div
+          className="divide-y divide-slate-100 md:hidden"
+          aria-label="Error results"
+        >
+          {(data ?? []).map((report) => (
+            <article key={report.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Link
+                    href={`/internal/admin/errors/${report.id}`}
+                    className="font-semibold break-words hover:underline"
+                  >
+                    {report.error_name}
+                  </Link>
+                  <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+                    {report.error_message}
+                  </p>
+                </div>
+                <StatusPill value={report.severity} />
+              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                <span className="capitalize">
+                  {report.source.replaceAll("_", " ")}
+                </span>{" "}
+                · {formatDateTime(report.occurred_at)}
+              </p>
+              <details className="mt-3 border-t border-slate-100 pt-3">
+                <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-slate-700">
+                  Technical details
+                </summary>
+                <dl className="space-y-3 pb-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-slate-500">Request</dt>
+                    <dd className="font-mono text-xs break-all">
+                      {report.request_method ?? "—"}{" "}
+                      {report.request_path ?? "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-500">Environment</dt>
+                    <dd>
+                      {report.application_version} · {report.environment}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-slate-500">Correlation ID</dt>
+                    <dd className="font-mono text-xs break-all">
+                      {report.correlation_id}
+                    </dd>
+                  </div>
+                </dl>
+                <Link
+                  href={`/internal/admin/errors/${report.id}`}
+                  className="inline-block border-t border-slate-100 pt-3 text-sm font-semibold hover:underline"
+                >
+                  Investigate error
+                </Link>
+              </details>
+            </article>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[70rem] text-left text-sm">
             <thead className="border-b bg-slate-50 text-xs text-slate-500 uppercase">
               <tr>

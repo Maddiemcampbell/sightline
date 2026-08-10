@@ -169,6 +169,13 @@ describe("company dashboard", () => {
     expect(markup).toContain("Portfolio home");
     expect(markup).toContain("Since your last visit");
     expect(markup).toContain("Needs attention");
+    expect(markup).toContain("Explore portfolio analytics");
+    expect(markup.indexOf("Needs attention")).toBeLessThan(
+      markup.indexOf("Since your last visit"),
+    );
+    expect(markup.indexOf("Since your last visit")).toBeLessThan(
+      markup.indexOf("Explore portfolio analytics"),
+    );
     expect(markup).toContain("Portfolio Watch");
     expect(markup).toContain("Portfolio overview");
     expect(markup).toContain("Top risk drivers");

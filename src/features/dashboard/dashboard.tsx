@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
   Bot,
@@ -60,6 +61,7 @@ const heatmapColumns = [
 export function Dashboard({ view }: { view: DashboardView }) {
   const { selectedProjectId } = useDashboardState();
   const { projects } = useWorkspaceResources();
+  const [mobileAnalyticsExpanded, setMobileAnalyticsExpanded] = useState(false);
   const filteredView = filterDashboardView(view, selectedProjectId);
   const selectedProject = projects.find(
     (project) => project.id === selectedProjectId,
@@ -164,37 +166,69 @@ export function Dashboard({ view }: { view: DashboardView }) {
         </div>
       </section>
 
-      <MovementSummary view={filteredView} />
+      <div className="flex flex-col">
+        <div className="order-1 lg:order-2">
+          <AttentionQueue view={filteredView} />
+        </div>
+        <div className="order-2 lg:order-1">
+          <MovementSummary view={filteredView} />
+        </div>
+      </div>
 
-      <AttentionQueue view={filteredView} />
-
-      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_19rem]">
-        <div className="min-w-0 space-y-4">
-          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
-            <PortfolioOverview view={filteredView} />
-            <RiskDrivers
-              drivers={filteredView.riskDrivers}
-              canViewFinancials={filteredView.canViewFinancials}
-            />
-          </div>
-
-          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
+      <div className="mt-4 max-w-full min-w-0">
+        <button
+          type="button"
+          aria-expanded={mobileAnalyticsExpanded}
+          aria-controls="portfolio-analytics"
+          onClick={() => setMobileAnalyticsExpanded((expanded) => !expanded)}
+          className="dashboard-card text-deep-green flex min-h-14 w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold md:hidden"
+        >
+          <span>
+            <span className="block">Explore portfolio analytics</span>
+            <span className="text-muted mt-0.5 block text-xs font-normal">
+              Overview, risk drivers, hotspots, and recommendations
+            </span>
+          </span>
+          <ChevronDown
+            className={`size-4 shrink-0 transition-transform ${
+              mobileAnalyticsExpanded ? "rotate-180" : ""
+            }`}
+            aria-hidden="true"
+          />
+        </button>
+        <div
+          id="portfolio-analytics"
+          className={`${mobileAnalyticsExpanded ? "block" : "hidden"} max-w-full min-w-0 overflow-x-clip md:block`}
+        >
+          <div className="mt-4 grid max-w-full min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_19rem]">
             <div className="min-w-0 space-y-4">
-              <RiskHeatmap
-                analytics={filteredView.riskAnalytics ?? null}
-                fallbackRows={filteredView.riskHeatmap}
-              />
-              <ResponseReadiness view={filteredView} />
+              <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(17rem,0.8fr)]">
+                <PortfolioOverview view={filteredView} />
+                <RiskDrivers
+                  drivers={filteredView.riskDrivers}
+                  canViewFinancials={filteredView.canViewFinancials}
+                />
+              </div>
+
+              <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(19rem,0.7fr)]">
+                <div className="min-w-0 space-y-4">
+                  <RiskHeatmap
+                    analytics={filteredView.riskAnalytics ?? null}
+                    fallbackRows={filteredView.riskHeatmap}
+                  />
+                  <ResponseReadiness view={filteredView} />
+                </div>
+                <div className="space-y-4">
+                  <RecentIntelligence view={filteredView} />
+                  <OverdueActions view={filteredView} />
+                  <ExecutiveRecommendations view={filteredView} />
+                </div>
+              </div>
             </div>
-            <div className="space-y-4">
-              <RecentIntelligence view={filteredView} />
-              <OverdueActions view={filteredView} />
-              <ExecutiveRecommendations view={filteredView} />
-            </div>
+
+            <PortfolioAdvisor view={filteredView} topRisk={topRisk ?? null} />
           </div>
         </div>
-
-        <PortfolioAdvisor view={filteredView} topRisk={topRisk ?? null} />
       </div>
 
       <QuickPaths view={filteredView} topRisk={topRisk ?? null} />

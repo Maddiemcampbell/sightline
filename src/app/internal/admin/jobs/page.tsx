@@ -119,60 +119,128 @@ export default async function PlatformJobsPage({
             </p>
           </div>
         ) : (
-          <table className="w-full min-w-[70rem] text-left text-sm">
-            <thead className="border-b bg-slate-50 text-xs text-slate-500 uppercase">
-              <tr>
-                {[
-                  "Job",
-                  "Status",
-                  "Last success",
-                  "Last failure",
-                  "Duration",
-                  "Next run",
-                  "Failures",
-                  "Retries",
-                  "Recent history",
-                ].map((label) => (
-                  <th key={label} className="px-4 py-3">
-                    {label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div
+              className="divide-y divide-slate-100 md:hidden"
+              aria-label="Job monitoring cards"
+            >
               {dashboard.rows.map((row) => (
-                <tr key={row.key} className="border-b align-top">
-                  <td className="px-4 py-4 font-medium">
-                    {row.jobName}
-                    <span className="mt-1 block text-xs font-normal text-slate-500">
-                      {row.organizationName}
+                <article key={row.key} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-semibold">{row.jobName}</h2>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {row.organizationName}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize">
+                      {row.status}
                     </span>
-                  </td>
-                  <td className="px-4 py-4 capitalize">{row.status}</td>
-                  <td className="px-4 py-4">{formatDate(row.lastSuccess)}</td>
-                  <td className="px-4 py-4">{formatDate(row.lastFailure)}</td>
-                  <td className="px-4 py-4">
-                    {row.durationMs === null
-                      ? "—"
-                      : `${(row.durationMs / 1000).toFixed(1)}s`}
-                  </td>
-                  <td className="px-4 py-4">{formatDate(row.nextRun)}</td>
-                  <td className="px-4 py-4">{row.failureCount}</td>
-                  <td className="px-4 py-4">{row.retryCount}</td>
-                  <td className="px-4 py-4">
-                    {row.history.map((item) => (
-                      <span
-                        key={item.id}
-                        className="mr-2 inline-block capitalize"
-                      >
-                        {item.status}
-                      </span>
-                    ))}
-                  </td>
-                </tr>
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <dt className="text-xs text-slate-500">Last success</dt>
+                      <dd>{formatDate(row.lastSuccess)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-slate-500">Failures</dt>
+                      <dd>{row.failureCount}</dd>
+                    </div>
+                  </dl>
+                  <details className="mt-3 border-t border-slate-100 pt-3">
+                    <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-slate-700">
+                      Execution details
+                    </summary>
+                    <dl className="grid grid-cols-2 gap-3 pb-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-slate-500">Last failure</dt>
+                        <dd>{formatDate(row.lastFailure)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Duration</dt>
+                        <dd>
+                          {row.durationMs === null
+                            ? "—"
+                            : `${(row.durationMs / 1000).toFixed(1)}s`}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Next run</dt>
+                        <dd>{formatDate(row.nextRun)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-slate-500">Retries</dt>
+                        <dd>{row.retryCount}</dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-xs text-slate-500">
+                          Recent history
+                        </dt>
+                        <dd className="capitalize">
+                          {row.history.map((item) => item.status).join(", ") ||
+                            "No history"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </details>
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <table className="hidden w-full min-w-[70rem] text-left text-sm md:table">
+              <thead className="border-b bg-slate-50 text-xs text-slate-500 uppercase">
+                <tr>
+                  {[
+                    "Job",
+                    "Status",
+                    "Last success",
+                    "Last failure",
+                    "Duration",
+                    "Next run",
+                    "Failures",
+                    "Retries",
+                    "Recent history",
+                  ].map((label) => (
+                    <th key={label} className="px-4 py-3">
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dashboard.rows.map((row) => (
+                  <tr key={row.key} className="border-b align-top">
+                    <td className="px-4 py-4 font-medium">
+                      {row.jobName}
+                      <span className="mt-1 block text-xs font-normal text-slate-500">
+                        {row.organizationName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 capitalize">{row.status}</td>
+                    <td className="px-4 py-4">{formatDate(row.lastSuccess)}</td>
+                    <td className="px-4 py-4">{formatDate(row.lastFailure)}</td>
+                    <td className="px-4 py-4">
+                      {row.durationMs === null
+                        ? "—"
+                        : `${(row.durationMs / 1000).toFixed(1)}s`}
+                    </td>
+                    <td className="px-4 py-4">{formatDate(row.nextRun)}</td>
+                    <td className="px-4 py-4">{row.failureCount}</td>
+                    <td className="px-4 py-4">{row.retryCount}</td>
+                    <td className="px-4 py-4">
+                      {row.history.map((item) => (
+                        <span
+                          key={item.id}
+                          className="mr-2 inline-block capitalize"
+                        >
+                          {item.status}
+                        </span>
+                      ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </section>
       <nav
@@ -272,62 +340,123 @@ export default async function PlatformJobsPage({
         </form>
         <div className="mt-4 overflow-x-auto rounded-lg border bg-white">
           {history.rows.length ? (
-            <table className="w-full min-w-[70rem] text-left text-sm">
-              <thead className="border-b bg-slate-50 text-xs text-slate-500 uppercase">
-                <tr>
-                  {[
-                    "Job",
-                    "Status",
-                    "Trigger",
-                    "Attempt",
-                    "Started",
-                    "Duration",
-                    "Error",
-                    "Correlation ID",
-                  ].map((label) => (
-                    <th key={label} className="px-4 py-3">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <div
+                className="divide-y divide-slate-100 md:hidden"
+                aria-label="Execution history cards"
+              >
                 {history.rows.map((execution) => (
-                  <tr
-                    key={execution.id}
-                    className="border-b align-top last:border-0"
-                  >
-                    <td className="px-4 py-4 font-medium">
-                      {execution.jobName}
-                      <span className="mt-1 block font-mono text-xs font-normal text-slate-500">
-                        {execution.jobKey}
+                  <article key={execution.id} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold">{execution.jobName}</h3>
+                        <p className="mt-1 font-mono text-xs text-slate-500">
+                          {execution.jobKey}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold capitalize">
+                        {execution.status.replaceAll("_", " ")}
                       </span>
-                    </td>
-                    <td className="px-4 py-4 capitalize">
-                      {execution.status.replaceAll("_", " ")}
-                    </td>
-                    <td className="px-4 py-4 capitalize">
-                      {execution.trigger}
-                    </td>
-                    <td className="px-4 py-4">{execution.attemptNumber}</td>
-                    <td className="px-4 py-4">
+                    </div>
+                    <p className="mt-3 text-sm text-slate-600">
+                      <span className="capitalize">{execution.trigger}</span> ·{" "}
                       {formatDate(execution.startedAt ?? execution.createdAt)}
-                    </td>
-                    <td className="px-4 py-4">
-                      {execution.durationMs === null
-                        ? "—"
-                        : `${(execution.durationMs / 1000).toFixed(1)}s`}
-                    </td>
-                    <td className="max-w-sm px-4 py-4 text-slate-600">
-                      {execution.errorMessage ?? "—"}
-                    </td>
-                    <td className="px-4 py-4 font-mono text-xs text-slate-500">
-                      {execution.correlationId}
-                    </td>
-                  </tr>
+                    </p>
+                    <details className="mt-3 border-t border-slate-100 pt-3">
+                      <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-slate-700">
+                        Execution details
+                      </summary>
+                      <dl className="space-y-3 pb-2 text-sm">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <dt className="text-xs text-slate-500">Attempt</dt>
+                            <dd>{execution.attemptNumber}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-slate-500">Duration</dt>
+                            <dd>
+                              {execution.durationMs === null
+                                ? "—"
+                                : `${(execution.durationMs / 1000).toFixed(1)}s`}
+                            </dd>
+                          </div>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-slate-500">Error</dt>
+                          <dd className="break-words text-slate-600">
+                            {execution.errorMessage ?? "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-slate-500">
+                            Correlation ID
+                          </dt>
+                          <dd className="font-mono text-xs break-all">
+                            {execution.correlationId}
+                          </dd>
+                        </div>
+                      </dl>
+                    </details>
+                  </article>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              <table className="hidden w-full min-w-[70rem] text-left text-sm md:table">
+                <thead className="border-b bg-slate-50 text-xs text-slate-500 uppercase">
+                  <tr>
+                    {[
+                      "Job",
+                      "Status",
+                      "Trigger",
+                      "Attempt",
+                      "Started",
+                      "Duration",
+                      "Error",
+                      "Correlation ID",
+                    ].map((label) => (
+                      <th key={label} className="px-4 py-3">
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.rows.map((execution) => (
+                    <tr
+                      key={execution.id}
+                      className="border-b align-top last:border-0"
+                    >
+                      <td className="px-4 py-4 font-medium">
+                        {execution.jobName}
+                        <span className="mt-1 block font-mono text-xs font-normal text-slate-500">
+                          {execution.jobKey}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 capitalize">
+                        {execution.status.replaceAll("_", " ")}
+                      </td>
+                      <td className="px-4 py-4 capitalize">
+                        {execution.trigger}
+                      </td>
+                      <td className="px-4 py-4">{execution.attemptNumber}</td>
+                      <td className="px-4 py-4">
+                        {formatDate(execution.startedAt ?? execution.createdAt)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {execution.durationMs === null
+                          ? "—"
+                          : `${(execution.durationMs / 1000).toFixed(1)}s`}
+                      </td>
+                      <td className="max-w-sm px-4 py-4 text-slate-600">
+                        {execution.errorMessage ?? "—"}
+                      </td>
+                      <td className="px-4 py-4 font-mono text-xs text-slate-500">
+                        {execution.correlationId}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           ) : (
             <div className="p-10 text-center">
               <h3 className="font-semibold">No execution history found</h3>

@@ -55,6 +55,29 @@ for (const viewport of [
     await expect(
       page.getByRole("heading", { name: "Good morning, Matt." }),
     ).toBeVisible();
+    const analyticsDisclosure = page.getByRole("button", {
+      name: /Explore portfolio analytics/,
+    });
+    if (viewport.name === "mobile") {
+      await expect(analyticsDisclosure).toBeVisible();
+      await expect(analyticsDisclosure).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      await expect(
+        page.getByRole("heading", { name: "Portfolio overview" }),
+      ).toBeHidden();
+      await analyticsDisclosure.click();
+      await expect(analyticsDisclosure).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    } else {
+      await expect(analyticsDisclosure).toBeHidden();
+    }
+    await expect(
+      page.getByRole("heading", { name: "Portfolio overview" }),
+    ).toBeVisible();
     await expect(
       page.getByRole("region", { name: "Quick Ask Sightline" }),
     ).toBeVisible();
