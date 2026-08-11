@@ -2,7 +2,6 @@ import {
   BriefcaseBusiness,
   FileText,
   Gauge,
-  Settings,
   ShieldAlert,
   ListChecks,
   History,
@@ -34,5 +33,4 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/forecasts", label: "Forecasting", icon: ChartNoAxesCombined },
   { href: "/integrations", label: "Integrations", icon: Blocks },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];

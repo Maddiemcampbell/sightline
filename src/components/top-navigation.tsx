@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 
 import { logout } from "@/app/auth/actions";
 import {
@@ -12,6 +12,7 @@ import { HelpSupportMenu } from "@/components/help-support-menu";
 import { GlobalSearch } from "@/features/workspace/global-search";
 import Link from "next/link";
 import { HeaderDropdownProvider } from "@/components/header-dropdown-context";
+import { WatchlistShortcut } from "@/features/workspace/watchlist-shortcut";
 
 export async function TopNavigation() {
   const [organization, membership] = await Promise.all([
@@ -57,6 +58,19 @@ export async function TopNavigation() {
             </li>
             <li>
               <HelpSupportMenu />
+            </li>
+            <li className="hidden lg:block">
+              <WatchlistShortcut variant="header" />
+            </li>
+            <li className="hidden lg:block">
+              <Link
+                href="/settings"
+                aria-label="Settings"
+                title="Settings"
+                className="text-muted hover:bg-background hover:text-ink grid size-10 place-items-center rounded-md transition-colors"
+              >
+                <Settings aria-hidden="true" className="size-5" />
+              </Link>
             </li>
             <li>
               <NotificationMenu initialItems={notifications} />

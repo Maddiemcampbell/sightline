@@ -6,10 +6,35 @@ import { usePathname } from "next/navigation";
 
 import { useWatchlist } from "@/features/workspace/workspace-provider";
 
-export function WatchlistShortcut() {
+export function WatchlistShortcut({
+  variant = "sidebar",
+}: {
+  variant?: "sidebar" | "header";
+}) {
   const { watchlist } = useWatchlist();
   const pathname = usePathname();
   const active = pathname.startsWith("/watchlist");
+  if (variant === "header")
+    return (
+      <Link
+        href="/watchlist"
+        aria-label={`My Watchlist, ${watchlist.length} item${watchlist.length === 1 ? "" : "s"}`}
+        aria-current={active ? "page" : undefined}
+        title="My Watchlist"
+        className={`relative grid size-10 place-items-center rounded-md transition-colors ${
+          active
+            ? "bg-soft-green text-deep-green"
+            : "text-muted hover:bg-background hover:text-ink"
+        }`}
+      >
+        <Bookmark aria-hidden="true" className="size-5" />
+        {watchlist.length ? (
+          <span className="bg-deep-green absolute top-0.5 right-0.5 min-w-4 rounded-full px-1 text-center text-[0.6rem] leading-4 font-semibold text-white">
+            {watchlist.length > 9 ? "9+" : watchlist.length}
+          </span>
+        ) : null}
+      </Link>
+    );
   return (
     <Link
       href="/watchlist"
