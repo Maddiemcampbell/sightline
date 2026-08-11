@@ -63,6 +63,23 @@ test("contributor can open the homepage without financial exposure", async ({
   await expect(page.getByText("Financial outlook is restricted")).toBeVisible();
   await expect(page.getByText("Net budget outlook")).toHaveCount(0);
   await expect(page.getByText("30-day net cash")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Open data-readiness center" }),
+  ).toHaveCount(0);
+
+  await page.goto("/forecasts/readiness");
+  const restrictedReadinessHeading = page
+    .locator("#main-content")
+    .getByRole("heading", {
+      name: "Financial readiness is restricted",
+      exact: true,
+    });
+  await expect(restrictedReadinessHeading).toHaveCount(1);
+  await expect(restrictedReadinessHeading).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Readiness summary" }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Authoritative values")).toHaveCount(0);
 
   await context.close();
 });

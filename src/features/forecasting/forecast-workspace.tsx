@@ -366,6 +366,15 @@ function ForecastReadiness({ view }: { view: ForecastingView }) {
         Confidence reflects source completeness and whether Sightline had to
         distribute undated remaining costs as estimates.
       </p>
+      {view.canViewFinancials ? (
+        <Link
+          href="/forecasts/readiness"
+          className="text-deep-green mt-4 inline-flex items-center gap-2 text-sm font-semibold"
+        >
+          Open data-readiness center
+          <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      ) : null}
     </Card>
   );
 }

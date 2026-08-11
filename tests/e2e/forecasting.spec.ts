@@ -43,3 +43,44 @@ test("forecasting remains readable without horizontal page overflow", async ({
   }));
   expect(dimensions.page).toBeLessThanOrEqual(dimensions.viewport + 1);
 });
+
+test("explains forecast readiness and links data gaps to corrective work", async ({
+  page,
+}) => {
+  await page.goto("/forecasts");
+  await page.getByRole("link", { name: "Open data-readiness center" }).click();
+  await expect(page).toHaveURL("/forecasts/readiness");
+  await expect(
+    page.getByRole("heading", { name: "Data-readiness center" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Improve forecast accuracy" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Integration readiness" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Readiness by project" }),
+  ).toBeVisible();
+  await expect(page.getByRole("progressbar").first()).toBeVisible();
+  const summary = page.getByRole("region", { name: "Readiness summary" });
+  await expect(
+    summary.getByText("Authoritative values", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    summary.getByText("Estimated values", { exact: true }),
+  ).toBeVisible();
+});
+
+test("data readiness remains readable on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/forecasts/readiness");
+  await expect(
+    page.getByRole("heading", { name: "Data-readiness center" }),
+  ).toBeVisible();
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    page: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.page).toBeLessThanOrEqual(dimensions.viewport + 1);
+});
