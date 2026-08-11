@@ -94,6 +94,7 @@ test("requires a reason before dismissing a brief risk", async ({ page }) => {
 test("acknowledges a risk and persists after reload", async ({ page }) => {
   await page.goto("/brief");
   const firstRisk = page.getByRole("article").first();
+  const riskName = await firstRisk.getByRole("heading", { level: 2 }).innerText();
   const acknowledge = firstRisk.getByRole("button", {
     name: "Acknowledge",
     exact: true,
@@ -109,9 +110,8 @@ test("acknowledges a risk and persists after reload", async ({ page }) => {
     "true",
   );
   await page.reload();
-  await expect(
-    page.getByRole("article").first().getByRole("status"),
-  ).toHaveText("Acknowledged");
+  const persistedRisk = page.getByRole("article", { name: riskName });
+  await expect(persistedRisk.getByRole("status")).toHaveText("Acknowledged");
 });
 
 test("exposes a healthy service endpoint", async ({ request }) => {

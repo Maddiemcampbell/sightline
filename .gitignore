@@ -38,6 +38,7 @@ yarn-error.log*
 # test output
 /playwright-report/
 /test-results/
+/.codex-test-tmp/
 
 # local workspace artifacts
 /work/
