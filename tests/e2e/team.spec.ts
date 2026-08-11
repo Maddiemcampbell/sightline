@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("shows the organization team management experience", async ({ page }) => {
   await page.goto("/settings/team");
+  await expect(page).toHaveURL(/\/organization\?section=team$/);
   const main = page.locator("#main-content");
 
   await expect(

@@ -90,14 +90,9 @@ export default async function SettingsOverview() {
       </Card>
       <div className="grid gap-4 md:grid-cols-2">
         <QuickLink
-          href="/settings/organization"
-          title="Organization profile"
-          copy="Branding, company details, timezone, and currency."
-        />
-        <QuickLink
-          href="/settings/team"
-          title="Team and access"
-          copy="Members, invitations, roles, and project assignment."
+          href="/organization"
+          title="Organization workspace"
+          copy="Company profile, team access, roles, and reporting defaults."
         />
         <QuickLink
           href="/settings/security"

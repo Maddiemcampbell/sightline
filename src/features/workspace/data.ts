@@ -103,7 +103,7 @@ export async function getWorkspaceShellData(): Promise<{
       type: "user" as const,
       title: user.full_name,
       detail: user.email,
-      href: "/settings/team",
+      href: "/organization?section=team",
     })),
   ];
   return {

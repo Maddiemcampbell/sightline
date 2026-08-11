@@ -14,6 +14,6 @@ describe("Sightline product guide", () => {
     expect(markup).toContain("Access follows organizational responsibility");
     expect(markup).toContain('href="/brief"');
     expect(markup).toContain('href="/ask"');
-    expect(markup).toContain('href="/settings/team"');
+    expect(markup).toContain('href="/organization?section=team"');
   });
 });

@@ -85,6 +85,7 @@ export async function updateOrganizationSettingsAction(
   if (error) return { message: "", error: error.message };
   await audit(context, "organization");
   revalidatePath("/settings", "layout");
+  revalidatePath("/organization");
   return { message: "Organization settings saved." };
 }
 

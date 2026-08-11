@@ -34,15 +34,7 @@ export function SidebarNavigation({
                       href="/organization"
                       className="block min-h-10 rounded-md px-3 py-2 text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white"
                     >
-                      Organization profile
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/settings/team"
-                      className="block min-h-10 rounded-md px-3 py-2 text-sm font-semibold text-white/75 hover:bg-white/10 hover:text-white"
-                    >
-                      Team management
+                      Organization &amp; team
                     </Link>
                   </li>
                 </ul>

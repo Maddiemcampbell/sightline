@@ -96,7 +96,7 @@ export async function changeMemberRoleAction(
         },
       ]),
     ]);
-    revalidatePath("/settings/team");
+    revalidatePath("/organization");
     return {
       ok: true,
       message: result.ownershipTransferred
@@ -152,7 +152,7 @@ export async function removeMemberAction(
         },
       ]),
     ]);
-    revalidatePath("/settings/team");
+    revalidatePath("/organization");
     return {
       ok: true,
       message: "Member removed.",
@@ -191,7 +191,7 @@ export async function revokeInvitationAction(
         metadata: {},
       },
     ]);
-    revalidatePath("/settings/team");
+    revalidatePath("/organization");
     return {
       ok: true,
       message: "Invitation revoked.",
@@ -275,7 +275,7 @@ export async function resendInvitationAction(
       cause: error instanceof Error ? error.message : "Unknown error",
     });
   }
-  revalidatePath("/settings/team");
+  revalidatePath("/organization");
   return {
     ok: true,
     message: deliveryFailed
@@ -324,7 +324,7 @@ export async function assignMemberProjectsAction(
         },
       ]),
     ]);
-    revalidatePath("/settings/team");
+    revalidatePath("/organization");
     return {
       ok: true,
       message: "Project assignments updated.",

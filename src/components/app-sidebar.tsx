@@ -1,4 +1,4 @@
-import { Building2 } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { SightlineMark } from "@/components/sightline-mark";
@@ -32,24 +32,8 @@ export async function AppSidebar() {
         </Link>
       </div>
 
-      <div className="shrink-0 border-b border-white/10 px-3 py-3 lg:border-b-0 lg:px-4 [@media(min-width:1024px)_and_(max-height:900px)]:py-2">
-        {currentMembership ? (
-          <div className="flex min-h-13 items-center gap-3 rounded-md border border-white/15 bg-white/5 px-3 py-2.5">
-            <span className="bg-accent/15 text-accent grid size-8 shrink-0 place-items-center rounded-sm">
-              <Building2 aria-hidden="true" className="size-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {currentMembership.organization.name}
-              </p>
-              <p className="text-xs text-white/60">
-                {currentMembership.organization.planKey === "professional"
-                  ? "Professional"
-                  : "Essential"}
-              </p>
-            </div>
-          </div>
-        ) : (
+      {!currentMembership ? (
+        <div className="shrink-0 border-b border-white/10 px-3 py-3 lg:border-b-0 lg:px-4 [@media(min-width:1024px)_and_(max-height:900px)]:py-2">
           <Link
             href="/organizations/new"
             className="flex items-center gap-3 rounded-md border border-white/15 bg-white/5 px-3 py-2.5 text-sm font-semibold hover:bg-white/10"
@@ -59,24 +43,37 @@ export async function AppSidebar() {
             </span>
             Create organization
           </Link>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <SidebarNavigation showOrganizationLinks={Boolean(currentMembership)} />
 
       {currentMembership ? (
-        <div className="hidden shrink-0 flex-col gap-2 px-4 pb-3 lg:flex [@media(min-width:1024px)_and_(max-height:900px)]:gap-1 [@media(min-width:1024px)_and_(max-height:900px)]:pb-2">
+        <div className="hidden shrink-0 px-4 pb-3 lg:block [@media(min-width:1024px)_and_(max-height:900px)]:pb-2">
           <Link
             href="/organization"
-            className="text-sm font-semibold text-white/65 hover:text-white"
+            className="focus-visible:outline-accent-strong group flex items-center gap-3 rounded-md border border-white/15 bg-white/5 px-3 py-2.5 transition-colors hover:bg-white/10"
           >
-            Organization profile
-          </Link>
-          <Link
-            href="/settings/team"
-            className="text-sm font-semibold text-white/65 hover:text-white"
-          >
-            Team management
+            <span className="bg-accent/15 text-accent grid size-8 shrink-0 place-items-center rounded-sm">
+              <Building2 aria-hidden="true" className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[0.65rem] font-semibold tracking-[0.12em] text-white/50 uppercase">
+                Organization
+              </span>
+              <span className="block truncate text-sm font-semibold text-white">
+                {currentMembership.organization.name}
+              </span>
+              <span className="block text-xs text-white/60">
+                {currentMembership.organization.planKey === "professional"
+                  ? "Professional"
+                  : "Essential"}
+              </span>
+            </span>
+            <ChevronRight
+              aria-hidden="true"
+              className="size-4 text-white/45 transition-transform group-hover:translate-x-0.5 group-hover:text-white"
+            />
           </Link>
         </div>
       ) : null}

@@ -302,7 +302,7 @@ export function ProductGuide() {
                   for their role.
                 </p>
                 <Link
-                  href="/settings/team"
+                  href="/organization?section=team"
                   className="text-deep-green mt-4 inline-flex items-center gap-1 text-sm font-semibold"
                 >
                   Review team access{" "}

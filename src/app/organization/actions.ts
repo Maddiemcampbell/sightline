@@ -285,8 +285,7 @@ export async function createInvitationAction(
       cause: error instanceof Error ? error.message : "Unknown error",
     });
   }
-  revalidatePath("/organization/settings");
-  revalidatePath("/settings/team");
+  revalidatePath("/organization");
   return {
     message: deliveryFailed
       ? "Invitation created, but email delivery failed. Share this single-use link securely."

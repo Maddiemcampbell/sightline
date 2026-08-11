@@ -3,8 +3,6 @@ import Link from "next/link";
 const items = [
   ["/settings", "Overview"],
   ["/settings/profile", "Profile"],
-  ["/settings/team", "Team"],
-  ["/settings/organization", "Organization"],
   ["/settings/security", "Security"],
   ["/settings/notifications", "Notifications"],
   ["/settings/audit-log", "Audit log"],

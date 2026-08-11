@@ -37,6 +37,7 @@ type Props = Readonly<{
   members: readonly OrganizationMemberProfile[];
   invitations: readonly Invitation[];
   projects: readonly Readonly<{ id: string; name: string }>[];
+  embedded?: boolean;
 }>;
 
 export function TeamManagement(props: Props) {
@@ -155,13 +156,27 @@ export function TeamManagement(props: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-[var(--page-gutter)] py-8 sm:py-10">
+    <div
+      className={
+        props.embedded
+          ? ""
+          : "mx-auto max-w-6xl px-[var(--page-gutter)] py-8 sm:py-10"
+      }
+    >
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="text-muted text-sm font-semibold">
-            Organization settings
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
+          {!props.embedded ? (
+            <p className="text-muted text-sm font-semibold">
+              Organization settings
+            </p>
+          ) : null}
+          <h1
+            className={
+              props.embedded
+                ? "text-2xl font-semibold tracking-[-0.03em]"
+                : "mt-2 text-3xl font-semibold tracking-[-0.04em]"
+            }
+          >
             Team management
           </h1>
           <p className="text-muted mt-2">
