@@ -8,10 +8,27 @@ import {
   microsoft365SyncHandler,
   privacyCleanupHandler,
   riskDetectionHandler,
+  exceptionAlertsHandler,
 } from "./handlers";
 import { SchedulerRegistry } from "./registry";
 
 export const schedulerRegistry = new SchedulerRegistry([
+  {
+    key: "exception-alerts",
+    name: "Business exception evaluation",
+    description:
+      "Evaluate configurable business thresholds and resolve recovered exceptions.",
+    cron: "*/15 * * * *",
+    enabled: true,
+    timeoutMs: 15 * 60_000,
+    retry: {
+      maximumRetries: 2,
+      backoffMs: 60_000,
+      maximumBackoffMs: 10 * 60_000,
+    },
+    concurrency: "forbid",
+    handler: exceptionAlertsHandler,
+  },
   {
     key: "microsoft365-sync",
     name: "Microsoft 365 synchronization",

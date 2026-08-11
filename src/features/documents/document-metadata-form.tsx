@@ -24,6 +24,7 @@ export function DocumentMetadataForm({
     name: string;
     document_type: string;
     document_date: string | null;
+    expires_on: string | null;
     project_id: string | null;
     vendor_id: string | null;
     archived_at: string | null;
@@ -47,6 +48,7 @@ export function DocumentMetadataForm({
       projectId: formData.get("projectId"),
       vendorId: formData.get("vendorId"),
       documentDate: formData.get("documentDate"),
+      expiresOn: formData.get("expiresOn"),
     };
     setError(null);
     setSuccess(null);
@@ -100,6 +102,20 @@ export function DocumentMetadataForm({
           disabled={pending || archived}
           className={`${inputClass} mt-2`}
         />
+      </label>
+      <label className="block text-sm font-semibold">
+        Expiration date
+        <input
+          name="expiresOn"
+          type="date"
+          defaultValue={document.expires_on ?? ""}
+          disabled={pending || archived}
+          className={`${inputClass} mt-2`}
+        />
+        <span className="text-muted mt-1 block text-xs font-normal">
+          Used for proactive expiration alerts. Leave blank when the document
+          does not expire.
+        </span>
       </label>
       <label className="block text-sm font-semibold">
         Project

@@ -84,6 +84,7 @@ export default async function DocumentDetailPage({ params }: Props) {
               name: detail.document.name,
               document_type: detail.document.document_type,
               document_date: detail.document.document_date,
+              expires_on: detail.document.expires_on,
               project_id: detail.document.project_id,
               vendor_id: detail.document.vendor_id,
               archived_at: detail.document.archived_at,

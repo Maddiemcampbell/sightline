@@ -1577,6 +1577,7 @@ export type Database = {
           created_at: string
           document_date: string | null
           document_type: Database["public"]["Enums"]["document_type"]
+          expires_on: string | null
           external_id: string | null
           id: string
           integration_source_id: string | null
@@ -1597,6 +1598,7 @@ export type Database = {
           created_at?: string
           document_date?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
+          expires_on?: string | null
           external_id?: string | null
           id?: string
           integration_source_id?: string | null
@@ -1617,6 +1619,7 @@ export type Database = {
           created_at?: string
           document_date?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
+          expires_on?: string | null
           external_id?: string | null
           id?: string
           integration_source_id?: string | null
@@ -1681,6 +1684,170 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vendors"
             referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      exception_alert_rules: {
+        Row: {
+          action_due_days: number
+          action_due_enabled: boolean
+          budget_enabled: boolean
+          budget_variance_percent: number
+          created_at: string
+          document_expiry_days: number
+          document_expiry_enabled: boolean
+          forecast_stale_days: number
+          forecast_stale_enabled: boolean
+          margin_enabled: boolean
+          margin_floor_percent: number
+          organization_id: string
+          sync_stale_enabled: boolean
+          sync_stale_hours: number
+          unowned_risk_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          action_due_days?: number
+          action_due_enabled?: boolean
+          budget_enabled?: boolean
+          budget_variance_percent?: number
+          created_at?: string
+          document_expiry_days?: number
+          document_expiry_enabled?: boolean
+          forecast_stale_days?: number
+          forecast_stale_enabled?: boolean
+          margin_enabled?: boolean
+          margin_floor_percent?: number
+          organization_id: string
+          sync_stale_enabled?: boolean
+          sync_stale_hours?: number
+          unowned_risk_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          action_due_days?: number
+          action_due_enabled?: boolean
+          budget_enabled?: boolean
+          budget_variance_percent?: number
+          created_at?: string
+          document_expiry_days?: number
+          document_expiry_enabled?: boolean
+          forecast_stale_days?: number
+          forecast_stale_enabled?: boolean
+          margin_enabled?: boolean
+          margin_floor_percent?: number
+          organization_id?: string
+          sync_stale_enabled?: boolean
+          sync_stale_hours?: number
+          unowned_risk_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exception_alert_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exception_alert_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "platform_customer_health"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exception_alert_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "platform_organization_directory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exception_alerts: {
+        Row: {
+          body: string
+          created_at: string
+          fingerprint: string
+          first_detected_at: string
+          href: string | null
+          id: string
+          last_detected_at: string
+          occurrence_count: number
+          organization_id: string
+          payload: Json
+          resolved_at: string | null
+          rule_type: string
+          severity: string
+          status: string
+          subject_id: string
+          subject_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          fingerprint: string
+          first_detected_at?: string
+          href?: string | null
+          id?: string
+          last_detected_at?: string
+          occurrence_count?: number
+          organization_id: string
+          payload?: Json
+          resolved_at?: string | null
+          rule_type: string
+          severity: string
+          status?: string
+          subject_id: string
+          subject_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          fingerprint?: string
+          first_detected_at?: string
+          href?: string | null
+          id?: string
+          last_detected_at?: string
+          occurrence_count?: number
+          organization_id?: string
+          payload?: Json
+          resolved_at?: string | null
+          rule_type?: string
+          severity?: string
+          status?: string
+          subject_id?: string
+          subject_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exception_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exception_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "platform_customer_health"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exception_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "platform_organization_directory"
+            referencedColumns: ["id"]
           },
         ]
       }

@@ -19,7 +19,7 @@ export async function editDocumentAction(
   const { data: document, error } = await client
     .from("documents")
     .select(
-      "organization_id,archived_at,name,document_type,project_id,vendor_id,document_date",
+      "organization_id,archived_at,name,document_type,project_id,vendor_id,document_date,expires_on",
     )
     .eq("organization_id", context.organizationId)
     .eq("id", value.documentId)
@@ -39,6 +39,7 @@ export async function editDocumentAction(
       project_id: value.projectId,
       vendor_id: value.vendorId,
       document_date: value.documentDate,
+      expires_on: value.expiresOn,
     })
     .eq("organization_id", context.organizationId)
     .eq("id", value.documentId)
@@ -72,6 +73,7 @@ export async function editDocumentAction(
         project_id: document.project_id,
         vendor_id: document.vendor_id,
         document_date: document.document_date,
+        expires_on: document.expires_on,
       })
       .eq("organization_id", context.organizationId)
       .eq("id", value.documentId);

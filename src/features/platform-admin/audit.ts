@@ -38,29 +38,56 @@ export async function recordPlatformAuditEvent(input: {
     !Array.isArray(input.metadata)
       ? input.metadata
       : {};
-  const { error } = await createAdminSupabaseClient()
-    .from("platform_audit_logs")
-    .insert({
-      operator_id: input.operator.id,
-      action: input.action,
-      resource_type: input.resourceType,
-      resource_id: input.resourceId ?? null,
-      organization_id: input.organizationId ?? null,
-      affected_auth_user_id: input.affectedAuthUserId ?? null,
-      ip_address: isIP(candidate) ? candidate : null,
-      user_agent: requestHeaders.get("user-agent")?.slice(0, 1000) ?? null,
-      request_id: requestId.slice(0, 240),
-      outcome: input.outcome ?? "success",
-      metadata: {
-        ...suppliedMetadata,
-        environment:
-          process.env.VERCEL_ENV ??
-          (process.env.NODE_ENV === "production"
-            ? "production"
-            : "development"),
-      },
-    });
-  if (error) throw new Error(error.message);
+  await insertPlatformAuditWithRetry({
+    id: randomUUID(),
+    operator_id: input.operator.id,
+    action: input.action,
+    resource_type: input.resourceType,
+    resource_id: input.resourceId ?? null,
+    organization_id: input.organizationId ?? null,
+    affected_auth_user_id: input.affectedAuthUserId ?? null,
+    ip_address: isIP(candidate) ? candidate : null,
+    user_agent: requestHeaders.get("user-agent")?.slice(0, 1000) ?? null,
+    request_id: requestId.slice(0, 240),
+    outcome: input.outcome ?? "success",
+    metadata: {
+      ...suppliedMetadata,
+      environment:
+        process.env.VERCEL_ENV ??
+        (process.env.NODE_ENV === "production"
+          ? "production"
+          : "development"),
+    },
+  });
+}
+
+type PlatformAuditInsert = {
+  id: string;
+  operator_id: string;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  organization_id: string | null;
+  affected_auth_user_id: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  request_id: string;
+  outcome: PlatformAuditOutcome;
+  metadata: Json;
+};
+
+async function insertPlatformAuditWithRetry(row: PlatformAuditInsert) {
+  let lastError = "Platform audit write failed.";
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { error } = await createAdminSupabaseClient()
+      .from("platform_audit_logs")
+      .insert(row);
+    if (!error || error.code === "23505") return;
+    lastError = error.message;
+    if (attempt < 2)
+      await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+  }
+  throw new Error(lastError);
 }
 
 export async function recordPlatformAuthenticationEvent(

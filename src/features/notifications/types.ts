@@ -9,6 +9,7 @@ export const NOTIFICATION_TYPES = [
   "data_export_ready",
   "data_export_failed",
   "background_job_failed",
+  "exception_alert",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

@@ -232,6 +232,51 @@ export type Database = {
     Tables: {
       organizations: Table<OrganizationRow>;
       organization_memberships: Table<OrganizationMembershipRow>;
+      exception_alert_rules: Table<
+        Timestamped & {
+          organization_id: string;
+          margin_enabled: boolean;
+          margin_floor_percent: number;
+          budget_enabled: boolean;
+          budget_variance_percent: number;
+          unowned_risk_enabled: boolean;
+          action_due_enabled: boolean;
+          action_due_days: number;
+          document_expiry_enabled: boolean;
+          document_expiry_days: number;
+          sync_stale_enabled: boolean;
+          sync_stale_hours: number;
+          forecast_stale_enabled: boolean;
+          forecast_stale_days: number;
+        }
+      >;
+      exception_alerts: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          rule_type:
+            | "margin_below_target"
+            | "budget_variance"
+            | "unowned_high_risk"
+            | "action_due"
+            | "document_expiring"
+            | "sync_stale"
+            | "forecast_inputs_stale";
+          fingerprint: string;
+          subject_type: string;
+          subject_id: string;
+          severity: "warning" | "critical";
+          title: string;
+          body: string;
+          href: string | null;
+          status: "active" | "resolved";
+          payload: Json;
+          first_detected_at: string;
+          last_detected_at: string;
+          resolved_at: string | null;
+          occurrence_count: number;
+        }
+      >;
       invitations: Table<InvitationRow>;
       audit_logs: Table<AuditLogRow>;
       platform_operators: Table<
@@ -813,7 +858,8 @@ export type Database = {
           | "action_completed"
           | "data_export_ready"
           | "data_export_failed"
-          | "background_job_failed";
+          | "background_job_failed"
+          | "exception_alert";
         organization_id: string;
         payload: Json;
         read_at: string | null;
@@ -1112,6 +1158,7 @@ export type Database = {
           document_date: string | null;
           document_type: DatabaseEnums["document_type"];
           external_id: string | null;
+          expires_on: string | null;
           id: string;
           integration_source_id: string | null;
           mime_type: string | null;

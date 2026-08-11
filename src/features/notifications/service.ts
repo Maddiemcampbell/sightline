@@ -8,7 +8,12 @@ export class NotificationService {
 
   async notify(input: unknown) {
     const value = notificationInputSchema.parse(input);
-    if (value.recipientMembershipId === value.actorMembershipId) return;
+    if (
+      value.actorMembershipId !== null &&
+      value.actorMembershipId !== undefined &&
+      value.recipientMembershipId === value.actorMembershipId
+    )
+      return;
     await this.repository.create({
       organizationId: value.organizationId,
       recipientMembershipId: value.recipientMembershipId,

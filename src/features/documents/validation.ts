@@ -39,6 +39,10 @@ export const documentSearchSchema = z.object({
 
 export const editDocumentSchema = documentMetadataSchema.extend({
   documentId: z.uuid(),
+  expiresOn: z.preprocess(
+    (value) => (value === "" || value === undefined ? null : value),
+    z.iso.date().nullable(),
+  ),
 });
 
 export const archiveDocumentSchema = z.object({ documentId: z.uuid() });

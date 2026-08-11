@@ -8,6 +8,7 @@ import {
 import { DataExportWorker } from "@/features/data-exports/worker";
 import { enqueueDueScheduledDataExports } from "@/features/data-exports/schedule-service";
 import { detectLongRunningJobs } from "@/features/job-monitoring/alerts";
+import { ExceptionAlertService } from "@/features/exception-alerts/service";
 import { runDetection } from "@/features/detection/service";
 import { PrivacyCleanupService } from "@/features/privacy/cleanup";
 import type { SchedulerHandler } from "@/features/scheduler/types";
@@ -105,5 +106,24 @@ export const microsoft365SyncHandler: SchedulerHandler = async () => {
     succeeded: summary.succeeded,
     failed: summary.failed,
     skipped: summary.skipped,
+  };
+};
+
+export const exceptionAlertsHandler: SchedulerHandler = async () => {
+  const client = createAdminSupabaseClient();
+  const { data, error } = await client
+    .from("organizations")
+    .select("id")
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  const service = new ExceptionAlertService(client);
+  const results = [];
+  for (const organization of data ?? [])
+    results.push(await service.evaluateOrganization(organization.id));
+  return {
+    organizations: results.length,
+    detected: results.reduce((total, result) => total + result.detected, 0),
+    opened: results.reduce((total, result) => total + result.opened, 0),
+    resolved: results.reduce((total, result) => total + result.resolved, 0),
   };
 };
