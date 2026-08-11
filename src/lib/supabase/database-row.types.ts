@@ -17,6 +17,9 @@ export type FinancialCashEventRow = Tables["financial_cash_events"]["Row"];
 export type PortfolioFinancialSnapshotRow =
   Tables["portfolio_financial_snapshots"]["Row"];
 export type RecommendedActionRow = Tables["recommended_actions"]["Row"];
+export type MeetingRow = Tables["meetings"]["Row"];
+export type MeetingDecisionRow = Tables["meeting_decisions"]["Row"];
+export type MeetingFollowUpRow = Tables["meeting_follow_ups"]["Row"];
 export type RiskActivityRow = Tables["risk_activities"]["Row"];
 export type RiskEvidenceRow = Tables["risk_evidence"]["Row"];
 export type RiskEmailDraftRow = Tables["risk_email_drafts"]["Row"];

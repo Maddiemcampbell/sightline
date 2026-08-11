@@ -52,6 +52,7 @@ export type ForecastingView = Readonly<{
   projects: readonly ForecastProject[];
   worseningRisks: readonly Readonly<{
     id: string;
+    projectId: string | null;
     title: string;
     category: string;
     severity: string;

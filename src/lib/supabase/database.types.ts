@@ -1384,6 +1384,43 @@ export type Database = {
           updated_by_user_id: string | null;
         }
       >;
+      meetings: Table<{
+        id: string;
+        organization_id: string;
+        title: string;
+        meeting_type:
+          | "weekly_executive_review"
+          | "monthly_portfolio_review"
+          | "project_owner_meeting"
+          | "lender_board_update"
+          | "risk_committee_briefing";
+        status: "draft" | "in_progress" | "completed";
+        starts_at: string;
+        project_ids: string[];
+        agenda: Json;
+        facilitator_user_id: string;
+        created_by_user_id: string;
+        completed_at: string | null;
+        created_at: string;
+        updated_at: string;
+      }>;
+      meeting_decisions: Table<{
+        id: string;
+        organization_id: string;
+        meeting_id: string;
+        project_id: string | null;
+        risk_id: string | null;
+        summary: string;
+        rationale: string | null;
+        recorded_by_user_id: string;
+        created_at: string;
+      }>;
+      meeting_follow_ups: Table<{
+        organization_id: string;
+        meeting_id: string;
+        action_id: string;
+        created_at: string;
+      }>;
       risk_resolutions: Table<{
         completed_action_ids: string[];
         created_at: string;

@@ -100,6 +100,7 @@ export async function getForecastingView(): Promise<ForecastingView> {
   );
   const worseningRisks = rankedRisks.slice(0, 5).map((risk) => ({
     id: risk.riskId,
+    projectId: risk.projectId,
     title: risk.title,
     category: risk.category.replaceAll("_", " "),
     severity: risk.severity,

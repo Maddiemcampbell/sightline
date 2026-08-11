@@ -11,6 +11,7 @@ import {
   Blocks,
   Sparkles,
   House,
+  CalendarCheck2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,6 +28,7 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/projects", label: "Projects", icon: BriefcaseBusiness },
   { href: "/risks", label: "Risks", icon: ShieldAlert },
   { href: "/actions", label: "Actions", icon: ListChecks },
+  { href: "/meetings", label: "Meetings", icon: CalendarCheck2 },
   { href: "/activity", label: "Activity", icon: History },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/reports", label: "Reports", icon: BarChart3 },
