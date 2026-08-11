@@ -181,6 +181,32 @@ describe("financial analytics", () => {
     ).toBe(60_01);
   });
 
+  it("supports a rolling 60-day lookahead", () => {
+    const result = new ForecastService().generate({
+      projects: [project()],
+      cashEvents: [
+        {
+          id: "day-60-inflow",
+          projectId: "project-1",
+          projectName: "Project One",
+          direction: "inflow",
+          amountCents: 25_00,
+          expectedDate: "2026-08-15",
+          sourceType: "payment_schedule",
+          confidence: "high",
+        },
+      ],
+      period: "rolling_60_days",
+      now: NOW,
+    });
+    expect(result.buckets).toHaveLength(1);
+    expect(result.buckets[0]).toMatchObject({
+      startsOn: "2026-07-25",
+      endsOn: "2026-09-22",
+    });
+    expect(result.buckets[0]?.expectedInflows.valueCents).toBe(25_00);
+  });
+
   it("compares values with explicit direction and missing-history handling", () => {
     expect(compareFinancialValues(-20_00, -50_00)).toMatchObject({
       absoluteChange: 30_00,

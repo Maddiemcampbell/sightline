@@ -18,8 +18,8 @@ export async function AppSidebar() {
     .slice(0, 2);
 
   return (
-    <aside className="border-[#1c4b3e] bg-[#0b3328] text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:border-r">
-      <div className="flex h-16 items-center border-b border-white/10 px-5 lg:h-20 lg:border-b-0">
+    <aside className="border-[#1c4b3e] bg-[#0b3328] text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:overflow-hidden lg:border-r">
+      <div className="flex h-16 shrink-0 items-center border-b border-white/10 px-5 lg:h-20 lg:border-b-0 [@media(min-width:1024px)_and_(max-height:900px)]:h-16">
         <Link
           href="/"
           className="focus-visible:outline-accent-strong flex items-center gap-3 rounded-sm text-white"
@@ -32,7 +32,7 @@ export async function AppSidebar() {
         </Link>
       </div>
 
-      <div className="border-b border-white/10 px-3 py-3 lg:border-b-0 lg:px-4">
+      <div className="shrink-0 border-b border-white/10 px-3 py-3 lg:border-b-0 lg:px-4 [@media(min-width:1024px)_and_(max-height:900px)]:py-2">
         {currentMembership ? (
           <div className="flex min-h-13 items-center gap-3 rounded-md border border-white/15 bg-white/5 px-3 py-2.5">
             <span className="bg-accent/15 text-accent grid size-8 shrink-0 place-items-center rounded-sm">
@@ -65,7 +65,7 @@ export async function AppSidebar() {
       <SidebarNavigation showOrganizationLinks={Boolean(currentMembership)} />
 
       {currentMembership ? (
-        <div className="hidden flex-col gap-2 px-4 pb-3 lg:flex">
+        <div className="hidden shrink-0 flex-col gap-2 px-4 pb-3 lg:flex [@media(min-width:1024px)_and_(max-height:900px)]:gap-1 [@media(min-width:1024px)_and_(max-height:900px)]:pb-2">
           <Link
             href="/organization"
             className="text-sm font-semibold text-white/65 hover:text-white"
@@ -81,7 +81,7 @@ export async function AppSidebar() {
         </div>
       ) : null}
 
-      <div className="hidden border-t border-white/10 p-4 lg:block">
+      <div className="hidden shrink-0 border-t border-white/10 p-4 lg:block [@media(min-width:1024px)_and_(max-height:900px)]:p-2">
         <div className="flex items-center gap-3 rounded-md px-2 py-2">
           <span
             aria-hidden="true"

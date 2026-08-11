@@ -57,17 +57,23 @@ export function SidebarNavigation({
       </div>
       <nav
         aria-label="Primary navigation"
-        className="hidden border-b border-white/10 px-3 py-3 lg:block lg:flex-1 lg:border-b-0 lg:px-4 lg:py-4"
+        className="hidden [scrollbar-gutter:stable] border-b border-white/10 px-3 py-3 lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:border-b-0 lg:px-4 lg:py-4 [@media(min-width:1024px)_and_(max-height:900px)]:py-2"
       >
-        <NavigationList pathname={pathname} />
+        <NavigationList pathname={pathname} compact />
       </nav>
     </>
   );
 }
 
-function NavigationList({ pathname }: { pathname: string }) {
+function NavigationList({
+  pathname,
+  compact = false,
+}: {
+  pathname: string;
+  compact?: boolean;
+}) {
   return (
-    <ul className="space-y-1">
+    <ul className={compact ? "space-y-0.5" : "space-y-1"}>
       {primaryNavigation.map(({ href, icon: Icon, label }) => {
         const active = isActivePath(pathname, href);
         return (

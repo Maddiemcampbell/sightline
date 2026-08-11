@@ -56,5 +56,13 @@ test("contributor can open the homepage without financial exposure", async ({
   await expect(page.getByText("Financial Performance")).toHaveCount(0);
   await expect(page.getByText(/Restricted for your role/i)).toHaveCount(0);
 
+  await page.goto("/forecasts");
+  await expect(
+    page.getByRole("heading", { name: "Forecasting" }),
+  ).toBeVisible();
+  await expect(page.getByText("Financial outlook is restricted")).toBeVisible();
+  await expect(page.getByText("Net budget outlook")).toHaveCount(0);
+  await expect(page.getByText("30-day net cash")).toHaveCount(0);
+
   await context.close();
 });

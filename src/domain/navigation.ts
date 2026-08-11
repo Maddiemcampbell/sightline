@@ -7,6 +7,7 @@ import {
   ListChecks,
   History,
   BarChart3,
+  ChartNoAxesCombined,
   Blocks,
   Sparkles,
   House,
@@ -29,6 +30,7 @@ export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/activity", label: "Activity", icon: History },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/forecasts", label: "Forecasting", icon: ChartNoAxesCombined },
   { href: "/integrations", label: "Integrations", icon: Blocks },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

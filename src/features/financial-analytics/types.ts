@@ -78,7 +78,11 @@ export type PortfolioFinancialMetrics = Readonly<{
 }>;
 
 export type ForecastPeriod =
-  "weekly" | "monthly" | "rolling_30_days" | "rolling_90_days";
+  | "weekly"
+  | "monthly"
+  | "rolling_30_days"
+  | "rolling_60_days"
+  | "rolling_90_days";
 export type ForecastConfidence = "high" | "medium" | "low" | "unavailable";
 
 export type CashFlowEventInput = Readonly<{

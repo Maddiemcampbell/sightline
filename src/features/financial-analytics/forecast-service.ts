@@ -112,8 +112,13 @@ function buildRanges(
   now: Date,
 ): readonly Readonly<{ startsOn: string; endsOn: string }>[] {
   const date = utcDate(now);
-  if (period === "rolling_30_days" || period === "rolling_90_days") {
-    const days = period === "rolling_30_days" ? 30 : 90;
+  if (period.startsWith("rolling_")) {
+    const days =
+      period === "rolling_30_days"
+        ? 30
+        : period === "rolling_60_days"
+          ? 60
+          : 90;
     return [{ startsOn: iso(date), endsOn: iso(addDays(date, days - 1)) }];
   }
   if (period === "weekly") {
