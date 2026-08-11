@@ -4,9 +4,12 @@ Sightline is a profit intelligence platform for commercial construction
 companies. Its initial promise is to tell an executive, every morning, the
 three things most likely to cost them money that week.
 
-This repository contains only the technical foundation. It does not include
-predictive models, advanced AI, third-party construction integrations, or
-autonomous workflows.
+The current product includes evidence-backed risk and action workflows,
+deterministic forecasting, executive reports and editable slide decks, meeting
+preparation, configurable exception alerts, human-controlled email drafting,
+commitment follow-up automation, and integration foundations for Procore and
+Microsoft 365. AI-generated content remains reviewable and separate from
+authoritative record mutation.
 
 ## Requirements
 
@@ -116,17 +119,41 @@ only where browser interactivity is necessary. Domain rules belong in
 `src/domain`, data-access boundaries in `src/lib`, and presentation in
 `src/components` or the relevant route.
 
-The initial routes are:
+Key customer routes include:
 
 - `/`
 - `/brief`
+- `/ask`
 - `/projects`
 - `/projects/[projectId]`
 - `/risks`
 - `/risks/[riskId]`
+- `/actions`
+- `/meetings`
 - `/documents`
+- `/reports`
+- `/forecasts`
+- `/forecasts/readiness`
+- `/integrations`
+- `/organization`
 - `/settings`
+- `/help/documentation`
 - `/api/health`
+
+## User guides
+
+The authenticated Help menu links to the in-app guide at
+`/help/documentation`. It covers the daily workflow, workspace navigation,
+responsible use of Ask Sightline, and role-aware access. Focused guides are
+available for:
+
+- `/help/forecasting` — baseline forecasts, scenarios, and data readiness
+- `/help/reports-meetings` — PDFs, executive decks, agendas, decisions, and follow-up actions
+- `/help/follow-ups-alerts` — requested commitments, reminders, evidence verification, escalation, and exception thresholds
+
+Keep user-facing workflow guidance in `src/features/help/content.ts` and
+`src/features/help/product-guide.tsx` so it ships with the product and remains
+available from the Help menu.
 
 ## Data and forms
 

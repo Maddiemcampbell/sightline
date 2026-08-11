@@ -8,6 +8,9 @@ describe("help page content", () => {
       "documentation",
       "shortcuts",
       "releases",
+      "forecasting",
+      "reports-meetings",
+      "follow-ups-alerts",
       "about",
     ]);
 

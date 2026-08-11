@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
 import { AboutSightline } from "@/features/help/about-sightline";
@@ -24,6 +25,12 @@ export default async function HelpPage({
   return (
     <div className="mx-auto w-full max-w-5xl px-[var(--page-gutter)] py-8 sm:py-10">
       <header>
+        <Link
+          href="/help/documentation#workflow-guides"
+          className="text-muted hover:text-deep-green text-sm font-semibold"
+        >
+          ← All guides
+        </Link>
         <p className="text-deep-green text-sm font-semibold">
           {content.eyebrow}
         </p>

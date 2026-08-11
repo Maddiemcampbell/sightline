@@ -59,16 +59,114 @@ export const helpPages = {
       "Recent Sightline improvements are summarized here so teams can understand changes to their daily workflow.",
     sections: [
       {
-        title: "Launch plans and billing",
-        body: "Essential and Professional plan limits are enforced consistently, with Stripe Checkout and verified webhook processing available for customer activation.",
+        title: "Forecasting and data readiness",
+        body: "Authorized financial users can review deterministic cash, margin, budget, and completion outlooks; explore bounded scenarios; and see which missing, stale, or estimated inputs weaken confidence.",
       },
       {
-        title: "Role-aware workspaces",
-        body: "Restricted financial and organization-management sections are omitted when a member does not have permission to use them.",
+        title: "Executive reporting and meetings",
+        body: "Teams can generate permission-aware PDF reports and editable executive PowerPoint decks, prepare meeting agendas, record decisions, and create accountable follow-up actions.",
       },
       {
-        title: "Operational reliability",
-        body: "Authentication health checks, document-upload validation, platform job monitoring, and customer data-export workflows have expanded automated coverage.",
+        title: "Exceptions and commitment follow-up",
+        body: "Configurable business exceptions focus notifications on thresholds that need attention. Sent email drafts can now track requested commitments, expected responses, evidence arrival, reminders, escalation, and verified closure.",
+      },
+      {
+        title: "Clearer workspace navigation",
+        body: "Home is now a distinct portfolio-overview destination. Desktop Watchlist and Settings controls live in the header, while mobile users retain them in the labeled navigation menu.",
+      },
+    ],
+  },
+  forecasting: {
+    eyebrow: "Workflow guide",
+    title: "Forecast with confidence",
+    introduction:
+      "Use deterministic outlooks and explicit data-quality signals to discuss what may happen next without presenting estimates as certainty.",
+    sections: [
+      {
+        title: "Start with the baseline",
+        body: "Open Forecasting to review the 30, 60, and 90-day cash outlook, forecast-at-completion trend, margin trajectory, risk exposure, and upcoming commitments across projects you are authorized to see.",
+        items: [
+          "Use the project selector to narrow the view.",
+          "Check whether values are authoritative or estimated.",
+          "Read the confidence explanation before sharing the outlook.",
+        ],
+      },
+      {
+        title: "Test a bounded scenario",
+        body: "Scenario controls adjust one stated assumption at a time, such as a completion delay or rejected change order. They do not predict every downstream effect or silently change project records.",
+        items: [
+          "Compare the scenario with the unchanged baseline.",
+          "Read the stated assumptions and exclusions.",
+          "Treat the result as decision support, not an approved forecast revision.",
+        ],
+      },
+      {
+        title: "Improve data readiness",
+        body: "Open the Data-readiness center when confidence is low. It identifies stale records, missing financial or schedule inputs, unmapped integration objects, and estimated values by project.",
+        items: [
+          "Resolve high-impact missing inputs first.",
+          "Confirm the last successful synchronization.",
+          "Revisit the forecast after authoritative data is available.",
+        ],
+      },
+    ],
+  },
+  "reports-meetings": {
+    eyebrow: "Workflow guide",
+    title: "Prepare executive reviews and meetings",
+    introduction:
+      "Turn current portfolio evidence into a reviewable report or meeting agenda, then preserve the decisions and follow-up work created during the conversation.",
+    sections: [
+      {
+        title: "Choose the right output",
+        body: "Use Reports for a point-in-time PDF or an editable executive PowerPoint. Use Meetings when the goal is to organize a discussion, record decisions, and assign follow-up work.",
+        items: [
+          "PDF reports are suited to stable, permission-aware snapshots.",
+          "PowerPoint decks support editable executive narratives, charts, and appendix detail.",
+          "Meeting preparation connects agenda items to live Sightline records.",
+        ],
+      },
+      {
+        title: "Review before sharing",
+        body: "Charts and tables are deterministic; generated narrative remains a draft. Confirm dates, scope, financial visibility, cited risks, and stated data limitations before downloading or presenting.",
+      },
+      {
+        title: "Close the meeting loop",
+        body: "Record decisions while context is fresh, create follow-up actions with owners and due dates, and preserve the meeting record so later activity explains why the work changed.",
+      },
+    ],
+  },
+  "follow-ups-alerts": {
+    eyebrow: "Workflow guide",
+    title: "Close the loop on commitments",
+    introduction:
+      "Track the external response requested by an email, focus notifications on genuine exceptions, and require evidence before work is marked complete.",
+    sections: [
+      {
+        title: "Track the request when sending",
+        body: "After reviewing an email draft, select Track the requested commitment, confirm what is expected, and set the response date before marking the email as sent manually.",
+        items: [
+          "The current user becomes the accountable follow-up owner.",
+          "The open commitment appears at the top of Actions.",
+          "Sightline never sends the email automatically.",
+        ],
+      },
+      {
+        title: "Respond to silence",
+        body: "When the response date passes, scheduled automation creates an owner reminder. Open the follow-up to review its status and draft a human-controlled escalation when appropriate.",
+      },
+      {
+        title: "Verify what arrived",
+        body: "New evidence added after the email was sent is highlighted as a possible response. Select the correct source, record the response, and verify it before resolving the follow-up.",
+        items: [
+          "Possible matches are suggestions, not conclusions.",
+          "Verification is a separate, explicit human step.",
+          "A linked action is completed only when it is already accepted or in progress.",
+        ],
+      },
+      {
+        title: "Tune exception alerts",
+        body: "Owners and administrators can configure thresholds for margin, budget variance, unowned high-severity risks, due actions, expiring documents, stale synchronization, and stale forecast inputs. Use exceptions for conditions requiring action—not general updates.",
       },
     ],
   },

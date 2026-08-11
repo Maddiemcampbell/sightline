@@ -15,7 +15,7 @@ describe("help and support menu", () => {
 
     expect(markup).toContain("Help and support");
     expect(helpMenuItems.map(({ label }) => label)).toEqual([
-      "Documentation",
+      "Guides & Documentation",
       "Keyboard Shortcuts",
       "Contact Support",
       "Release Notes",
@@ -25,12 +25,12 @@ describe("help and support menu", () => {
     expect(markup).not.toContain("Coming soon");
   });
 
-  it("maps every internal destination to a supported help page", () => {
+  it("maps every menu destination to a supported help page", () => {
     const internalSlugs = helpMenuItems
       .map(({ href }) => href)
       .filter((href) => href.startsWith("/help/"))
       .map((href) => href.replace("/help/", ""));
 
-    expect(internalSlugs).toEqual(Object.keys(helpPages));
+    for (const slug of internalSlugs) expect(helpPages).toHaveProperty(slug);
   });
 });

@@ -2,10 +2,13 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  BellRing,
   BookOpen,
   BriefcaseBusiness,
   CheckCircle2,
   ClipboardCheck,
+  CalendarCheck2,
+  ChartNoAxesCombined,
   FileText,
   Gauge,
   History,
@@ -16,6 +19,7 @@ import {
   Settings,
   ShieldAlert,
   Sparkles,
+  Presentation,
   Users,
 } from "lucide-react";
 
@@ -25,6 +29,7 @@ const contents = [
   ["getting-started", "Getting started"],
   ["daily-workflow", "Daily workflow"],
   ["workspace-guide", "Workspace guide"],
+  ["workflow-guides", "Planning & follow-through"],
   ["ask-sightline", "Ask Sightline"],
   ["access", "Roles and access"],
 ] as const;
@@ -35,6 +40,12 @@ const workspaceGuides = [
     title: "Projects",
     body: "Review project health, assignments, contract context, and the risks affecting delivery.",
     href: "/projects",
+  },
+  {
+    icon: CalendarCheck2,
+    title: "Meetings",
+    body: "Prepare an evidence-backed agenda, capture decisions, and assign follow-up work without losing project context.",
+    href: "/meetings",
   },
   {
     icon: ShieldAlert,
@@ -63,8 +74,20 @@ const workspaceGuides = [
   {
     icon: BarChart3,
     title: "Reports",
-    body: "Review portfolio risk and financial context, then export permission-aware PDF reports.",
+    body: "Export permission-aware PDFs or generate editable executive PowerPoint decks for review.",
     href: "/reports",
+  },
+  {
+    icon: ChartNoAxesCombined,
+    title: "Forecasting",
+    body: "Review deterministic cash, margin, budget, and schedule outlooks with explicit confidence and data-quality signals.",
+    href: "/forecasts",
+  },
+  {
+    icon: Plug,
+    title: "Integrations",
+    body: "Connect supported sources, map external records to projects, and monitor synchronization readiness.",
+    href: "/integrations",
   },
 ] as const;
 
@@ -209,6 +232,24 @@ export function ProductGuide() {
             title="Navigate the workspace"
             introduction="Each area answers a different operational question while sharing the same authorized project context."
           >
+            <div className="bg-soft-green mb-4 rounded-xl p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
+              <div>
+                <h3 className="font-semibold">
+                  Home is your portfolio overview
+                </h3>
+                <p className="text-muted mt-1 text-sm leading-6">
+                  Use the distinct Home card to return to portfolio priorities.
+                  On desktop, Watchlist and Settings are in the header; on
+                  mobile, find them in Menu.
+                </p>
+              </div>
+              <Link
+                href="/"
+                className="text-deep-green mt-3 inline-flex shrink-0 items-center gap-1 text-sm font-semibold sm:mt-0"
+              >
+                Open Home <ArrowRight className="size-3.5" aria-hidden="true" />
+              </Link>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {workspaceGuides.map(({ icon: Icon, title, body, href }) => (
                 <Link
@@ -237,6 +278,34 @@ export function ProductGuide() {
               <InlineLink href="/settings" icon={Settings}>
                 Configure settings
               </InlineLink>
+            </div>
+          </GuideSection>
+
+          <GuideSection
+            id="workflow-guides"
+            eyebrow="Planning and follow-through"
+            title="Use Sightline beyond the daily risk review"
+            introduction="These focused guides cover the newer workflows where data quality, human review, and operational follow-through matter most."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              <GuideLink
+                href="/help/forecasting"
+                icon={ChartNoAxesCombined}
+                title="Forecast with confidence"
+                body="Interpret the baseline, test bounded scenarios, and improve weak project inputs."
+              />
+              <GuideLink
+                href="/help/reports-meetings"
+                icon={Presentation}
+                title="Prepare executive reviews"
+                body="Choose the right report or meeting workflow, review generated content, and preserve decisions."
+              />
+              <GuideLink
+                href="/help/follow-ups-alerts"
+                icon={BellRing}
+                title="Close the commitment loop"
+                body="Track requested responses, handle exceptions, verify arriving evidence, and escalate responsibly."
+              />
             </div>
           </GuideSection>
 
@@ -448,6 +517,37 @@ function InlineLink({
     >
       <Icon className="text-deep-green size-4" aria-hidden="true" />
       {children}
+    </Link>
+  );
+}
+
+function GuideLink({
+  href,
+  icon: Icon,
+  title,
+  body,
+}: {
+  href: string;
+  icon: typeof BellRing;
+  title: string;
+  body: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="border-border bg-surface hover:border-accent-strong group rounded-xl border p-5 shadow-sm transition-colors"
+    >
+      <span className="bg-soft-green text-deep-green grid size-10 place-items-center rounded-lg">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <h3 className="mt-4 flex items-center justify-between gap-3 font-semibold">
+        {title}
+        <ArrowRight
+          className="text-muted group-hover:text-deep-green size-4"
+          aria-hidden="true"
+        />
+      </h3>
+      <p className="text-muted mt-2 text-sm leading-6">{body}</p>
     </Link>
   );
 }

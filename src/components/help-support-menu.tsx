@@ -18,8 +18,8 @@ import { FeatureRequestDialog } from "@/components/feature-request-dialog";
 
 export const helpMenuItems = [
   {
-    label: "Documentation",
-    detail: "Learn how Sightline workflows fit together.",
+    label: "Guides & Documentation",
+    detail: "Learn core and advanced Sightline workflows.",
     href: "/help/documentation",
     icon: BookOpen,
   },

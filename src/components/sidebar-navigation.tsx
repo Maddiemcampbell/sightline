@@ -144,6 +144,7 @@ function NavigationItem({
       <li>
         <Link
           href={href}
+          aria-label="Home"
           aria-current={active ? "page" : undefined}
           className={`focus-visible:outline-accent-strong group flex min-h-[4.25rem] items-center gap-3 rounded-xl border px-3 py-3 transition-all ${
             active
