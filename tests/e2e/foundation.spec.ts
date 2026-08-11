@@ -411,6 +411,52 @@ test("edits and saves a human-controlled email draft", async ({ page }) => {
   await expect(page.getByText("Template generated")).toBeVisible();
 });
 
+test("tracks an email commitment through evidence-backed verification", async ({
+  page,
+}) => {
+  await page.goto(
+    "/risks/60000000-0000-4000-8000-000000000001/email-draft?actionId=80000000-0000-4000-8000-000000000001",
+  );
+  const main = page.locator("#main-content");
+  const recipient = main.getByLabel("Recipient");
+  await expect(recipient).toHaveCount(1);
+  await recipient.selectOption(
+    "vendor:30000000-0000-4000-8000-000000000001",
+  );
+  await main.getByRole("button", { name: "Generate editable draft" }).click();
+  await expect(page).toHaveURL(/email-draft\?draftId=[0-9a-f-]+$/, {
+    timeout: 30_000,
+  });
+  await main
+    .getByLabel("Commitment requested")
+    .fill("Provide the renewed insurance certificate");
+  await main.getByLabel("Expected response date").fill("2026-12-15");
+  await main
+    .getByRole("button", { name: "Mark sent & track follow-up" })
+    .click();
+  await expect(main.getByRole("status")).toHaveText(
+    "Sent manually and follow-up tracking started.",
+  );
+  await page.reload();
+  await expect(
+    main.getByRole("heading", { name: "Commitment follow-up" }),
+  ).toBeVisible();
+  await expect(
+    main.getByText("Awaiting response", { exact: true }),
+  ).toBeVisible();
+  await main
+    .getByLabel("Response evidence")
+    .selectOption("70000000-0000-4000-8000-000000000001");
+  await main.getByRole("button", { name: "Record response received" }).click();
+  await expect(
+    main.getByText("Evidence received, not yet verified"),
+  ).toBeVisible();
+  await main.getByRole("button", { name: "Verify evidence & resolve" }).click();
+  await expect(
+    main.getByText("Verified evidence closed this loop."),
+  ).toBeVisible();
+});
+
 test("adds a risk comment with an organization-user mention", async ({
   page,
 }) => {

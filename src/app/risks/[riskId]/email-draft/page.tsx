@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { deadlineState } from "@/domain/ai/email-draft";
 import { DraftEditor } from "@/features/email-drafts/draft-editor";
 import { EmailDraftService } from "@/features/email-drafts/service";
+import { FollowUpPanel } from "@/features/commitment-follow-ups/follow-up-panel";
 import { requireActorContext } from "@/lib/auth/request-context";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -29,7 +30,11 @@ export default async function EmailDraftPage({
   searchParams,
 }: {
   params: Promise<{ riskId: string }>;
-  searchParams: Promise<{ draftId?: string; actionId?: string }>;
+  searchParams: Promise<{
+    draftId?: string;
+    actionId?: string;
+    purpose?: string;
+  }>;
 }) {
   const [{ riskId }, query, context] = await Promise.all([
     params,
@@ -68,11 +73,24 @@ export default async function EmailDraftPage({
               <DraftEditor
                 draft={workspace.draft}
                 contacts={workspace.contacts}
+                requestedCommitment={
+                  workspace.action?.title ?? "Confirm the requested next step"
+                }
+                expectedResponseDate={futureResponseDate(dueAt)}
               />
             </div>
           </Card>
 
           <aside className="space-y-5">
+            {workspace.followUp ? (
+              <Card>
+                <FollowUpPanel
+                  followUp={workspace.followUp}
+                  evidence={workspace.evidence}
+                  sentAt={workspace.draft.manually_sent_at!}
+                />
+              </Card>
+            ) : null}
             {deadline.state === "overdue" ? (
               <div
                 role="alert"
@@ -205,6 +223,9 @@ export default async function EmailDraftPage({
               actionId={query.actionId ?? null}
               contacts={contacts}
               defaultContactKey={preferredContact}
+              defaultPurpose={
+                query.purpose === "escalation" ? "escalation" : "reminder"
+              }
             />
           ) : (
             <div
@@ -272,12 +293,14 @@ function GenerationForm({
   contacts,
   defaultContactKey,
   compact = false,
+  defaultPurpose = "reminder",
 }: {
   riskId: string;
   actionId: string | null;
   contacts: readonly Contact[];
   defaultContactKey: string;
   compact?: boolean;
+  defaultPurpose?: "reminder" | "escalation";
 }) {
   const defaultContact = contacts.find(
     (contact) => contact.key === defaultContactKey,
@@ -313,7 +336,7 @@ function GenerationForm({
         <SelectControl
           label="Purpose"
           name="purpose"
-          defaultValue="reminder"
+          defaultValue={defaultPurpose}
           options={[
             ["initial_request", "Initial request"],
             ["reminder", "Reminder"],
@@ -433,6 +456,17 @@ function contactKeyForDraft(draft: {
     : draft.recipient_vendor_id
       ? `vendor:${draft.recipient_vendor_id}`
       : "";
+}
+
+function futureResponseDate(value: string | null) {
+  const candidate = value ? new Date(value) : new Date();
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  if (candidate.getTime() <= today.getTime()) {
+    candidate.setTime(today.getTime());
+    candidate.setUTCDate(candidate.getUTCDate() + 3);
+  }
+  return candidate.toISOString().slice(0, 10);
 }
 
 function PageFrame({

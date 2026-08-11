@@ -13,6 +13,7 @@ import { tryRecordAiObservability } from "@/features/ai/observability";
 import type { EmailDraftProvider } from "@/features/ai/provider";
 import { sanitizeUntrustedExcerpt } from "@/features/ai/prompt-security";
 import { EmailDraftRepository } from "@/features/email-drafts/repository";
+import { CommitmentFollowUpService } from "@/features/commitment-follow-ups/service";
 import { generateEmailDraftWithFallback } from "@/features/email-drafts/generation";
 import type { ActorContext } from "@/lib/auth/authorization";
 import { getServerEnv } from "@/lib/env";
@@ -163,7 +164,11 @@ export class EmailDraftService {
       draft.risk_id,
       draft.recommended_action_id,
     );
-    return { ...source, draft, contacts: buildContacts(source) };
+    const followUp = await new CommitmentFollowUpService(this.client).forDraft(
+      context,
+      draftId,
+    );
+    return { ...source, draft, followUp, contacts: buildContacts(source) };
   }
 
   async save(
@@ -188,21 +193,35 @@ export class EmailDraftService {
     });
   }
 
-  async markSent(context: ActorContext, draftId: string) {
+  async markSent(
+    context: ActorContext,
+    draftId: string,
+    tracking?: { requestedCommitment: string; expectedResponseAt: string },
+  ) {
     const draft = await this.repository.get(context, draftId);
-    if (draft.status === "manually_sent") return draft;
-    const sentAt = new Date().toISOString();
-    const updated = await this.repository.update(context, draftId, {
-      status: "manually_sent",
-      manually_sent_at: sentAt,
-      manually_sent_by_user_id: context.userId,
-    });
-    await this.activity.append(context, {
-      riskId: draft.risk_id,
-      activityType: "email_marked_sent",
-      summary: "Email draft marked as sent manually.",
-      metadata: { draftId },
-    });
+    let updated = draft;
+    if (draft.status !== "manually_sent") {
+      const sentAt = new Date().toISOString();
+      updated = await this.repository.update(context, draftId, {
+        status: "manually_sent",
+        manually_sent_at: sentAt,
+        manually_sent_by_user_id: context.userId,
+      });
+      await this.activity.append(context, {
+        riskId: draft.risk_id,
+        activityType: "email_marked_sent",
+        summary: "Email draft marked as sent manually.",
+        metadata: { draftId },
+      });
+    }
+    if (tracking) {
+      await new CommitmentFollowUpService(this.client).track(
+        context,
+        draftId,
+        tracking.requestedCommitment,
+        tracking.expectedResponseAt,
+      );
+    }
     return updated;
   }
 }

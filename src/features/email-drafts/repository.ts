@@ -40,7 +40,7 @@ export class EmailDraftRepository {
         : Promise.resolve({ data: null, error: null }),
       this.client
         .from("risk_evidence")
-        .select("id,title,excerpt,why_it_matters")
+        .select("id,title,excerpt,why_it_matters,created_at")
         .eq("organization_id", context.organizationId)
         .eq("risk_id", riskId)
         .order("relevance_score", { ascending: false })

@@ -14,6 +14,8 @@ type Contact = { key: string; name: string; email: string; role: string };
 export function DraftEditor({
   draft,
   contacts,
+  requestedCommitment,
+  expectedResponseDate,
 }: {
   draft: {
     id: string;
@@ -24,6 +26,8 @@ export function DraftEditor({
     recipient_vendor_id: string | null;
   };
   contacts: readonly Contact[];
+  requestedCommitment: string;
+  expectedResponseDate: string;
 }) {
   const initialContact = draft.recipient_user_id
     ? `user:${draft.recipient_user_id}`
@@ -34,6 +38,9 @@ export function DraftEditor({
   const [body, setBody] = useState(draft.body);
   const [contactKey, setContactKey] = useState(initialContact);
   const [status, setStatus] = useState(draft.status);
+  const [trackFollowUp, setTrackFollowUp] = useState(true);
+  const [commitment, setCommitment] = useState(requestedCommitment);
+  const [responseDate, setResponseDate] = useState(expectedResponseDate);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -148,8 +155,54 @@ export function DraftEditor({
           <Clipboard className="size-4" /> Copy draft
         </SecondaryButton>
         {!locked && (
+          <div className="border-border bg-background w-full rounded-lg border p-4">
+            <label className="flex min-h-11 items-center gap-3 font-semibold">
+              <input
+                type="checkbox"
+                checked={trackFollowUp}
+                onChange={(event) => setTrackFollowUp(event.target.checked)}
+                className="size-4"
+              />
+              Track the requested commitment after sending
+            </label>
+            {trackFollowUp ? (
+              <div className="mt-3 grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
+                <label className="text-sm font-semibold">
+                  Commitment requested
+                  <input
+                    aria-label="Commitment requested"
+                    value={commitment}
+                    maxLength={1000}
+                    onChange={(event) => setCommitment(event.target.value)}
+                    className="border-border bg-surface mt-2 min-h-11 w-full rounded-md border px-3 font-normal"
+                  />
+                </label>
+                <label className="text-sm font-semibold">
+                  Expected response
+                  <input
+                    aria-label="Expected response date"
+                    type="date"
+                    value={responseDate}
+                    onChange={(event) => setResponseDate(event.target.value)}
+                    className="border-border bg-surface mt-2 min-h-11 w-full rounded-md border px-3 font-normal"
+                  />
+                </label>
+              </div>
+            ) : null}
+            <p className="text-muted mt-3 text-xs leading-5">
+              Sightline will remind the owner if no verified response is
+              recorded by this date.
+            </p>
+          </div>
+        )}
+        {!locked && (
           <SecondaryButton
-            disabled={pending || !subject.trim() || !body.trim()}
+            disabled={
+              pending ||
+              !subject.trim() ||
+              !body.trim() ||
+              (trackFollowUp && (!commitment.trim() || !responseDate))
+            }
             onClick={() => {
               setError(null);
               startTransition(async () => {
@@ -160,9 +213,21 @@ export function DraftEditor({
                     body,
                     contactKey: contactKey || null,
                   });
-                  await markEmailDraftSentAction(draft.id);
+                  await markEmailDraftSentAction(
+                    draft.id,
+                    trackFollowUp
+                      ? {
+                          requestedCommitment: commitment,
+                          expectedResponseAt: `${responseDate}T17:00:00.000Z`,
+                        }
+                      : undefined,
+                  );
                   setStatus("manually_sent");
-                  setMessage("Saved and marked as sent manually.");
+                  setMessage(
+                    trackFollowUp
+                      ? "Sent manually and follow-up tracking started."
+                      : "Saved and marked as sent manually.",
+                  );
                 } catch (caught) {
                   setError(
                     caught instanceof Error
@@ -173,7 +238,10 @@ export function DraftEditor({
               });
             }}
           >
-            <Check className="size-4" /> Mark as sent manually
+            <Check className="size-4" />
+            {trackFollowUp
+              ? "Mark sent & track follow-up"
+              : "Mark as sent manually"}
           </SecondaryButton>
         )}
       </div>

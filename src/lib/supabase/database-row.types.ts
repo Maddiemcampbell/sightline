@@ -25,6 +25,7 @@ export type MeetingFollowUpRow = Tables["meeting_follow_ups"]["Row"];
 export type RiskActivityRow = Tables["risk_activities"]["Row"];
 export type RiskEvidenceRow = Tables["risk_evidence"]["Row"];
 export type RiskEmailDraftRow = Tables["risk_email_drafts"]["Row"];
+export type CommitmentFollowUpRow = Tables["commitment_follow_ups"]["Row"];
 export type RiskConversationRow = Tables["risk_conversations"]["Row"];
 export type RiskConversationMessageRow =
   Tables["risk_conversation_messages"]["Row"];

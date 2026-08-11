@@ -24,18 +24,22 @@ import {
   queuedMicrosoft365Jobs,
   syncMicrosoft365Connection,
 } from "@/features/microsoft365/sync";
+import { createDueCommitmentReminders } from "@/features/commitment-follow-ups/reminders";
 
 export async function runPortfolioRefresh(organizationId: string) {
-  const [intelligence, financialSnapshot, riskSnapshot] = await Promise.all([
-    refreshPortfolioIntelligence(organizationId),
-    new FinancialSnapshotService().createMonthlySnapshot(organizationId),
-    new RiskSnapshotService().createMonthlySnapshot(organizationId),
-  ]);
+  const [intelligence, financialSnapshot, riskSnapshot, commitmentReminders] =
+    await Promise.all([
+      refreshPortfolioIntelligence(organizationId),
+      new FinancialSnapshotService().createMonthlySnapshot(organizationId),
+      new RiskSnapshotService().createMonthlySnapshot(organizationId),
+      createDueCommitmentReminders(organizationId),
+    ]);
   return {
     observations: intelligence.observations,
     relationships: intelligence.relationships,
     financialSnapshotCreated: Boolean(financialSnapshot),
     riskSnapshotCreated: Boolean(riskSnapshot),
+    commitmentReminders,
   } satisfies OrganizationJobMetrics;
 }
 

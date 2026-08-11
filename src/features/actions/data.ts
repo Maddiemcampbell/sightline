@@ -32,8 +32,8 @@ export function toActionView(
 export async function getActionsWorkspace(filters: ActionFilters) {
   const context = await requireActorContext();
   const client = await createServerSupabaseClient();
-  const [actionsResult, risks, projectsResult, usersResult] = await Promise.all(
-    [
+  const [actionsResult, risks, projectsResult, usersResult, followUpsResult] =
+    await Promise.all([
       client
         .from("recommended_actions")
         .select("*")
@@ -57,9 +57,19 @@ export async function getActionsWorkspace(filters: ActionFilters) {
         .select("id,full_name")
         .eq("organization_id", context.organizationId)
         .order("full_name"),
-    ],
-  );
-  for (const result of [actionsResult, projectsResult, usersResult])
+      client
+        .from("commitment_follow_ups")
+        .select("*")
+        .eq("organization_id", context.organizationId)
+        .neq("status", "resolved")
+        .order("expected_response_at"),
+    ]);
+  for (const result of [
+    actionsResult,
+    projectsResult,
+    usersResult,
+    followUpsResult,
+  ])
     if (result.error) throw new Error(result.error.message);
   const actions = actionsResult.data ?? [];
   const projects = projectsResult.data ?? [];
@@ -112,6 +122,14 @@ export async function getActionsWorkspace(filters: ActionFilters) {
     }));
   return {
     rows,
+    followUps: (followUpsResult.data ?? []).map((followUp) => ({
+      followUp,
+      risk: riskById.get(followUp.risk_id) ?? null,
+      project: riskById.get(followUp.risk_id)?.project_id
+        ? (projectById.get(riskById.get(followUp.risk_id)?.project_id ?? "") ??
+          null)
+        : null,
+    })),
     owners: users.map((user): ActionOwner => ({
       id: user.id,
       name: user.full_name,

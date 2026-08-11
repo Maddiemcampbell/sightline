@@ -104,6 +104,22 @@ export async function requireEmailDraftProjectAccess(
   return requireRiskProjectAccess(context, data!.risk_id);
 }
 
+export async function requireCommitmentFollowUpProjectAccess(
+  context: ActorContext,
+  followUpId: string,
+): Promise<ProjectAccessContext> {
+  const client = createAdminSupabaseClient();
+  const { data, error } = await client
+    .from("commitment_follow_ups")
+    .select("risk_id")
+    .eq("organization_id", context.organizationId)
+    .eq("id", followUpId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  assertAuthorized(Boolean(data));
+  return requireRiskProjectAccess(context, data!.risk_id);
+}
+
 async function currentMembershipId(context: ActorContext): Promise<string> {
   const client = createAdminSupabaseClient();
   const { data, error } = await client

@@ -5,6 +5,7 @@ import { ActionControls } from "@/features/actions/action-controls";
 import { getActionsWorkspace } from "@/features/actions/data";
 import { actionFiltersSchema } from "@/features/actions/validation";
 import { WatchlistButton } from "@/features/workspace/watchlist-button";
+import { commitmentTiming } from "@/features/commitment-follow-ups/state";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -100,6 +101,70 @@ export default async function ActionsPage({ searchParams }: Props) {
           </button>
         </form>
       </Card>
+      {workspace.followUps.length ? (
+        <section className="mt-6" aria-labelledby="external-follow-ups-title">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-deep-green text-xs font-semibold tracking-wide uppercase">
+                External commitments
+              </p>
+              <h2
+                id="external-follow-ups-title"
+                className="mt-1 text-xl font-semibold"
+              >
+                Waiting on a response
+              </h2>
+            </div>
+            <span className="text-muted text-sm">
+              {workspace.followUps.length} open
+            </span>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {workspace.followUps.map(({ followUp, risk, project }) => {
+              const timing = commitmentTiming(followUp);
+              return (
+                <Link
+                  key={followUp.id}
+                  href={`/risks/${followUp.risk_id}/email-draft?draftId=${followUp.email_draft_id}`}
+                  className="border-border bg-surface hover:border-deep-green rounded-xl border p-4 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">
+                        {followUp.requested_commitment}
+                      </p>
+                      <p className="text-muted mt-1 text-xs">
+                        {project?.name ?? risk?.title ?? "Risk follow-up"}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${timing === "overdue" ? "bg-danger/10 text-danger" : timing === "received" ? "bg-soft-green text-deep-green" : "bg-soft-amber text-warning"}`}
+                    >
+                      {timing === "overdue"
+                        ? "Overdue"
+                        : timing === "received"
+                          ? "Verify response"
+                          : timing === "due_today"
+                            ? "Due today"
+                            : "Awaiting"}
+                    </span>
+                  </div>
+                  <p className="text-muted mt-3 text-xs">
+                    Expected{" "}
+                    {new Intl.DateTimeFormat("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    }).format(new Date(followUp.expected_response_at))}{" "}
+                    →
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
       <section className="mt-6" aria-label="Organization actions">
         {workspace.rows.length ? (
           <ul className="space-y-4">

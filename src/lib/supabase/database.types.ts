@@ -27,6 +27,10 @@ export type DatabaseEnums = {
     | "document_uploaded"
     | "email_drafted"
     | "email_marked_sent"
+    | "commitment_tracked"
+    | "commitment_response_received"
+    | "commitment_resolved"
+    | "commitment_reminder_created"
     | "comment_added"
     | "risk_resolved"
     | "risk_reopened"
@@ -859,7 +863,8 @@ export type Database = {
           | "data_export_ready"
           | "data_export_failed"
           | "background_job_failed"
-          | "exception_alert";
+          | "exception_alert"
+          | "commitment_follow_up";
         organization_id: string;
         payload: Json;
         read_at: string | null;
@@ -1361,6 +1366,26 @@ export type Database = {
           status: "draft" | "manually_sent";
           manually_sent_at: string | null;
           manually_sent_by_user_id: string | null;
+        }
+      >;
+      commitment_follow_ups: Table<
+        Timestamped & {
+          id: string;
+          organization_id: string;
+          risk_id: string;
+          email_draft_id: string;
+          recommended_action_id: string | null;
+          owner_user_id: string;
+          requested_commitment: string;
+          expected_response_at: string;
+          status: "awaiting_response" | "response_received" | "resolved";
+          response_evidence_id: string | null;
+          response_note: string | null;
+          response_received_at: string | null;
+          verified_at: string | null;
+          verified_by_user_id: string | null;
+          last_reminded_at: string | null;
+          reminder_count: number;
         }
       >;
       risk_conversations: Table<{
