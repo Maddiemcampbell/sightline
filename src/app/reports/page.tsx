@@ -2,6 +2,8 @@ import {
   ArrowDownToLine,
   ArrowRight,
   CircleDollarSign,
+  FileCheck2,
+  Presentation,
   ShieldAlert,
   TrendingDown,
   TrendingUp,
@@ -13,6 +15,13 @@ import { PageHeader } from "@/components/page-header";
 import { RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getReportsData } from "@/features/reports/data";
+import { getForecastingView } from "@/features/forecasting/data";
+import {
+  buildExecutiveDeckReview,
+  executiveDeckTemplates,
+  formatDataLimitation,
+  isExecutiveDeckTemplate,
+} from "@/features/reports/executive-deck";
 import {
   formatInteger,
   formatMoney,
@@ -20,8 +29,25 @@ import {
   formatReportDate,
 } from "@/features/reports/format";
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deckTemplate?: string | string[] }>;
+}) {
   const { financialAnalytics, riskAnalytics } = await getReportsData();
+  const requestedTemplate = (await searchParams).deckTemplate;
+  const selectedTemplate =
+    typeof requestedTemplate === "string" &&
+    isExecutiveDeckTemplate(requestedTemplate)
+      ? requestedTemplate
+      : null;
+  const forecast = selectedTemplate ? await getForecastingView() : null;
+  const deckReview = forecast
+    ? buildExecutiveDeckReview({
+        reports: { financialAnalytics, riskAnalytics },
+        forecast,
+      })
+    : null;
   const currency = financialAnalytics?.portfolio.currencyCode ?? null;
   const leadingRisks = riskAnalytics.executiveRisks.slice(0, 8);
   const leadingDrivers = riskAnalytics.drivers.slice(0, 6);
@@ -51,6 +77,126 @@ export default async function ReportsPage() {
           </Link>
         }
       />
+
+      <section aria-labelledby="executive-decks" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="bg-soft-green text-deep-green grid size-9 place-items-center rounded-md">
+                <Presentation className="size-4" aria-hidden="true" />
+              </span>
+              <h2 id="executive-decks" className="text-xl font-semibold">
+                Executive slide decks
+              </h2>
+            </div>
+            <p className="text-muted mt-2 max-w-3xl text-sm">
+              Generate an editable PowerPoint from authorized portfolio data.
+              Review its planned contents and source coverage before download.
+            </p>
+          </div>
+          <span className="bg-background text-muted rounded-full px-3 py-1 text-xs font-semibold">
+            Deterministic charts · source-linked records
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {executiveDeckTemplates.map((template) => {
+            const selected = selectedTemplate === template.id;
+            return (
+              <Link
+                key={template.id}
+                href={`/reports?deckTemplate=${template.id}#deck-review`}
+                aria-current={selected ? "true" : undefined}
+                className={`focus-visible:outline-accent-strong rounded-lg border p-4 transition-colors ${
+                  selected
+                    ? "border-deep-green bg-soft-green"
+                    : "border-border bg-surface hover:border-deep-green/40"
+                }`}
+              >
+                <p className="font-semibold">{template.name}</p>
+                <p className="text-muted mt-2 text-xs leading-5">
+                  {template.description}
+                </p>
+                <p className="text-deep-green mt-4 text-xs font-semibold">
+                  Preview deck →
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+
+        {selectedTemplate && deckReview ? (
+          <Card id="deck-review" className="overflow-hidden p-0">
+            <div className="border-border flex flex-wrap items-start justify-between gap-5 border-b p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="bg-soft-green text-deep-green grid size-10 shrink-0 place-items-center rounded-md">
+                  <FileCheck2 className="size-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="text-muted text-xs font-semibold tracking-[0.08em] uppercase">
+                    Review before download
+                  </p>
+                  <h3 className="mt-1 text-xl font-semibold">
+                    {
+                      executiveDeckTemplates.find(
+                        ({ id }) => id === selectedTemplate,
+                      )?.name
+                    }
+                  </h3>
+                  <p className="text-muted mt-1 text-sm">
+                    {deckReview.slideCount} editable slides · generated only
+                    when you download
+                  </p>
+                </div>
+              </div>
+              <a
+                href={`/api/reports/executive-deck?template=${selectedTemplate}`}
+                className="bg-deep-green hover:bg-ink inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors"
+              >
+                <ArrowDownToLine className="size-4" aria-hidden="true" />
+                Download editable PowerPoint
+              </a>
+            </div>
+            <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <h4 className="font-semibold">Slides included</h4>
+                <ol className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                  {deckReview.sections.map((section, index) => (
+                    <li key={section} className="flex gap-2">
+                      <span className="text-muted tabular-nums">
+                        {index + 1}.
+                      </span>
+                      <span>{section}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div className="border-border lg:border-l lg:pl-6">
+                <h4 className="font-semibold">Source coverage</h4>
+                <ul className="text-muted mt-4 space-y-2 text-sm">
+                  {deckReview.generatedFrom.map((source) => (
+                    <li key={source}>✓ {source}</li>
+                  ))}
+                </ul>
+                <p className="text-muted mt-4 text-xs leading-5">
+                  Financial values follow the current user’s permissions. Each
+                  slide includes source URLs in speaker notes, and key records
+                  are linked directly from the deck.
+                </p>
+                {deckReview.limitations.length ? (
+                  <p className="bg-soft-amber text-warning mt-4 rounded-md p-3 text-xs">
+                    Data limitations:{" "}
+                    {deckReview.limitations
+                      .map(formatDataLimitation)
+                      .join(", ")}
+                    .
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </Card>
+        ) : null}
+      </section>
 
       <section aria-labelledby="portfolio-overview">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">

@@ -16,6 +16,33 @@ test("presents live portfolio reporting and downloads authorized PDFs", async ({
   await expect(
     main.getByRole("heading", { name: "Risk concentration" }),
   ).toBeVisible();
+  await expect(
+    main.getByRole("heading", { name: "Executive slide decks" }),
+  ).toBeVisible();
+
+  await main.getByRole("link", { name: /Weekly executive review/ }).click();
+  await expect(
+    main.getByRole("heading", { name: "Weekly executive review" }),
+  ).toBeVisible();
+  await expect(
+    main.getByRole("link", { name: "Download editable PowerPoint" }),
+  ).toBeVisible();
+  const deckResponse = await page.request.get(
+    "/api/reports/executive-deck?template=weekly-executive-review",
+  );
+  expect(deckResponse.ok()).toBe(true);
+  expect(deckResponse.headers()["content-type"]).toBe(
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  );
+  expect(deckResponse.headers()["content-disposition"]).toMatch(
+    /attachment; filename="sightline-weekly-executive-review-\d{4}-\d{2}-\d{2}\.pptx"/,
+  );
+  const deck = await deckResponse.body();
+  expect(deck.subarray(0, 2).toString()).toBe("PK");
+  if (process.env.REPORT_PPTX_QA === "1") {
+    await mkdir("tmp/pptx", { recursive: true });
+    await writeFile("tmp/pptx/sightline-executive-deck-qa.pptx", deck);
+  }
 
   const riskResponse = await page.request.get("/api/reports/risk");
   expect(riskResponse.ok()).toBe(true);

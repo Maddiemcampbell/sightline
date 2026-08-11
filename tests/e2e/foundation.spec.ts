@@ -93,19 +93,24 @@ test("requires a reason before dismissing a brief risk", async ({ page }) => {
 
 test("acknowledges a risk and persists after reload", async ({ page }) => {
   await page.goto("/brief");
-  const firstRisk = page.getByRole("article").first();
-  const riskName = await firstRisk.getByRole("heading", { level: 2 }).innerText();
-  const acknowledge = firstRisk.getByRole("button", {
+  const initialRisk = page.getByRole("article").first();
+  const riskName = await initialRisk
+    .getByRole("heading", { level: 2 })
+    .innerText();
+  // Acknowledgement moves the card from "Act today" to "Monitor". Follow the
+  // selected risk by its accessible name instead of its changing list position.
+  const selectedRisk = page.getByRole("article", { name: riskName });
+  const acknowledge = selectedRisk.getByRole("button", {
     name: "Acknowledge",
     exact: true,
   });
-  const acknowledgedStatus = firstRisk.getByRole("status");
+  const acknowledgedStatus = selectedRisk.getByRole("status");
   await expect(acknowledgedStatus.or(acknowledge)).toBeVisible();
   if (await acknowledge.isVisible()) {
     await acknowledge.click();
   }
   await expect(acknowledgedStatus).toHaveText("Acknowledged");
-  await expect(firstRisk).toHaveAttribute(
+  await expect(selectedRisk).toHaveAttribute(
     "data-acknowledgement-persisted",
     "true",
   );
