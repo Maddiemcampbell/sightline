@@ -98,17 +98,18 @@ export function AskSightlineWorkspace() {
     const resolved = resolveAskCommand(value);
     if (resolved.question.length < 3 || pending || !canUseAi) return;
     if (resolved.advisorMode) setAdvisorMode(resolved.advisorMode);
-    ask(
-      resolved.question,
-      resolved.advisorMode
-        ? { openDrawer: false, advisorMode: resolved.advisorMode }
-        : { openDrawer: false },
-    );
+    ask(resolved.question, {
+      openDrawer: false,
+      ...(resolved.advisorMode ? { advisorMode: resolved.advisorMode } : {}),
+      ...(resolved.workflowCommand
+        ? { workflowCommand: resolved.workflowCommand }
+        : {}),
+    });
     setQuestion("");
   }
 
   function selectCommand(command: AskCommand) {
-    setQuestion(command.prompt || `${command.token} `);
+    setQuestion(`${command.token} `);
     setAdvisorMode(command.advisorMode);
     setActiveCommandIndex(0);
     requestAnimationFrame(() => composerRef.current?.focus());
@@ -580,6 +581,41 @@ function WorkspaceAnswer({
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </section>
+        ) : null}
+        {message.workflowProposal ? (
+          <section
+            aria-label="Workflow preview"
+            className="border-accent-strong bg-soft-green mt-5 rounded-xl border p-4"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-deep-green text-xs font-semibold tracking-wide uppercase">
+                Preview · Not applied
+              </p>
+              <code className="text-muted text-xs">
+                {message.workflowProposal.command}
+              </code>
+            </div>
+            <h3 className="mt-3 font-semibold">
+              {message.workflowProposal.title}
+            </h3>
+            <p className="mt-1 text-sm leading-6">
+              {message.workflowProposal.summary}
+            </p>
+            <p className="text-muted mt-3 text-xs leading-5">
+              {message.workflowProposal.effect}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Link
+                href={message.workflowProposal.href}
+                className="bg-deep-green inline-flex min-h-10 items-center rounded-md px-4 text-sm font-semibold text-white"
+              >
+                {message.workflowProposal.actionLabel}
+              </Link>
+              <span className="text-muted text-xs">
+                You will review required details before anything changes.
+              </span>
+            </div>
           </section>
         ) : null}
         {message.suggestedFollowUps.length ? (

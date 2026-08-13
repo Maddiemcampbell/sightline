@@ -80,6 +80,15 @@ export const helpPages = {
           "Escape: close the command palette",
         ],
       },
+      {
+        title: "Preview before applying",
+        body: "Workflow commands return a proposal marked Preview · Not applied. Review its scope and effect, then continue to the destination workflow to supply required details. Sightline does not create actions, meetings, reports, decks, emails, or document changes merely because a slash command was submitted.",
+        items: [
+          "Read the proposed scope and the explicit statement of what has not changed.",
+          "Use the review button to open the validated setup workflow.",
+          "Confirm required owners, dates, recipients, evidence, and permissions before applying or downloading anything.",
+        ],
+      },
     ],
   },
   releases: {

@@ -10,6 +10,17 @@ export type SharedAskMessage = Readonly<{
   missingInformation: readonly string[];
   suggestedFollowUps: readonly string[];
   routedAdvisorMode?: Exclude<AdvisorMode, "auto"> | null;
+  workflowProposal?: AskWorkflowProposal | null;
+}>;
+
+export type AskWorkflowProposal = Readonly<{
+  command:
+    "/action" | "/meeting" | "/deck" | "/report" | "/email" | "/document";
+  title: string;
+  summary: string;
+  effect: string;
+  href: string;
+  actionLabel: string;
 }>;
 
 export type SharedAskConversation = Readonly<{

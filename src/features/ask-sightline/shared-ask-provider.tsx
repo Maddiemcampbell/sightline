@@ -14,6 +14,7 @@ import {
 import { askOrganizationSightlineAction } from "@/app/ask/actions";
 import { organizationCitationSchema } from "@/domain/ai/organization-question";
 import type {
+  AskWorkflowProposal,
   SharedAskConversation,
   SharedAskMessage,
 } from "@/features/ask-sightline/shared-types";
@@ -22,6 +23,7 @@ import {
   useWorkspaceResources,
 } from "@/features/workspace/workspace-provider";
 import type { AdvisorMode } from "@/features/workspace/types";
+import { buildWorkflowProposal } from "@/features/ask-sightline/commands";
 
 type SharedAskContextValue = Readonly<{
   messages: readonly SharedAskMessage[];
@@ -29,7 +31,11 @@ type SharedAskContextValue = Readonly<{
   activeConversationId: string | null;
   ask: (
     question: string,
-    options?: { openDrawer?: boolean; advisorMode?: AdvisorMode },
+    options?: {
+      openDrawer?: boolean;
+      advisorMode?: AdvisorMode;
+      workflowCommand?: AskWorkflowProposal["command"];
+    },
   ) => void;
   clearConversation: () => void;
   selectConversation: (conversationId: string) => void;
@@ -151,7 +157,11 @@ export function SharedAskProvider({
   const ask = useCallback(
     (
       question: string,
-      options?: { openDrawer?: boolean; advisorMode?: AdvisorMode },
+      options?: {
+        openDrawer?: boolean;
+        advisorMode?: AdvisorMode;
+        workflowCommand?: AskWorkflowProposal["command"];
+      },
     ) => {
       const trimmed = question.trim();
       if (trimmed.length < 3 || pending) return;
@@ -192,9 +202,18 @@ export function SharedAskProvider({
               content,
             })),
           });
+          const answerWithProposal: SharedAskMessage = options?.workflowCommand
+            ? {
+                ...answer,
+                workflowProposal: buildWorkflowProposal(
+                  options.workflowCommand,
+                  trimmed,
+                ),
+              }
+            : answer;
           commitMessages(
             conversationId,
-            [...optimisticMessages, answer].slice(-30),
+            [...optimisticMessages, answerWithProposal].slice(-30),
           );
         } catch (caught) {
           const next = optimisticMessages.filter(
@@ -435,10 +454,38 @@ function normalizeMessages(value: unknown): SharedAskMessage[] {
             isRoutedAdvisorMode(message.routedAdvisorMode)
               ? message.routedAdvisorMode
               : null,
+          workflowProposal:
+            "workflowProposal" in message
+              ? normalizeWorkflowProposal(message.workflowProposal)
+              : null,
         },
       ];
     })
     .slice(-30);
+}
+
+function normalizeWorkflowProposal(value: unknown): AskWorkflowProposal | null {
+  if (typeof value !== "object" || value === null) return null;
+  const proposal = value as Partial<AskWorkflowProposal>;
+  const commands = [
+    "/action",
+    "/meeting",
+    "/deck",
+    "/report",
+    "/email",
+    "/document",
+  ];
+  if (
+    !commands.includes(String(proposal.command)) ||
+    typeof proposal.title !== "string" ||
+    typeof proposal.summary !== "string" ||
+    typeof proposal.effect !== "string" ||
+    typeof proposal.href !== "string" ||
+    !proposal.href.startsWith("/") ||
+    typeof proposal.actionLabel !== "string"
+  )
+    return null;
+  return proposal as AskWorkflowProposal;
 }
 
 function isRoutedAdvisorMode(

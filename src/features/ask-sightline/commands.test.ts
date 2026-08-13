@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   askCommands,
+  buildWorkflowProposal,
   matchingAskCommands,
   resolveAskCommand,
 } from "@/features/ask-sightline/commands";
@@ -27,14 +28,32 @@ describe("Ask Sightline commands", () => {
     expect(resolveAskCommand("/forecast next 90 days")).toEqual({
       question: "next 90 days",
       advisorMode: "forecast",
+      workflowCommand: null,
     });
     expect(resolveAskCommand("/meeting Cedar Grove")).toEqual({
       question: "Prepare a meeting for Cedar Grove",
       advisorMode: "executive",
+      workflowCommand: "/meeting",
     });
     expect(resolveAskCommand("What changed?")).toEqual({
       question: "What changed?",
       advisorMode: null,
+      workflowCommand: null,
     });
+  });
+
+  it("builds an explicit non-mutating workflow preview", () => {
+    expect(
+      buildWorkflowProposal("/meeting", "Prepare a meeting for Cedar Grove"),
+    ).toMatchObject({
+      command: "/meeting",
+      summary: "Cedar Grove",
+      href: "/meetings",
+      actionLabel: "Review meeting setup",
+    });
+    expect(
+      buildWorkflowProposal("/meeting", "Prepare a meeting for Cedar Grove")
+        .effect,
+    ).toMatch(/No meeting has been created/);
   });
 });

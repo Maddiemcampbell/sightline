@@ -204,6 +204,26 @@ export function SharedAskDrawer() {
                         </ul>
                       </div>
                     )}
+                    {message.workflowProposal && (
+                      <div className="border-accent-strong bg-soft-green mt-4 rounded-lg border p-3">
+                        <p className="text-deep-green text-[0.68rem] font-semibold uppercase">
+                          Preview · Not applied
+                        </p>
+                        <p className="mt-2 text-sm font-semibold">
+                          {message.workflowProposal.title}
+                        </p>
+                        <p className="text-muted mt-1 text-xs leading-5">
+                          {message.workflowProposal.effect}
+                        </p>
+                        <Link
+                          href={message.workflowProposal.href}
+                          onClick={() => setOpen(false)}
+                          className="bg-deep-green mt-3 inline-flex min-h-9 items-center rounded-md px-3 text-xs font-semibold text-white"
+                        >
+                          {message.workflowProposal.actionLabel}
+                        </Link>
+                      </div>
+                    )}
                     {message.suggestedFollowUps.length > 0 && (
                       <div className="mt-4 flex flex-wrap gap-2">
                         {message.suggestedFollowUps.map((prompt) => (

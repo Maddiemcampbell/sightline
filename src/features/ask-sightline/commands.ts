@@ -1,4 +1,5 @@
 import type { AdvisorMode } from "@/features/workspace/types";
+import type { AskWorkflowProposal } from "@/features/ask-sightline/shared-types";
 
 export type AskCommand = Readonly<{
   token: string;
@@ -122,15 +123,88 @@ export function matchingAskCommands(value: string): readonly AskCommand[] {
 export function resolveAskCommand(value: string): Readonly<{
   question: string;
   advisorMode: AdvisorMode | null;
+  workflowCommand: AskWorkflowProposal["command"] | null;
 }> {
   const trimmed = value.trim();
   const [token = "", ...rest] = trimmed.split(/\s+/);
   const command = askCommands.find(
     (item) => item.token === token.toLowerCase(),
   );
-  if (!command) return { question: trimmed, advisorMode: null };
+  if (!command)
+    return { question: trimmed, advisorMode: null, workflowCommand: null };
   return {
     question: `${command.prompt}${rest.join(" ")}`.trim(),
     advisorMode: command.advisorMode,
+    workflowCommand:
+      command.category === "Workflow"
+        ? (command.token as AskWorkflowProposal["command"])
+        : null,
   };
+}
+
+export function buildWorkflowProposal(
+  command: AskWorkflowProposal["command"],
+  question: string,
+): AskWorkflowProposal {
+  const subject = question
+    .replace(
+      /^(Create a follow-up action for|Prepare a meeting for|Prepare an executive slide deck for|Prepare a report about|Draft an email about|Find supporting documents related to)\s*/i,
+      "",
+    )
+    .trim();
+  const encoded = encodeURIComponent(subject);
+  const proposals: Record<
+    AskWorkflowProposal["command"],
+    Omit<AskWorkflowProposal, "command">
+  > = {
+    "/action": {
+      title: "Proposed follow-up action workflow",
+      summary: subject || "Review the requested follow-up and its evidence.",
+      effect:
+        "No action has been created. Confirm the related risk, owner, priority, due date, and definition of done in the action workflow.",
+      href: `/actions${subject ? `?search=${encoded}` : ""}`,
+      actionLabel: "Review action workflow",
+    },
+    "/meeting": {
+      title: "Proposed meeting preparation",
+      summary: subject || "Prepare an evidence-grounded meeting agenda.",
+      effect:
+        "No meeting has been created. Confirm the meeting type, projects, date, and generated agenda before saving it.",
+      href: "/meetings",
+      actionLabel: "Review meeting setup",
+    },
+    "/deck": {
+      title: "Proposed executive deck",
+      summary: subject || "Prepare an editable executive presentation.",
+      effect:
+        "No deck has been generated. Confirm the template, included sections, financial visibility, and data-readiness warnings first.",
+      href: "/reports?template=weekly-executive-review#executive-decks",
+      actionLabel: "Review deck setup",
+    },
+    "/report": {
+      title: "Proposed report",
+      summary: subject || "Prepare a permission-aware report.",
+      effect:
+        "No report has been downloaded. Select the report type and review its scope and data limitations first.",
+      href: "/reports",
+      actionLabel: "Review report options",
+    },
+    "/email": {
+      title: "Proposed email draft",
+      summary: subject || "Draft evidence-grounded correspondence.",
+      effect:
+        "No email has been drafted or sent. Select the related risk and review the recipient, tone, claims, and cited evidence first.",
+      href: "/risks",
+      actionLabel: "Choose related risk",
+    },
+    "/document": {
+      title: "Proposed document review",
+      summary: subject || "Find supporting documents and evidence.",
+      effect:
+        "No records have changed. Review only documents available within the current organization and project scope.",
+      href: `/documents${subject ? `?search=${encoded}` : ""}`,
+      actionLabel: "Review documents",
+    },
+  };
+  return { command, ...proposals[command] };
 }
