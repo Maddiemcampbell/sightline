@@ -15,6 +15,7 @@ import {
   getSuggestedOrganizationPrompts,
   getSuggestedRiskPrompts,
 } from "@/features/ask-sightline/suggested-prompts";
+import { organizationObservationCitationId } from "@/features/ask-sightline/organization-context";
 
 const context = organizationQuestionContextSchema.parse({
   organizationId: crypto.randomUUID(),
@@ -167,5 +168,21 @@ describe("organization-wide Ask Sightline", () => {
       1,
     );
     expect(selected[0]?.id).toBe("forecast:portfolio");
+  });
+
+  it("keeps portfolio observation citation IDs short and deterministic", () => {
+    const longObservationKey = `documentation-gap:${Array.from(
+      { length: 20 },
+      (_, index) =>
+        `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    ).join(",")}`;
+    const id = organizationObservationCitationId(longObservationKey);
+
+    expect(longObservationKey.length).toBeGreaterThan(180);
+    expect(id.length).toBeLessThanOrEqual(180);
+    expect(organizationObservationCitationId(longObservationKey)).toBe(id);
+    expect(
+      organizationObservationCitationId(`${longObservationKey}:different`),
+    ).not.toBe(id);
   });
 });

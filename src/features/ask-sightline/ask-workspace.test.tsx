@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { AskSightlineWorkspace } from "@/features/ask-sightline/ask-workspace";
 import { SharedAskProvider } from "@/features/ask-sightline/shared-ask-provider";
+import { getAskSightlineErrorMessage } from "@/features/ask-sightline/shared-ask-provider";
 import { WorkspaceProvider } from "@/features/workspace/workspace-provider";
 
 describe("Ask Sightline workspace", () => {
@@ -26,5 +27,14 @@ describe("Ask Sightline workspace", () => {
     expect(markup).toContain("Your organization permissions");
     expect(markup).toContain("How answers work");
     expect(markup).toContain("Verify cited records before acting");
+  });
+
+  it("does not expose internal validation details to users", () => {
+    const message = getAskSightlineErrorMessage(
+      new Error('[{"code":"too_big","path":["citations",15,"id"]}]'),
+    );
+
+    expect(message).toMatch(/couldn't prepare an answer/i);
+    expect(message).not.toMatch(/citations|too_big|path/i);
   });
 });

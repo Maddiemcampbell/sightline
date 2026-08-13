@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import {
   organizationQuestionContextSchema,
   type OrganizationCitation,
@@ -281,7 +283,7 @@ export function buildOrganizationQuestionContext({
         ]
       : []),
     ...observations.map((observation): OrganizationCitation => ({
-      id: `observation:${observation.key}`,
+      id: organizationObservationCitationId(observation.key),
       entityType: "observation",
       title: observation.title,
       excerpt: sanitizeUntrustedExcerpt(
@@ -306,7 +308,7 @@ export function buildOrganizationQuestionContext({
     })),
     ...intelligence.rootCauseSuggestions.map(
       (suggestion): OrganizationCitation => ({
-        id: `observation:hypothesis:${suggestion.key}`,
+        id: organizationObservationCitationId(`hypothesis:${suggestion.key}`),
         entityType: "observation",
         title: suggestion.title,
         excerpt: sanitizeUntrustedExcerpt(
@@ -493,6 +495,11 @@ export function buildOrganizationQuestionContext({
       })),
     question: sanitizeUntrustedExcerpt(question),
   });
+}
+
+export function organizationObservationCitationId(key: string): string {
+  const digest = createHash("sha256").update(key).digest("hex").slice(0, 24);
+  return `observation:${digest}`;
 }
 
 function displayDate(value: string): string {

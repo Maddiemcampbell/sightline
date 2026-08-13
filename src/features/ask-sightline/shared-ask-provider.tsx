@@ -134,11 +134,7 @@ export function SharedAskProvider({
             persistMessages(next);
             return next;
           });
-          setError(
-            caught instanceof Error
-              ? caught.message
-              : "Sightline could not answer that question.",
-          );
+          setError(getAskSightlineErrorMessage(caught));
         }
       });
     },
@@ -196,6 +192,14 @@ export function useSharedAsk() {
   if (!context)
     throw new Error("useSharedAsk must be used inside SharedAskProvider.");
   return context;
+}
+
+export function getAskSightlineErrorMessage(caught: unknown): string {
+  const message = caught instanceof Error ? caught.message : "";
+  if (/too many questions/i.test(message)) return message;
+  if (/does not permit access|not authorized|unauthorized/i.test(message))
+    return "Your current role does not permit access to that information.";
+  return "Sightline couldn't prepare an answer from the available records. Please retry, or narrow the project scope if the issue continues.";
 }
 
 function normalizeMessages(value: unknown): SharedAskMessage[] {
