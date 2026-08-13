@@ -14,6 +14,8 @@ const advisorInstructions: Record<AdvisorMode, string> = {
   risk: "Focus on risk severity, exposure, evidence strength, mitigation progress, connected patterns, and missing information. Distinguish facts from hypotheses. Example response framing: 'Supported risk — evidence — mitigation — uncertainty.'",
   financial:
     "Use only supplied authoritative financial analytics and financial impact records. Distinguish actual, derived, estimated, partial, missing, and unavailable values. Explain that positive budget variance means under budget and negative means over budget. Never calculate a new forecast, profitability figure, or savings estimate inside the prompt. Example response framing: 'Supported amount — source — quality/limitation'; omit an amount when none is supplied.",
+  forecast:
+    "Focus on the supplied deterministic forecast, cash-flow horizon, margin and budget trajectory, worsening risk signals, upcoming commitments, confidence, and missing inputs. Clearly distinguish a current projection from an actual result or prediction. Never invent probabilities, extend the supplied horizon, or calculate a new scenario. Example response framing: 'Outlook — supported driver — confidence/data gap — next check.'",
 };
 
 const purposeInstructions: Record<OrganizationQuestionPurpose, string> = {
@@ -27,6 +29,8 @@ const purposeInstructions: Record<OrganizationQuestionPurpose, string> = {
     "Identify only evidence-backed opportunities. For each, include Observation, Supporting Reasoning, Confidence, Related Projects/Risks, and Suggested Next Step. Never invent a savings estimate.",
   project_analysis:
     "Compare only supplied project facts and supported history. Clearly state when trend, manager-load, schedule, or KPI data is unavailable.",
+  forecast_analysis:
+    "Explain the current deterministic outlook, the inputs driving it, forecast confidence, and the most important data gaps. Separate financial projections from risk trend indicators, and recommend which underlying record to verify next.",
 };
 
 export function organizationSystemInstructions(
@@ -73,6 +77,12 @@ export function classifyOrganizationQuestion(
   question: string,
 ): OrganizationQuestionPurpose {
   const normalized = question.toLocaleLowerCase();
+  if (
+    /forecast|lookahead|look ahead|cash flow|cashflow|margin trajectory|budget trajectory|likely to miss|worsen the outlook|scenario/.test(
+      normalized,
+    )
+  )
+    return "forecast_analysis";
   if (/leadership|meeting|agenda|tomorrow/.test(normalized))
     return "leadership_prep";
   if (/cost.?sav|saving|reduce cost|opportunit|vendor issue/.test(normalized))

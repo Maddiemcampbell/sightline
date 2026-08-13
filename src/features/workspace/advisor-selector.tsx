@@ -10,6 +10,7 @@ const labels: Record<AdvisorMode, string> = {
   executive: "Executive Advisor",
   risk: "Risk Advisor",
   financial: "Financial Advisor",
+  forecast: "Forecast Advisor",
 };
 
 export function AdvisorSelector() {

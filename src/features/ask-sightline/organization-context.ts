@@ -95,6 +95,103 @@ export function buildOrganizationQuestionContext({
   });
 
   const citations: OrganizationCitation[] = [
+    ...(advisorMode === "forecast" && financialAnalytics
+      ? [
+          {
+            id: "forecast:portfolio-outlook",
+            entityType: "forecast" as const,
+            title: "Current deterministic portfolio outlook",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                financialAnalytics.portfolio.netBudgetVariance.valueCents !==
+                null
+                  ? `Current net budget variance ${formatMoney(financialAnalytics.portfolio.netBudgetVariance.valueCents)}; positive means under budget and negative means over budget.`
+                  : "Current net budget variance unavailable.",
+                financialAnalytics.portfolio.forecastMarginPercent !== null
+                  ? `Current forecast margin ${financialAnalytics.portfolio.forecastMarginPercent}%.`
+                  : "Current forecast margin unavailable.",
+                `${financialAnalytics.portfolio.projectsOverBudget} projects over budget; ${financialAnalytics.portfolio.projectsMissingFinancialData} projects missing required financial data.`,
+                `Forecast quality ${financialAnalytics.portfolio.quality}. Missing inputs: ${financialAnalytics.portfolio.metadata.missingInputs.join(", ") || "none"}.`,
+                `Calculated ${financialAnalytics.portfolio.metadata.calculatedAt} using deterministic calculation ${financialAnalytics.portfolio.metadata.calculationVersion}. This is a current projection, not an actual result or AI prediction.`,
+              ].join(" "),
+            ),
+            href: "/forecasts",
+          },
+          {
+            id: "forecast:cash-flow",
+            entityType: "forecast" as const,
+            title: "Current cash-flow forecast",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                `Forecast period ${financialAnalytics.cashFlow.period}; confidence ${financialAnalytics.cashFlow.confidence}.`,
+                ...financialAnalytics.cashFlow.buckets.map(
+                  (bucket) =>
+                    `${bucket.startsOn} through ${bucket.endsOn}: expected inflows ${formatMoney(bucket.expectedInflows.valueCents ?? 0)}, expected outflows ${formatMoney(bucket.expectedOutflows.valueCents ?? 0)}, net cash flow ${formatMoney(bucket.netCashFlow.valueCents ?? 0)}; confidence ${bucket.confidence}; ${bucket.isEstimated ? "estimated fallback" : "scheduled data"}.`,
+                ),
+                `Missing inputs: ${financialAnalytics.cashFlow.metadata.missingInputs.join(", ") || "none"}.`,
+              ].join(" "),
+            ),
+            href: "/forecasts",
+          },
+          ...financialAnalytics.portfolio.projects.map(
+            (project): OrganizationCitation => ({
+              id: `forecast:project:${project.projectId}`,
+              entityType: "forecast",
+              title: `${project.projectName} forecast outlook`,
+              excerpt: sanitizeUntrustedExcerpt(
+                [
+                  project.forecastMarginPercent !== null
+                    ? `Current forecast margin ${project.forecastMarginPercent}%.`
+                    : "Current forecast margin unavailable.",
+                  project.estimateAtCompletion.valueCents !== null
+                    ? `Estimate at completion ${formatMoney(project.estimateAtCompletion.valueCents)}.`
+                    : "Estimate at completion unavailable.",
+                  project.budgetVariance.valueCents !== null
+                    ? `Budget variance ${formatMoney(project.budgetVariance.valueCents)} (${project.budgetVariancePercent ?? "unavailable"}%); ${project.varianceDirection.replaceAll("_", " ")}.`
+                    : "Budget variance unavailable.",
+                  project.pendingChangeOrders.valueCents !== null
+                    ? `Pending change orders ${formatMoney(project.pendingChangeOrders.valueCents)}.`
+                    : "Pending change orders unavailable.",
+                  `Data quality ${project.quality}. Missing inputs: ${project.budgetVariance.metadata.missingInputs.join(", ") || "none"}.`,
+                ].join(" "),
+              ),
+              href: `/projects/${project.projectId}`,
+            }),
+          ),
+        ]
+      : advisorMode === "forecast"
+        ? [
+            {
+              id: "forecast:financial-access",
+              entityType: "forecast" as const,
+              title: "Forecast data access",
+              excerpt:
+                "Financial forecast values are unavailable because this role cannot view financial exposure. Risk signals, actions, and project records remain available within the user's authorized scope.",
+              href: "/forecasts/readiness",
+            },
+          ]
+        : []),
+    ...(advisorMode === "forecast" && riskAnalytics
+      ? [
+          {
+            id: "forecast:risk-outlook",
+            entityType: "forecast" as const,
+            title: "Risk outlook indicators",
+            excerpt: sanitizeUntrustedExcerpt(
+              [
+                ...riskAnalytics.drivers
+                  .slice(0, 8)
+                  .map(
+                    (driver) =>
+                      `${driver.label}: ${driver.activeRiskCount} active risks; trend ${driver.trendState}${driver.trendPercent === null ? "" : ` at ${driver.trendPercent}%`}.`,
+                  ),
+                "Risk trends describe changes in current records; they are not predictions of future outcomes.",
+              ].join(" "),
+            ),
+            href: "/forecasts",
+          },
+        ]
+      : []),
     ...(riskAnalytics
       ? [
           {

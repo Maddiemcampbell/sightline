@@ -118,6 +118,15 @@ describe("organization-wide Ask Sightline", () => {
     expect(classifyOrganizationQuestion("Find cost saving opportunities")).toBe(
       "cost_saving",
     );
+    expect(
+      organizationSystemInstructions({
+        advisorMode: "forecast",
+        purpose: "forecast_analysis",
+      }),
+    ).toContain("current projection");
+    expect(
+      classifyOrganizationQuestion("What does cash flow look like next?"),
+    ).toBe("forecast_analysis");
   });
 
   it("adapts reusable suggestions to advisor, page, and project context", () => {
@@ -132,5 +141,31 @@ describe("organization-wide Ask Sightline", () => {
     ).toContain("Summarize Atlas.");
     expect(getSuggestedRiskPrompts("financial")[0]).toMatch(/financial/i);
     expect(getSuggestedRiskPrompts("executive")[0]).toMatch(/leadership/i);
+    expect(
+      getSuggestedOrganizationPrompts({
+        advisorMode: "forecast",
+        pathname: "/ask",
+        selectedProjectName: null,
+        hasPortfolioObservations: false,
+      }),
+    ).toEqual(expect.arrayContaining([expect.stringMatching(/cash flow/i)]));
+  });
+
+  it("prioritizes deterministic forecast sources for forecast questions", () => {
+    const selected = selectRelevantOrganizationCitations(
+      "Which projects are likely to miss their forecast targets?",
+      [
+        ...context.citations,
+        {
+          id: "forecast:portfolio",
+          entityType: "forecast",
+          title: "Current deterministic portfolio outlook",
+          excerpt: "Current forecast margin is unavailable.",
+          href: "/forecasts",
+        },
+      ],
+      1,
+    );
+    expect(selected[0]?.id).toBe("forecast:portfolio");
   });
 });

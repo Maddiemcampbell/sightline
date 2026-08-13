@@ -54,6 +54,7 @@ const advisorModes: readonly AdvisorMode[] = [
   "executive",
   "risk",
   "financial",
+  "forecast",
 ];
 
 export function WorkspaceProvider({

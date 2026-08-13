@@ -8,6 +8,7 @@ export const advisorModeSchema = z.enum([
   "executive",
   "risk",
   "financial",
+  "forecast",
 ]);
 export const organizationQuestionPurposeSchema = z.enum([
   "portfolio_summary",
@@ -15,6 +16,7 @@ export const organizationQuestionPurposeSchema = z.enum([
   "leadership_prep",
   "cost_saving",
   "project_analysis",
+  "forecast_analysis",
 ]);
 export const organizationCitationSchema = z.object({
   id: z.string().min(1).max(180),
@@ -27,6 +29,7 @@ export const organizationCitationSchema = z.object({
     "activity",
     "resolution",
     "observation",
+    "forecast",
   ]),
   title: z.string().min(1).max(240),
   excerpt: z.string().min(1).max(1_500),

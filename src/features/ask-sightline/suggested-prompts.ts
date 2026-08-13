@@ -21,6 +21,12 @@ const advisorPrompts: Record<AdvisorMode, readonly string[]> = {
     "Where do repeated issues suggest cost-saving opportunities?",
     "Which financial questions cannot current data answer?",
   ],
+  forecast: [
+    "Which projects are most likely to miss their targets?",
+    "What does cash flow look like over the forecast horizon?",
+    "Which forecast inputs are missing or estimated?",
+    "Which risks and commitments could worsen the outlook?",
+  ],
 };
 
 export function getSuggestedOrganizationPrompts({
@@ -77,6 +83,10 @@ export function getSuggestedRiskPrompts(
     financial: [
       "What supported financial impact does this risk have?",
       "Which financial information is missing?",
+    ],
+    forecast: [
+      "How could this risk change the project forecast?",
+      "Which forecast inputs would help quantify this risk?",
     ],
   };
   return contextual[advisorMode];

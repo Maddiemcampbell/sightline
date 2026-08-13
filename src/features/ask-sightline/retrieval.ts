@@ -42,6 +42,7 @@ const organizationCitationWeight: Readonly<
   project: 25,
   activity: 20,
   document: 15,
+  forecast: 70,
 };
 
 export function selectRelevantOrganizationCitations(
@@ -94,8 +95,15 @@ function organizationIntentBoost(
   )
     return 80;
   if (
+    /forecast|outlook|cash.?flow|margin|trajectory|scenario|likely|confidence|estimated/.test(
+      normalized,
+    ) &&
+    type === "forecast"
+  )
+    return 100;
+  if (
     /financial|exposure|profit|cost|saving/.test(normalized) &&
-    (type === "risk" || type === "project")
+    (type === "risk" || type === "project" || type === "forecast")
   )
     return 60;
   if (/project|compare|performance/.test(normalized) && type === "project")

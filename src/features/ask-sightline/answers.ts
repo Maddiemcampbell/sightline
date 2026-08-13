@@ -62,11 +62,13 @@ export function deterministicOrganizationAnswer(
     };
 
   const preferredTypes =
-    context.purpose === "cost_saving"
-      ? ["observation", "evidence", "risk", "action"]
-      : context.purpose === "project_analysis"
-        ? ["project", "risk", "action", "document"]
-        : ["observation", "risk", "action", "activity"];
+    context.purpose === "forecast_analysis"
+      ? ["forecast", "risk", "action", "project"]
+      : context.purpose === "cost_saving"
+        ? ["observation", "evidence", "risk", "action"]
+        : context.purpose === "project_analysis"
+          ? ["project", "risk", "action", "document"]
+          : ["observation", "risk", "action", "activity"];
   const selected = [
     ...context.citations.filter((citation) =>
       preferredTypes.includes(citation.entityType),
@@ -96,7 +98,9 @@ export function deterministicOrganizationAnswer(
               ? "## Executive summary"
               : context.purpose === "project_analysis"
                 ? "## Supported project analysis"
-                : "## Portfolio attention",
+                : context.purpose === "forecast_analysis"
+                  ? "## Forecast outlook"
+                  : "## Portfolio attention",
           ...selected.map(
             (citation) => `- **${citation.title}:** ${citation.excerpt}`,
           ),
@@ -108,11 +112,15 @@ export function deterministicOrganizationAnswer(
     citationIds: selected.map((citation) => citation.id),
     confidence: Math.min(85, 55 + selected.length * 10),
     missingInformation:
-      context.purpose === "project_analysis"
+      context.purpose === "forecast_analysis"
         ? [
-            "Only stored project, risk, action, document, activity, and resolution records are available; unsupported KPIs and trends were not inferred.",
+            "Forecasts reflect current authorized inputs. Missing or estimated inputs reduce confidence and no unsupported scenario was calculated.",
           ]
-        : [],
+        : context.purpose === "project_analysis"
+          ? [
+              "Only stored project, risk, action, document, activity, and resolution records are available; unsupported KPIs and trends were not inferred.",
+            ]
+          : [],
     suggestedFollowUpQuestions:
       context.projectScope === null
         ? [

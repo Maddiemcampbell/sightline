@@ -184,7 +184,11 @@ export function AskSightlineWorkspace() {
                   disabled={!ready || pending || !canUseAi}
                   rows={3}
                   maxLength={800}
-                  placeholder="Ask about risks, projects, actions, documents, or recent changes…"
+                  placeholder={
+                    advisorMode === "forecast"
+                      ? "Ask about outlook, cash flow, confidence, or missing forecast inputs…"
+                      : "Ask about risks, projects, actions, documents, or recent changes…"
+                  }
                   className="border-border bg-background block w-full resize-none rounded-lg border p-3 text-sm leading-6"
                 />
               </label>
@@ -224,6 +228,14 @@ export function AskSightlineWorkspace() {
                 <dd className="mt-1 font-semibold">
                   {selectedProject?.name ??
                     `All accessible (${projects.length})`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted text-xs">Advisor</dt>
+                <dd className="mt-1 font-semibold">
+                  {advisorMode === "forecast"
+                    ? "Forecast Advisor"
+                    : "Authorized portfolio advisor"}
                 </dd>
               </div>
               <div>
