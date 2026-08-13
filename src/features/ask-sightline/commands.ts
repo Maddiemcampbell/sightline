@@ -1,5 +1,6 @@
 import type { AdvisorMode } from "@/features/workspace/types";
 import type { AskWorkflowProposal } from "@/features/ask-sightline/shared-types";
+import type { OrganizationCitation } from "@/domain/ai/organization-question";
 
 export type AskCommand = Readonly<{
   token: string;
@@ -145,6 +146,7 @@ export function resolveAskCommand(value: string): Readonly<{
 export function buildWorkflowProposal(
   command: AskWorkflowProposal["command"],
   question: string,
+  citations: readonly OrganizationCitation[] = [],
 ): AskWorkflowProposal {
   const subject = question
     .replace(
@@ -153,9 +155,39 @@ export function buildWorkflowProposal(
     )
     .trim();
   const encoded = encodeURIComponent(subject);
+  const riskCitations = citations
+    .filter((citation) => citation.entityType === "risk")
+    .filter(
+      (citation, index, all) =>
+        all.findIndex((candidate) => candidate.id === citation.id) === index,
+    )
+    .slice(0, 5);
+  const actionItems =
+    command === "/action"
+      ? (riskCitations.length ? riskCitations : [null]).map((citation) => ({
+          id: crypto.randomUUID(),
+          selected: true,
+          status: "suggested" as const,
+          title:
+            subject ||
+            (citation ? `Follow up: ${citation.title}` : "Follow-up action"),
+          description:
+            citation?.excerpt ||
+            "Confirm the required outcome and attach evidence when complete.",
+          riskId: citation?.id ?? "",
+          riskTitle: citation?.title ?? "Select a related risk",
+          ownerUserId: null,
+          priority: "normal" as const,
+          dueDate: "",
+          evidenceTitle: citation?.title ?? null,
+          evidenceHref: citation?.href ?? null,
+          createdActionId: null,
+          error: null,
+        }))
+      : [];
   const proposals: Record<
     AskWorkflowProposal["command"],
-    Omit<AskWorkflowProposal, "command">
+    Omit<AskWorkflowProposal, "command" | "id" | "status" | "items">
   > = {
     "/action": {
       title: "Proposed follow-up action workflow",
@@ -206,5 +238,14 @@ export function buildWorkflowProposal(
       actionLabel: "Review documents",
     },
   };
-  return { command, ...proposals[command] };
+  return {
+    id: crypto.randomUUID(),
+    command,
+    status:
+      command === "/action" && actionItems.every((item) => item.riskId)
+        ? "ready_for_review"
+        : "suggested",
+    items: actionItems,
+    ...proposals[command],
+  };
 }

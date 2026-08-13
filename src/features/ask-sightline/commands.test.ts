@@ -56,4 +56,31 @@ describe("Ask Sightline commands", () => {
         .effect,
     ).toMatch(/No meeting has been created/);
   });
+
+  it("builds an editable action proposal from cited risks", () => {
+    const riskId = crypto.randomUUID();
+    const proposal = buildWorkflowProposal(
+      "/action",
+      "Create a follow-up action for obtain the renewed certificate",
+      [
+        {
+          id: riskId,
+          entityType: "risk",
+          title: "Insurance certificate expires soon",
+          excerpt: "The current certificate expires this week.",
+          href: `/risks/${riskId}`,
+        },
+      ],
+    );
+
+    expect(proposal.status).toBe("ready_for_review");
+    expect(proposal.items).toEqual([
+      expect.objectContaining({
+        selected: true,
+        title: "obtain the renewed certificate",
+        riskId,
+        evidenceTitle: "Insurance certificate expires soon",
+      }),
+    ]);
+  });
 });

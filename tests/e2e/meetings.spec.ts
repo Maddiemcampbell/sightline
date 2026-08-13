@@ -81,8 +81,12 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
     main.getByRole("button", { name: "Record decision" }),
   ).toHaveCount(0);
   await main.getByRole("button", { name: "Draft meeting recap" }).click();
+  await expect(main.getByRole("button", { name: "Working…" })).toHaveCount(0, {
+    timeout: 15_000,
+  });
   await expect(main.getByLabel("Subject")).toHaveValue(
     "Meeting recap: E2E leadership review",
+    { timeout: 15_000 },
   );
   const recap = main.getByLabel("Editable meeting recap email body");
   await expect(recap).toHaveValue(/Meeting details/);

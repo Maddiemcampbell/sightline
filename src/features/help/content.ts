@@ -82,7 +82,7 @@ export const helpPages = {
       },
       {
         title: "Preview before applying",
-        body: "Workflow commands return a proposal marked Preview · Not applied. Review its scope and effect, then continue to the destination workflow to supply required details. Sightline does not create actions, meetings, reports, decks, emails, or document changes merely because a slash command was submitted.",
+        body: "Workflow commands return a proposal marked Preview. Action proposals can be edited, selected, and approved directly in chat; Sightline checks permissions again and records only the approved items. Meeting, report, deck, email, and document proposals continue to their full workspace for required details. A slash command never changes records by itself.",
         items: [
           "Read the proposed scope and the explicit statement of what has not changed.",
           "Use the review button to open the validated setup workflow.",

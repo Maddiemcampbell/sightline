@@ -220,8 +220,15 @@ test("records a guided resolution and reopens it with a reason", async ({
     .getByRole("button", { name: "Ask Sightline" })
     .click();
   await expect(
+    page
+      .locator("#main-content")
+      .getByText("Sightline is reviewing the available evidence…", {
+        exact: true,
+      }),
+  ).toBeHidden({ timeout: 15_000 });
+  await expect(
     page.getByRole("region", { name: "Sightline answer" }).last(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
   await page.getByRole("link", { name: "Recommended actions" }).click();
   const accept = page.getByRole("button", { name: "Accept", exact: true });
   if (await accept.isVisible()) {
@@ -420,9 +427,7 @@ test("tracks an email commitment through evidence-backed verification", async ({
   const main = page.locator("#main-content");
   const recipient = main.getByLabel("Recipient");
   await expect(recipient).toHaveCount(1);
-  await recipient.selectOption(
-    "vendor:30000000-0000-4000-8000-000000000001",
-  );
+  await recipient.selectOption("vendor:30000000-0000-4000-8000-000000000001");
   await main.getByRole("button", { name: "Generate editable draft" }).click();
   await expect(page).toHaveURL(/email-draft\?draftId=[0-9a-f-]+$/, {
     timeout: 30_000,

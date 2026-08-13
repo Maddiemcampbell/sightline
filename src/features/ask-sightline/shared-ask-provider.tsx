@@ -11,7 +11,10 @@ import {
   type ReactNode,
 } from "react";
 
-import { askOrganizationSightlineAction } from "@/app/ask/actions";
+import {
+  applyAskActionProposalAction,
+  askOrganizationSightlineAction,
+} from "@/app/ask/actions";
 import { organizationCitationSchema } from "@/domain/ai/organization-question";
 import type {
   AskWorkflowProposal,
@@ -40,6 +43,15 @@ type SharedAskContextValue = Readonly<{
   clearConversation: () => void;
   selectConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
+  updateWorkflowProposal: (
+    messageId: string,
+    proposal: AskWorkflowProposal,
+  ) => void;
+  applyWorkflowProposal: (
+    messageId: string,
+    proposalOverride?: AskWorkflowProposal,
+  ) => void;
+  applyingProposalId: string | null;
   open: boolean;
   setOpen: (open: boolean) => void;
   pending: boolean;
@@ -74,6 +86,9 @@ export function SharedAskProvider({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryQuestion, setRetryQuestion] = useState<string | null>(null);
+  const [applyingProposalId, setApplyingProposalId] = useState<string | null>(
+    null,
+  );
   const [ready, setReady] = useState(false);
   const [pending, startTransition] = useTransition();
   const storageKey = `sightline:${storageIdentity}:organization-conversation`;
@@ -216,6 +231,7 @@ export function SharedAskProvider({
                 workflowProposal: buildWorkflowProposal(
                   options.workflowCommand,
                   trimmed,
+                  answer.citations,
                 ),
               }
             : answer;
@@ -299,6 +315,110 @@ export function SharedAskProvider({
     [activeConversationId, conversations, persistConversations],
   );
 
+  const updateWorkflowProposal = useCallback(
+    (messageId: string, proposal: AskWorkflowProposal) => {
+      if (!activeConversationId) return;
+      const next = messages.map((message) =>
+        message.id === messageId
+          ? { ...message, workflowProposal: proposal }
+          : message,
+      );
+      commitMessages(activeConversationId, next);
+    },
+    [activeConversationId, commitMessages, messages],
+  );
+
+  const applyWorkflowProposal = useCallback(
+    (messageId: string, proposalOverride?: AskWorkflowProposal) => {
+      if (!activeConversationId || applyingProposalId) return;
+      const message = messages.find((item) => item.id === messageId);
+      const proposal = proposalOverride ?? message?.workflowProposal;
+      if (!proposal || proposal.command !== "/action") return;
+      const selected = proposal.items.filter(
+        (item) => item.selected && item.status !== "created",
+      );
+      if (!selected.length) return;
+      const approved: AskWorkflowProposal = {
+        ...proposal,
+        status: "approved",
+        items: proposal.items.map((item) =>
+          item.selected && item.status !== "created"
+            ? { ...item, status: "approved", error: null }
+            : item,
+        ),
+      };
+      const approvingMessages = messages.map((item) =>
+        item.id === messageId ? { ...item, workflowProposal: approved } : item,
+      );
+      commitMessages(activeConversationId, approvingMessages);
+      setApplyingProposalId(proposal.id);
+      void applyAskActionProposalAction({
+        proposalId: proposal.id,
+        items: selected.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          riskId: item.riskId,
+          ownerUserId: item.ownerUserId,
+          priority: item.priority,
+          dueDate: item.dueDate,
+        })),
+      })
+        .then((results) => {
+          const byItem = new Map(
+            results.map((result) => [result.itemId, result]),
+          );
+          const completed: AskWorkflowProposal = {
+            ...approved,
+            status: results.every((result) => result.status === "created")
+              ? "created"
+              : "failed",
+            items: approved.items.map((item) => {
+              const result = byItem.get(item.id);
+              return result
+                ? {
+                    ...item,
+                    status: result.status,
+                    createdActionId: result.actionId,
+                    error: result.error,
+                  }
+                : item;
+            }),
+          };
+          commitMessages(
+            activeConversationId,
+            approvingMessages.map((item) =>
+              item.id === messageId
+                ? { ...item, workflowProposal: completed }
+                : item,
+            ),
+          );
+        })
+        .catch((caught) => {
+          const failure = getWorkflowApplyErrorMessage(caught);
+          const failed: AskWorkflowProposal = {
+            ...approved,
+            status: "failed",
+            items: approved.items.map((item) =>
+              item.status === "approved"
+                ? { ...item, status: "failed", error: failure }
+                : item,
+            ),
+          };
+          commitMessages(
+            activeConversationId,
+            approvingMessages.map((item) =>
+              item.id === messageId
+                ? { ...item, workflowProposal: failed }
+                : item,
+            ),
+          );
+        })
+        .finally(() => setApplyingProposalId(null));
+    },
+    [activeConversationId, applyingProposalId, commitMessages, messages],
+  );
+
   const value = useMemo(
     () => ({
       messages,
@@ -308,6 +428,9 @@ export function SharedAskProvider({
       clearConversation,
       selectConversation,
       deleteConversation,
+      updateWorkflowProposal,
+      applyWorkflowProposal,
+      applyingProposalId,
       open,
       setOpen,
       pending,
@@ -321,6 +444,9 @@ export function SharedAskProvider({
       clearConversation,
       conversations,
       deleteConversation,
+      updateWorkflowProposal,
+      applyWorkflowProposal,
+      applyingProposalId,
       error,
       messages,
       open,
@@ -430,6 +556,15 @@ export function getAskSightlineErrorMessage(caught: unknown): string {
   return "Sightline couldn't prepare an answer from the available records. Please retry, or narrow the project scope if the issue continues.";
 }
 
+function getWorkflowApplyErrorMessage(caught: unknown): string {
+  const message = caught instanceof Error ? caught.message : "";
+  if (/not authorized|unauthorized|does not permit/i.test(message))
+    return "Your current permissions do not allow this action to be created.";
+  if (/owner not found/i.test(message))
+    return "The selected owner is no longer available. Choose another owner.";
+  return "Sightline could not create this action. Review the fields and try again.";
+}
+
 function normalizeMessages(value: unknown): SharedAskMessage[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -518,7 +653,45 @@ function normalizeWorkflowProposal(value: unknown): AskWorkflowProposal | null {
     typeof proposal.actionLabel !== "string"
   )
     return null;
-  return proposal as AskWorkflowProposal;
+  const statuses: AskWorkflowProposal["status"][] = [
+    "suggested",
+    "ready_for_review",
+    "approved",
+    "created",
+    "failed",
+  ];
+  const items = Array.isArray(proposal.items)
+    ? proposal.items.filter(isWorkflowActionItem).slice(0, 10)
+    : [];
+  return {
+    ...(proposal as Omit<AskWorkflowProposal, "id" | "status" | "items">),
+    id: typeof proposal.id === "string" ? proposal.id : crypto.randomUUID(),
+    status: statuses.includes(proposal.status as AskWorkflowProposal["status"])
+      ? (proposal.status as AskWorkflowProposal["status"])
+      : "suggested",
+    items,
+  };
+}
+
+function isWorkflowActionItem(
+  value: unknown,
+): value is AskWorkflowProposal["items"][number] {
+  if (typeof value !== "object" || value === null) return false;
+  const item = value as Partial<AskWorkflowProposal["items"][number]>;
+  return (
+    typeof item.id === "string" &&
+    typeof item.selected === "boolean" &&
+    ["suggested", "approved", "created", "failed"].includes(
+      String(item.status),
+    ) &&
+    typeof item.title === "string" &&
+    typeof item.description === "string" &&
+    typeof item.riskId === "string" &&
+    typeof item.riskTitle === "string" &&
+    (item.ownerUserId === null || typeof item.ownerUserId === "string") &&
+    ["low", "normal", "high", "urgent"].includes(String(item.priority)) &&
+    typeof item.dueDate === "string"
+  );
 }
 
 function isRoutedAdvisorMode(
