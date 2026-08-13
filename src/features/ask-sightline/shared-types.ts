@@ -27,5 +27,7 @@ export type SharedAskConversation = Readonly<{
   id: string;
   title: string;
   updatedAt: string;
+  advisorMode: AdvisorMode;
+  selectedProjectId: string;
   messages: readonly SharedAskMessage[];
 }>;

@@ -32,6 +32,7 @@ import {
   type AskCommand,
 } from "@/features/ask-sightline/commands";
 import { NewConversationControl } from "@/features/ask-sightline/new-conversation-control";
+import { RichResponse } from "@/features/ask-sightline/rich-response";
 import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import type { SharedAskMessage } from "@/features/ask-sightline/shared-types";
 import {
@@ -426,7 +427,12 @@ export function AskSightlineWorkspace() {
                         </span>
                         <span className="text-muted mt-1 flex items-center gap-1 text-[0.7rem]">
                           <Clock3 className="size-3" aria-hidden="true" />
-                          {formatConversationTime(conversation.updatedAt)}
+                          {formatConversationTime(
+                            conversation.updatedAt,
+                          )} · {advisorModeLabels[conversation.advisorMode]}
+                          {conversation.selectedProjectId !== "all"
+                            ? ` · ${projects.find((project) => project.id === conversation.selectedProjectId)?.name ?? "Selected project"}`
+                            : " · All projects"}
                         </span>
                       </button>
                       <button
@@ -537,6 +543,7 @@ function WorkspaceAnswer({
       </div>
       <div className="pl-10">
         <MarkdownContent content={message.content} />
+        <RichResponse message={message} />
         {message.citations.length ? (
           <section aria-label="Sources used" className="mt-5">
             <p className="text-muted flex items-center gap-2 text-xs font-semibold uppercase">

@@ -57,8 +57,12 @@ export function SharedAskProvider({
   storageIdentity: string;
   children: ReactNode;
 }) {
-  const { advisorMode, selectedProjectId, setAdvisorMode } =
-    useDashboardState();
+  const {
+    advisorMode,
+    selectedProjectId,
+    setAdvisorMode,
+    setSelectedProjectId,
+  } = useDashboardState();
   const { canUseAi } = useWorkspaceResources();
   const [messages, setMessages] = useState<readonly SharedAskMessage[]>([]);
   const [conversations, setConversations] = useState<
@@ -133,6 +137,7 @@ export function SharedAskProvider({
       conversationId: string,
       nextMessages: readonly SharedAskMessage[],
       title?: string,
+      conversationAdvisorMode?: AdvisorMode,
     ) => {
       setMessages(nextMessages);
       setConversations((current) => {
@@ -141,6 +146,8 @@ export function SharedAskProvider({
           id: conversationId,
           title: title ?? existing?.title ?? conversationTitle(nextMessages),
           updatedAt: new Date().toISOString(),
+          advisorMode: conversationAdvisorMode ?? advisorMode,
+          selectedProjectId,
           messages: nextMessages,
         };
         const next = [
@@ -151,7 +158,7 @@ export function SharedAskProvider({
         return next;
       });
     },
-    [persistConversations],
+    [advisorMode, persistConversations, selectedProjectId],
   );
 
   const ask = useCallback(
@@ -190,6 +197,7 @@ export function SharedAskProvider({
         conversationId,
         optimisticMessages,
         activeConversationId ? undefined : titleFromQuestion(trimmed),
+        options?.advisorMode,
       );
       startTransition(async () => {
         try {
@@ -266,11 +274,13 @@ export function SharedAskProvider({
       if (!selected) return;
       setActiveConversationId(selected.id);
       setMessages(selected.messages);
+      setAdvisorMode(selected.advisorMode);
+      setSelectedProjectId(selected.selectedProjectId);
       setError(null);
       setRetryQuestion(null);
       persistConversations(conversations, selected.id);
     },
-    [conversations, persistConversations],
+    [conversations, persistConversations, setAdvisorMode, setSelectedProjectId],
   );
 
   const deleteConversation = useCallback(
@@ -347,6 +357,8 @@ function conversationFromMessages(
     id: crypto.randomUUID(),
     title: conversationTitle(messages),
     updatedAt: new Date().toISOString(),
+    advisorMode: "auto",
+    selectedProjectId: "all",
     messages,
   };
 }
@@ -374,12 +386,33 @@ function normalizeConversations(value: unknown): SharedAskConversation[] {
           id: conversation.id,
           title: conversation.title.slice(0, 80),
           updatedAt: conversation.updatedAt,
+          advisorMode:
+            "advisorMode" in conversation &&
+            isAdvisorMode(conversation.advisorMode)
+              ? conversation.advisorMode
+              : "auto",
+          selectedProjectId:
+            "selectedProjectId" in conversation &&
+            typeof conversation.selectedProjectId === "string"
+              ? conversation.selectedProjectId
+              : "all",
           messages: normalizedMessages,
         },
       ];
     })
     .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     .slice(0, 20);
+}
+
+function isAdvisorMode(value: unknown): value is AdvisorMode {
+  return [
+    "auto",
+    "project",
+    "executive",
+    "risk",
+    "financial",
+    "forecast",
+  ].includes(String(value));
 }
 
 export function useSharedAsk() {
