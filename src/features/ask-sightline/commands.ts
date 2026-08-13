@@ -108,6 +108,14 @@ export const askCommands: readonly AskCommand[] = [
     advisorMode: "project",
     prompt: "Find supporting documents related to ",
   },
+  {
+    token: "/scenario",
+    label: "Compare a forecast scenario",
+    description: "Review a named what-if assumption against the baseline.",
+    category: "Workflow",
+    advisorMode: "forecast",
+    prompt: "Compare a forecast scenario for ",
+  },
 ] as const;
 
 export function matchingAskCommands(value: string): readonly AskCommand[] {
@@ -150,7 +158,7 @@ export function buildWorkflowProposal(
 ): AskWorkflowProposal {
   const subject = question
     .replace(
-      /^(Create a follow-up action for|Prepare a meeting for|Prepare an executive slide deck for|Prepare a report about|Draft an email about|Find supporting documents related to)\s*/i,
+      /^(Create a follow-up action for|Prepare a meeting for|Prepare an executive slide deck for|Prepare a report about|Draft an email about|Find supporting documents related to|Compare a forecast scenario for)\s*/i,
       "",
     )
     .trim();
@@ -185,6 +193,16 @@ export function buildWorkflowProposal(
           error: null,
         }))
       : [];
+  const risk = riskCitations[0];
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  tomorrow.setHours(9, 0, 0, 0);
+  const defaultSections = [
+    "Executive summary",
+    "Projects needing attention",
+    "Forecast and data confidence",
+    "Top risks and overdue actions",
+    "Decisions required",
+  ];
   const proposals: Record<
     AskWorkflowProposal["command"],
     Omit<AskWorkflowProposal, "command" | "id" | "status" | "items">
@@ -237,7 +255,69 @@ export function buildWorkflowProposal(
       href: `/documents${subject ? `?search=${encoded}` : ""}`,
       actionLabel: "Review documents",
     },
+    "/scenario": {
+      title: "Proposed forecast scenario",
+      summary: subject || "Compare one explicit assumption with the baseline.",
+      effect:
+        "No official forecast will change. Review the project and assumption before opening the deterministic scenario workspace.",
+      href: "/forecasts#scenario-heading",
+      actionLabel: "Review forecast scenario",
+    },
   };
+  const configuration =
+    command === "/meeting"
+      ? {
+          kind: "meeting" as const,
+          title: subject || "Leadership review",
+          meetingType: "weekly_executive_review" as const,
+          startsAt: toLocalDateTime(tomorrow),
+          projectIds: [],
+          agendaPreview: [
+            "Confirm the desired meeting outcome",
+            ...riskCitations.slice(0, 3).map((item) => item.title),
+            "Confirm decisions, owners, and due dates",
+          ],
+        }
+      : command === "/email"
+        ? {
+            kind: "email" as const,
+            riskId: risk?.id ?? "",
+            recipientRole: "Project stakeholder",
+            tone: "collaborative" as const,
+            urgency: "soon" as const,
+            purpose: "reminder" as const,
+            length: "standard" as const,
+            subjectPreview:
+              subject ||
+              (risk ? `Follow-up: ${risk.title}` : "Project follow-up"),
+            bodyPreview: `Hello,\n\nI’m following up regarding ${subject || risk?.title || "this project item"}. Please confirm the current status and next step.\n\nThank you,`,
+          }
+        : command === "/deck" || command === "/report"
+          ? {
+              kind:
+                command === "/deck" ? ("deck" as const) : ("report" as const),
+              template:
+                command === "/deck"
+                  ? "weekly-executive-review"
+                  : "risk-summary",
+              projectIds: [],
+              sections: defaultSections,
+              readinessWarnings: [
+                "Financial details remain permission-aware.",
+                "Estimated or missing forecast inputs will be labeled.",
+              ],
+            }
+          : command === "/document"
+            ? { kind: "document" as const, search: subject }
+            : command === "/scenario"
+              ? {
+                  kind: "scenario" as const,
+                  name: subject || "Chat forecast scenario",
+                  projectId: "",
+                  assumption: "reject_pending_change_orders" as const,
+                  costIncreasePercent: 10,
+                }
+              : null;
   return {
     id: crypto.randomUUID(),
     command,
@@ -246,6 +326,12 @@ export function buildWorkflowProposal(
         ? "ready_for_review"
         : "suggested",
     items: actionItems,
+    ...(configuration ? { configuration } : {}),
     ...proposals[command],
   };
+}
+
+function toLocalDateTime(date: Date) {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }

@@ -13,14 +13,20 @@ describe("Ask Sightline commands", () => {
       askCommands.length,
     );
     expect(askCommands.map((command) => command.token)).toEqual(
-      expect.arrayContaining(["/auto", "/forecast", "/meeting", "/deck"]),
+      expect.arrayContaining([
+        "/auto",
+        "/forecast",
+        "/scenario",
+        "/meeting",
+        "/deck",
+      ]),
     );
   });
 
   it("filters commands while the slash token is being typed", () => {
     expect(
       matchingAskCommands("/fore").map((command) => command.token),
-    ).toEqual(["/forecast"]);
+    ).toEqual(["/forecast", "/scenario"]);
     expect(matchingAskCommands("regular question")).toEqual([]);
   });
 

@@ -25,7 +25,20 @@ import {
 import type { ForecastingView } from "@/features/forecasting/types";
 import { formatMoney, formatPercent } from "@/features/reports/format";
 
-export function ForecastWorkspace({ view }: { view: ForecastingView }) {
+export type InitialForecastScenario = Readonly<{
+  name: string;
+  projectId: string;
+  kind: ScenarioKind;
+  costIncreasePercent: number;
+}>;
+
+export function ForecastWorkspace({
+  view,
+  initialScenario,
+}: {
+  view: ForecastingView;
+  initialScenario?: InitialForecastScenario | null;
+}) {
   return (
     <div className="mx-auto max-w-[96rem] space-y-6 px-[var(--page-gutter)] py-6 sm:py-8">
       <header className="rounded-2xl bg-[#f4f7ed] px-5 py-6 sm:px-8 sm:py-8">
@@ -94,7 +107,7 @@ export function ForecastWorkspace({ view }: { view: ForecastingView }) {
       </div>
 
       {view.canViewFinancials && view.projects.length ? (
-        <ScenarioPanel view={view} />
+        <ScenarioPanel view={view} initialScenario={initialScenario ?? null} />
       ) : null}
     </div>
   );
@@ -548,12 +561,25 @@ function CommitmentOutlook({ view }: { view: ForecastingView }) {
   );
 }
 
-function ScenarioPanel({ view }: { view: ForecastingView }) {
-  const [projectId, setProjectId] = useState(view.projects[0]!.id);
+function ScenarioPanel({
+  view,
+  initialScenario,
+}: {
+  view: ForecastingView;
+  initialScenario?: InitialForecastScenario | null;
+}) {
+  const initialProjectId = view.projects.some(
+    (project) => project.id === initialScenario?.projectId,
+  )
+    ? initialScenario!.projectId
+    : view.projects[0]!.id;
+  const [projectId, setProjectId] = useState(initialProjectId);
   const [kind, setKind] = useState<ScenarioKind>(
-    "reject_pending_change_orders",
+    initialScenario?.kind ?? "reject_pending_change_orders",
   );
-  const [costIncrease, setCostIncrease] = useState(10);
+  const [costIncrease, setCostIncrease] = useState(
+    initialScenario?.costIncreasePercent ?? 10,
+  );
   const project =
     view.projects.find((item) => item.id === projectId) ?? view.projects[0]!;
   const result = useMemo(
@@ -576,7 +602,7 @@ function ScenarioPanel({ view }: { view: ForecastingView }) {
             />
             <div>
               <p className="text-deep-green text-xs font-semibold tracking-[0.1em] uppercase">
-                Temporary scenario
+                {initialScenario?.name || "Temporary scenario"}
               </p>
               <h2 id="scenario-heading" className="mt-1 text-xl font-semibold">
                 What changes if…

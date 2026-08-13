@@ -4,9 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { askOrganizationQuestionSchema } from "@/domain/ai/organization-question";
 import { RecommendedActionService } from "@/features/actions/service";
+import { recordAuditEvent } from "@/features/audit/service";
+import { getForecastingView } from "@/features/forecasting/data";
+import { EmailDraftService } from "@/features/email-drafts/service";
+import { MeetingService } from "@/features/meetings/service";
 import { AskSightlineService } from "@/features/ask-sightline/service";
 import {
   applyAskActionProposalSchema,
+  applyAskEmailProposalSchema,
+  applyAskMeetingProposalSchema,
   type ApplyAskActionProposalInput,
   type ApplyAskActionProposalResult,
 } from "@/features/ask-sightline/workflow-validation";
@@ -14,7 +20,10 @@ import {
   assertAuthorized,
   canAssignAction,
   canAssignProjectActions,
+  can,
   canEditAction,
+  canEditRisk,
+  canResolveProjectRisks,
   canUseAi,
 } from "@/lib/auth/authorization";
 import {
@@ -22,7 +31,10 @@ import {
   requireRiskProjectAccess,
 } from "@/lib/auth/project-access";
 import { runServerMutation } from "@/lib/server-mutation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  createAdminSupabaseClient,
+  createServerSupabaseClient,
+} from "@/lib/supabase/server";
 
 export async function askOrganizationSightlineAction(input: unknown) {
   const parsed = askOrganizationQuestionSchema.parse(input);
@@ -145,6 +157,76 @@ export async function applyAskActionProposalAction(
   revalidatePath("/brief");
   for (const item of parsed.items) revalidatePath(`/risks/${item.riskId}`);
   return results;
+}
+
+export async function applyAskMeetingProposalAction(input: unknown) {
+  const parsed = applyAskMeetingProposalSchema.parse(input);
+  const meeting = await runServerMutation(
+    applyAskMeetingProposalSchema,
+    parsed,
+    async (context, value) => {
+      assertAuthorized(can(context, "action:edit"));
+      const meeting = await new MeetingService(
+        createAdminSupabaseClient(),
+      ).create(context, {
+        ...value,
+        projectIds: [...value.projectIds],
+        forecast: await getForecastingView(),
+      });
+      await recordAuditEvent({
+        organizationId: context.organizationId,
+        actorAuthUserId: context.authUserId,
+        actorUserId: context.userId,
+        action: "meeting.created",
+        resourceType: "meeting",
+        resourceId: meeting.id,
+        metadata: {
+          meetingType: meeting.meeting_type,
+          projectCount: meeting.project_ids.length,
+          source: "ask_sightline",
+        },
+      });
+      return meeting;
+    },
+  );
+  revalidatePath("/meetings");
+  return { id: meeting.id, href: `/meetings/${meeting.id}` };
+}
+
+export async function applyAskEmailProposalAction(input: unknown) {
+  const parsed = applyAskEmailProposalSchema.parse(input);
+  const draft = await runServerMutation(
+    applyAskEmailProposalSchema,
+    parsed,
+    async (context, value) => {
+      const access = await requireRiskProjectAccess(context, value.riskId);
+      assertAuthorized(
+        canEditRisk(context) &&
+          canResolveProjectRisks(context, access.resource),
+      );
+      const service = new EmailDraftService(await createServerSupabaseClient());
+      const generated = await service.generate(context, {
+        riskId: value.riskId,
+        actionId: null,
+        recipientRole: value.recipientRole,
+        contactKey: null,
+        desiredTone: value.desiredTone,
+        requestedUrgency: value.requestedUrgency,
+        purpose: value.purpose,
+        length: value.length,
+      });
+      return service.save(context, generated.id, {
+        subject: value.subject,
+        body: value.body,
+        contactKey: null,
+      });
+    },
+  );
+  revalidatePath(`/risks/${parsed.riskId}`);
+  return {
+    id: draft.id,
+    href: `/risks/${parsed.riskId}/email-draft?draftId=${draft.id}`,
+  };
 }
 
 function workflowItemError(error: unknown) {

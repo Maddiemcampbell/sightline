@@ -61,6 +61,7 @@ export const helpPages = {
           "/risk: risk severity, evidence, mitigation, and uncertainty",
           "/financial: authorized cost, exposure, margin, and variance",
           "/forecast: outlook, cash flow, confidence, and missing inputs",
+          "/scenario: name and compare a deterministic what-if forecast",
           "/executive: portfolio summaries and leadership preparation",
           "/action: prepare a follow-up action for review",
           "/meeting: prepare a meeting agenda",
@@ -82,10 +83,10 @@ export const helpPages = {
       },
       {
         title: "Preview before applying",
-        body: "Workflow commands return a proposal marked Preview. Action proposals can be edited, selected, and approved directly in chat; Sightline checks permissions again and records only the approved items. Meeting, report, deck, email, and document proposals continue to their full workspace for required details. A slash command never changes records by itself.",
+        body: "Workflow commands return a proposal marked Preview. Actions, meetings, and email drafts can be configured and approved directly in chat; Sightline checks permissions again and records only the approved changes. Decks and reports preview their outline and readiness checks before opening the generation workspace. Forecast scenarios preserve a named assumption and open a side-by-side deterministic comparison without changing the official forecast. A slash command never changes records by itself.",
         items: [
           "Read the proposed scope and the explicit statement of what has not changed.",
-          "Use the review button to open the validated setup workflow.",
+          "Edit the proposal in chat, then approve it or continue to the validated workspace.",
           "Confirm required owners, dates, recipients, evidence, and permissions before applying or downloading anything.",
         ],
       },

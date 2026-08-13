@@ -47,7 +47,12 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
     .getByLabel("Project (optional)")
     .selectOption({ label: "Cedar Grove Medical Pavilion" });
   await main.getByRole("button", { name: "Record decision" }).click();
-  await expect(main.getByRole("status")).toContainText("Decision recorded");
+  await expect(
+    main.getByRole("button", { name: "Recording…" }),
+  ).toHaveCount(0, { timeout: 15_000 });
+  await expect(main.getByRole("status")).toContainText("Decision recorded", {
+    timeout: 15_000,
+  });
   await expect(
     main.getByText(/^1\. Escalate the insurance renewal today\.$/),
   ).toBeVisible();

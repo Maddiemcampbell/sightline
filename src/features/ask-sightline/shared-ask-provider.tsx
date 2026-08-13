@@ -13,6 +13,8 @@ import {
 
 import {
   applyAskActionProposalAction,
+  applyAskEmailProposalAction,
+  applyAskMeetingProposalAction,
   askOrganizationSightlineAction,
 } from "@/app/ask/actions";
 import { organizationCitationSchema } from "@/domain/ai/organization-question";
@@ -333,7 +335,71 @@ export function SharedAskProvider({
       if (!activeConversationId || applyingProposalId) return;
       const message = messages.find((item) => item.id === messageId);
       const proposal = proposalOverride ?? message?.workflowProposal;
-      if (!proposal || proposal.command !== "/action") return;
+      if (!proposal) return;
+      if (proposal.command !== "/action") {
+        const configuration = proposal.configuration;
+        if (
+          configuration?.kind !== "meeting" &&
+          configuration?.kind !== "email"
+        )
+          return;
+        const approved = { ...proposal, status: "approved" as const };
+        const approvingMessages = messages.map((item) =>
+          item.id === messageId
+            ? { ...item, workflowProposal: approved }
+            : item,
+        );
+        commitMessages(activeConversationId, approvingMessages);
+        setApplyingProposalId(proposal.id);
+        const request =
+          configuration.kind === "meeting"
+            ? applyAskMeetingProposalAction({
+                title: configuration.title,
+                meetingType: configuration.meetingType,
+                startsAt: configuration.startsAt,
+                projectIds: [...configuration.projectIds],
+              })
+            : applyAskEmailProposalAction({
+                riskId: configuration.riskId,
+                recipientRole: configuration.recipientRole,
+                desiredTone: configuration.tone,
+                requestedUrgency: configuration.urgency,
+                purpose: configuration.purpose,
+                length: configuration.length,
+                subject: configuration.subjectPreview,
+                body: configuration.bodyPreview,
+              });
+        void request
+          .then((result) => {
+            const completed = {
+              ...approved,
+              status: "created" as const,
+              createdHref: result.href,
+            };
+            commitMessages(
+              activeConversationId,
+              approvingMessages.map((item) =>
+                item.id === messageId
+                  ? { ...item, workflowProposal: completed }
+                  : item,
+              ),
+            );
+          })
+          .catch((caught) => {
+            setError(getWorkflowApplyErrorMessage(caught));
+            const failed = { ...approved, status: "failed" as const };
+            commitMessages(
+              activeConversationId,
+              approvingMessages.map((item) =>
+                item.id === messageId
+                  ? { ...item, workflowProposal: failed }
+                  : item,
+              ),
+            );
+          })
+          .finally(() => setApplyingProposalId(null));
+        return;
+      }
       const selected = proposal.items.filter(
         (item) => item.selected && item.status !== "created",
       );
