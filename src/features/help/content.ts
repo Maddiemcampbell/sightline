@@ -3,6 +3,7 @@ export type HelpPageContent = Readonly<{
   title: string;
   introduction: string;
   sections: readonly Readonly<{
+    id?: string;
     title: string;
     body: string;
     items?: readonly string[];
@@ -48,6 +49,35 @@ export const helpPages = {
           "Escape: close the active menu or dialog",
           "Up and Down arrows: move through open header menus",
           "Tab and Shift + Tab: move between interactive controls",
+        ],
+      },
+      {
+        id: "ask-sightline-commands",
+        title: "Ask Sightline command palette",
+        body: "Press / from the Ask Sightline page, or type / at the beginning of the composer, to open the command palette. Advisor commands route one question through a specific specialty. Workflow commands prepare a request for review; they do not silently create, send, or change records.",
+        items: [
+          "/auto: let Sightline choose the most relevant advisor",
+          "/project: project execution, documentation, and follow-up",
+          "/risk: risk severity, evidence, mitigation, and uncertainty",
+          "/financial: authorized cost, exposure, margin, and variance",
+          "/forecast: outlook, cash flow, confidence, and missing inputs",
+          "/executive: portfolio summaries and leadership preparation",
+          "/action: prepare a follow-up action for review",
+          "/meeting: prepare a meeting agenda",
+          "/deck: prepare an executive slide-deck request",
+          "/report: prepare a permission-aware report request",
+          "/email: draft an email without sending it",
+          "/document: find supporting documents and evidence",
+        ],
+      },
+      {
+        title: "Command palette navigation",
+        body: "The Ask Sightline palette supports standard keyboard controls and remains available by mouse or touch.",
+        items: [
+          "/: focus the Ask Sightline composer and open commands when you are not editing another field",
+          "Up and Down arrows: move through matching commands",
+          "Enter: select the highlighted command",
+          "Escape: close the command palette",
         ],
       },
     ],

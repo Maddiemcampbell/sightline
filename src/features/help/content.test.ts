@@ -26,4 +26,12 @@ describe("help page content", () => {
     expect(isHelpPageSlug("documentation")).toBe(true);
     expect(isHelpPageSlug("missing")).toBe(false);
   });
+
+  it("documents the Ask Sightline command palette", () => {
+    const serialized = JSON.stringify(helpPages.shortcuts);
+    expect(serialized).toContain("ask-sightline-commands");
+    expect(serialized).toContain("/forecast");
+    expect(serialized).toContain("/meeting");
+    expect(serialized).toContain("/deck");
+  });
 });

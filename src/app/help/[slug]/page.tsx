@@ -44,7 +44,7 @@ export default async function HelpPage({
 
       <div className="mt-8 grid gap-4">
         {content.sections.map((section) => (
-          <Card key={section.title}>
+          <Card key={section.title} id={section.id} className="scroll-mt-24">
             <h2 className="text-lg font-semibold">{section.title}</h2>
             <p className="text-muted mt-2 text-sm leading-6">{section.body}</p>
             {section.items && (

@@ -24,6 +24,13 @@ import { AdvisorSelector } from "@/features/workspace/advisor-selector";
 import { advisorModeLabels } from "@/features/workspace/advisor-selector";
 import { ProjectFilter } from "@/features/workspace/project-filter";
 import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
+import { AskCommandPalette } from "@/features/ask-sightline/command-palette";
+import {
+  askCommands,
+  matchingAskCommands,
+  resolveAskCommand,
+  type AskCommand,
+} from "@/features/ask-sightline/commands";
 import { NewConversationControl } from "@/features/ask-sightline/new-conversation-control";
 import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import type { SharedAskMessage } from "@/features/ask-sightline/shared-types";
@@ -46,9 +53,11 @@ export function AskSightlineWorkspace() {
     retryQuestion,
     ready,
   } = useSharedAsk();
-  const { advisorMode, selectedProjectId } = useDashboardState();
+  const { advisorMode, selectedProjectId, setAdvisorMode } =
+    useDashboardState();
   const { projects, canUseAi } = useWorkspaceResources();
   const [question, setQuestion] = useState("");
+  const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const selectedProject =
@@ -60,17 +69,49 @@ export function AskSightlineWorkspace() {
     hasPortfolioObservations: false,
     hasRecentActivity: true,
   });
+  const commandMatches = matchingAskCommands(question);
 
   useEffect(() => {
     if (messages.length || pending)
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages.length, pending]);
 
+  useEffect(() => {
+    function focusCommands(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const editing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      if (event.key === "/" && !editing && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        setQuestion("/");
+        setActiveCommandIndex(0);
+        composerRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", focusCommands);
+    return () => window.removeEventListener("keydown", focusCommands);
+  }, []);
+
   function submit(value: string) {
-    const trimmed = value.trim();
-    if (trimmed.length < 3 || pending || !canUseAi) return;
-    ask(trimmed, { openDrawer: false });
+    const resolved = resolveAskCommand(value);
+    if (resolved.question.length < 3 || pending || !canUseAi) return;
+    if (resolved.advisorMode) setAdvisorMode(resolved.advisorMode);
+    ask(
+      resolved.question,
+      resolved.advisorMode
+        ? { openDrawer: false, advisorMode: resolved.advisorMode }
+        : { openDrawer: false },
+    );
     setQuestion("");
+  }
+
+  function selectCommand(command: AskCommand) {
+    setQuestion(command.prompt || `${command.token} `);
+    setAdvisorMode(command.advisorMode);
+    setActiveCommandIndex(0);
+    requestAnimationFrame(() => composerRef.current?.focus());
   }
 
   return (
@@ -179,7 +220,12 @@ export function AskSightlineWorkspace() {
               submit(question);
             }}
           >
-            <div className="mx-auto flex max-w-4xl items-end gap-3">
+            <div className="relative mx-auto flex max-w-4xl items-end gap-3">
+              <AskCommandPalette
+                commands={commandMatches}
+                activeIndex={activeCommandIndex}
+                onSelect={selectCommand}
+              />
               <label className="min-w-0 flex-1">
                 <span className="sr-only">Ask Sightline a question</span>
                 <textarea
@@ -187,8 +233,33 @@ export function AskSightlineWorkspace() {
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   onKeyDown={(event) => {
+                    if (commandMatches.length && event.key === "ArrowDown") {
+                      event.preventDefault();
+                      setActiveCommandIndex(
+                        (current) => (current + 1) % commandMatches.length,
+                      );
+                      return;
+                    }
+                    if (commandMatches.length && event.key === "ArrowUp") {
+                      event.preventDefault();
+                      setActiveCommandIndex(
+                        (current) =>
+                          (current - 1 + commandMatches.length) %
+                          commandMatches.length,
+                      );
+                      return;
+                    }
+                    if (commandMatches.length && event.key === "Escape") {
+                      event.preventDefault();
+                      setQuestion("");
+                      return;
+                    }
                     if (event.key === "Enter" && !event.shiftKey) {
                       event.preventDefault();
+                      if (commandMatches[activeCommandIndex]) {
+                        selectCommand(commandMatches[activeCommandIndex]);
+                        return;
+                      }
                       submit(question);
                     }
                   }}
@@ -199,6 +270,14 @@ export function AskSightlineWorkspace() {
                     advisorMode === "forecast"
                       ? "Ask about outlook, cash flow, confidence, or missing forecast inputs…"
                       : "Ask about risks, projects, actions, documents, or recent changes…"
+                  }
+                  role="combobox"
+                  aria-expanded={commandMatches.length > 0}
+                  aria-controls="ask-command-palette"
+                  aria-activedescendant={
+                    commandMatches[activeCommandIndex]
+                      ? `ask-command-${activeCommandIndex}`
+                      : undefined
                   }
                   className="border-border bg-background block w-full resize-none rounded-lg border p-3 text-sm leading-6"
                 />
@@ -215,8 +294,8 @@ export function AskSightlineWorkspace() {
               </button>
             </div>
             <p className="text-muted mx-auto mt-2 max-w-4xl text-xs">
-              Enter to send · Shift+Enter for a new line · Verify cited records
-              before acting
+              Type / for commands · Enter to send · Shift+Enter for a new line ·
+              Verify cited records before acting
             </p>
           </form>
         </Card>
@@ -258,6 +337,38 @@ export function AskSightlineWorkspace() {
                 </dd>
               </div>
             </dl>
+          </Card>
+          <Card className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-semibold">Ask commands</h2>
+              <Link
+                href="/help/shortcuts#ask-sightline-commands"
+                className="text-deep-green text-xs font-semibold hover:underline"
+              >
+                View all
+              </Link>
+            </div>
+            <p className="text-muted mt-2 text-xs leading-5">
+              Type{" "}
+              <kbd className="border-border rounded border px-1.5 py-0.5">
+                /
+              </kbd>{" "}
+              in the composer to choose an advisor or start a workflow.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {askCommands.slice(0, 6).map((command) => (
+                <button
+                  key={command.token}
+                  type="button"
+                  onClick={() => selectCommand(command)}
+                  className="border-border hover:bg-background rounded-md border px-2 py-2 text-left"
+                >
+                  <code className="text-deep-green text-xs font-semibold">
+                    {command.token}
+                  </code>
+                </button>
+              ))}
+            </div>
           </Card>
           <Card className="p-5">
             <div className="flex items-center gap-2">

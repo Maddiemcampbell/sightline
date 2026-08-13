@@ -21,12 +21,16 @@ import {
   useDashboardState,
   useWorkspaceResources,
 } from "@/features/workspace/workspace-provider";
+import type { AdvisorMode } from "@/features/workspace/types";
 
 type SharedAskContextValue = Readonly<{
   messages: readonly SharedAskMessage[];
   conversations: readonly SharedAskConversation[];
   activeConversationId: string | null;
-  ask: (question: string, options?: { openDrawer?: boolean }) => void;
+  ask: (
+    question: string,
+    options?: { openDrawer?: boolean; advisorMode?: AdvisorMode },
+  ) => void;
   clearConversation: () => void;
   selectConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
@@ -145,7 +149,10 @@ export function SharedAskProvider({
   );
 
   const ask = useCallback(
-    (question: string, options?: { openDrawer?: boolean }) => {
+    (
+      question: string,
+      options?: { openDrawer?: boolean; advisorMode?: AdvisorMode },
+    ) => {
       const trimmed = question.trim();
       if (trimmed.length < 3 || pending) return;
       if (options?.openDrawer !== false) setOpen(true);
@@ -178,7 +185,7 @@ export function SharedAskProvider({
         try {
           const answer = await askOrganizationSightlineAction({
             question: trimmed,
-            advisorMode,
+            advisorMode: options?.advisorMode ?? advisorMode,
             projectId: selectedProjectId,
             history: messages.slice(-12).map(({ role, content }) => ({
               role,
