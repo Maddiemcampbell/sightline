@@ -6,6 +6,7 @@ import type { AdvisorMode } from "@/features/workspace/types";
 import { useDashboardState } from "@/features/workspace/workspace-provider";
 
 const labels: Record<AdvisorMode, string> = {
+  auto: "Automatic Advisor",
   project: "Project Advisor",
   executive: "Executive Advisor",
   risk: "Risk Advisor",
@@ -24,6 +25,7 @@ export function AdvisorSelector() {
         disabled={!stateReady}
         onChange={(event) => setAdvisorMode(event.target.value as AdvisorMode)}
         className="min-w-36 bg-transparent text-xs font-semibold outline-none"
+        aria-label="Advisor mode"
       >
         {Object.entries(labels).map(([value, label]) => (
           <option key={value} value={value}>

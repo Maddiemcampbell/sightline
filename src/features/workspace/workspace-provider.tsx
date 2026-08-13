@@ -50,6 +50,7 @@ const QuickAskContext = createContext<QuickAskValue | null>(null);
 const WatchlistContext = createContext<WatchlistValue | null>(null);
 
 const advisorModes: readonly AdvisorMode[] = [
+  "auto",
   "project",
   "executive",
   "risk",
@@ -73,7 +74,7 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const [selectedProjectId, setSelectedProjectIdState] = useState("all");
-  const [advisorMode, setAdvisorModeState] = useState<AdvisorMode>("project");
+  const [advisorMode, setAdvisorModeState] = useState<AdvisorMode>("auto");
   const [quickAskDraft, setQuickAskDraftState] = useState("");
   const [watchlist, setWatchlist] = useState<readonly WatchlistItem[]>([]);
   const [stateReady, setStateReady] = useState(false);
@@ -82,7 +83,7 @@ export function WorkspaceProvider({
   useEffect(() => {
     let cancelled = false;
     let restoredProjectId = "all";
-    let restoredMode: AdvisorMode = "project";
+    let restoredMode: AdvisorMode = "auto";
     let restoredDraft = "";
     let restoredWatchlist: WatchlistItem[] = [];
     try {

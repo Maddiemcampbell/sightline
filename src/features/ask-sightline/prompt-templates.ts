@@ -7,6 +7,7 @@ import type {
 import type { AdvisorMode } from "@/features/workspace/types";
 
 const advisorInstructions: Record<AdvisorMode, string> = {
+  auto: "Select the most relevant supplied perspective for the question while remaining within authorized evidence. State uncertainty when the request crosses multiple domains.",
   project:
     "Focus on authorized project execution, open risks, overdue actions, document coverage, and supported comparisons. Prefer project-by-project bullets. Example response framing: 'Project — supported condition — next investigation step.'",
   executive:
@@ -100,4 +101,42 @@ export function classifyOrganizationQuestion(
   )
     return "executive_summary";
   return "portfolio_summary";
+}
+
+export type RoutedAdvisorMode = Exclude<AdvisorMode, "auto">;
+
+export function routeOrganizationAdvisorMode({
+  question,
+  selectedMode,
+}: {
+  question: string;
+  selectedMode: AdvisorMode;
+}): RoutedAdvisorMode {
+  if (selectedMode !== "auto") return selectedMode;
+  const normalized = question.toLocaleLowerCase();
+  if (
+    /forecast|lookahead|look ahead|cash.?flow|margin trajectory|budget trajectory|scenario|likely to miss|projection|outlook|confidence/.test(
+      normalized,
+    )
+  )
+    return "forecast";
+  if (
+    /budget|financial|exposure|cost|profit|margin|variance|change order|saving|revenue/.test(
+      normalized,
+    )
+  )
+    return "financial";
+  if (
+    /risk|severity|mitigat|evidence|insurance|claim|safety|vendor/.test(
+      normalized,
+    )
+  )
+    return "risk";
+  if (
+    /executive|leadership|portfolio|brief|meeting|agenda|decision|across projects|organization/.test(
+      normalized,
+    )
+  )
+    return "executive";
+  return "project";
 }

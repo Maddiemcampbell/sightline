@@ -36,6 +36,7 @@ import { getServerEnv } from "@/lib/env";
 import type { AppDatabase } from "@/lib/supabase/app-database.types";
 import type { AdvisorMode } from "@/features/workspace/types";
 import { buildOrganizationQuestionContext } from "@/features/ask-sightline/organization-context";
+import { routeOrganizationAdvisorMode } from "@/features/ask-sightline/prompt-templates";
 import { FinancialAnalyticsRepository } from "@/features/financial-analytics/repository";
 import { FinancialAnalyticsService } from "@/features/financial-analytics/service";
 import { RiskAnalyticsRepository } from "@/features/risk-analytics/repository";
@@ -208,6 +209,10 @@ export class AskSightlineService {
         "Too many questions. Please wait one minute and try again.",
       );
     const canViewFinancials = canViewFinancialExposure(context);
+    const routedAdvisorMode = routeOrganizationAdvisorMode({
+      question: input.question,
+      selectedMode: input.advisorMode,
+    });
     const [retrieved, financialAnalytics, riskAnalytics] = await Promise.all([
       this.repository.retrieveOrganization(context, input.projectId),
       canViewFinancials
@@ -229,7 +234,7 @@ export class AskSightlineService {
       context,
       retrieved,
       question: input.question,
-      advisorMode: input.advisorMode,
+      advisorMode: routedAdvisorMode,
       history: input.history,
       projectId: input.projectId,
       canViewFinancials,
@@ -294,6 +299,7 @@ export class AskSightlineService {
       confidence: result.output.confidence,
       missingInformation: result.output.missingInformation,
       suggestedFollowUps: result.output.suggestedFollowUpQuestions,
+      routedAdvisorMode,
     };
   }
 

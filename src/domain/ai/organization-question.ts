@@ -4,6 +4,7 @@ export const ORGANIZATION_QUESTION_PROMPT_VERSION = "organization-question-v1";
 export const ORGANIZATION_ASK_HISTORY_LIMIT = 12;
 
 export const advisorModeSchema = z.enum([
+  "auto",
   "project",
   "executive",
   "risk",

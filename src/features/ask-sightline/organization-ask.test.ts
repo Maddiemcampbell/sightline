@@ -9,6 +9,7 @@ import {
   classifyOrganizationQuestion,
   organizationSystemInstructions,
   riskSystemInstructions,
+  routeOrganizationAdvisorMode,
 } from "@/features/ask-sightline/prompt-templates";
 import { selectRelevantOrganizationCitations } from "@/features/ask-sightline/retrieval";
 import {
@@ -184,5 +185,32 @@ describe("organization-wide Ask Sightline", () => {
     expect(
       organizationObservationCitationId(`${longObservationKey}:different`),
     ).not.toBe(id);
+  });
+
+  it("routes automatic advisor questions deterministically", () => {
+    expect(
+      routeOrganizationAdvisorMode({
+        question: "What does cash flow look like over the next 90 days?",
+        selectedMode: "auto",
+      }),
+    ).toBe("forecast");
+    expect(
+      routeOrganizationAdvisorMode({
+        question: "Which insurance risks need mitigation?",
+        selectedMode: "auto",
+      }),
+    ).toBe("risk");
+    expect(
+      routeOrganizationAdvisorMode({
+        question: "Summarize Cedar Grove",
+        selectedMode: "auto",
+      }),
+    ).toBe("project");
+    expect(
+      routeOrganizationAdvisorMode({
+        question: "Show the portfolio budget variance",
+        selectedMode: "risk",
+      }),
+    ).toBe("risk");
   });
 });

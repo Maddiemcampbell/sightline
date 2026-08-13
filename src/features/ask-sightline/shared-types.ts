@@ -1,4 +1,5 @@
 import type { OrganizationCitation } from "@/domain/ai/organization-question";
+import type { AdvisorMode } from "@/features/workspace/types";
 
 export type SharedAskMessage = Readonly<{
   id: string;
@@ -8,6 +9,7 @@ export type SharedAskMessage = Readonly<{
   confidence: number | null;
   missingInformation: readonly string[];
   suggestedFollowUps: readonly string[];
+  routedAdvisorMode?: Exclude<AdvisorMode, "auto"> | null;
 }>;
 
 export type SharedAskConversation = Readonly<{

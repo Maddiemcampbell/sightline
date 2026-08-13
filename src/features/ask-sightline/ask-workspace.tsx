@@ -21,6 +21,7 @@ import { MarkdownContent } from "@/components/markdown-content";
 import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { AdvisorSelector } from "@/features/workspace/advisor-selector";
+import { advisorModeLabels } from "@/features/workspace/advisor-selector";
 import { ProjectFilter } from "@/features/workspace/project-filter";
 import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
 import { NewConversationControl } from "@/features/ask-sightline/new-conversation-control";
@@ -245,7 +246,9 @@ export function AskSightlineWorkspace() {
                 <dd className="mt-1 font-semibold">
                   {advisorMode === "forecast"
                     ? "Forecast Advisor"
-                    : "Authorized portfolio advisor"}
+                    : advisorMode === "auto"
+                      ? "Automatic routing"
+                      : advisorModeLabels[advisorMode]}
                 </dd>
               </div>
               <div>
@@ -409,6 +412,11 @@ function WorkspaceAnswer({
         <p className="text-deep-green text-xs font-semibold uppercase">
           Sightline analyst
         </p>
+        {message.routedAdvisorMode ? (
+          <span className="bg-background text-muted rounded-full px-2 py-1 text-[0.65rem] font-semibold">
+            {advisorModeLabels[message.routedAdvisorMode]}
+          </span>
+        ) : null}
         {message.confidence !== null ? (
           <span className="text-muted ml-auto text-xs">
             {message.confidence}% confidence

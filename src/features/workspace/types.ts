@@ -1,5 +1,5 @@
 export type AdvisorMode =
-  "project" | "executive" | "risk" | "financial" | "forecast";
+  "auto" | "project" | "executive" | "risk" | "financial" | "forecast";
 
 export type WorkspaceProject = Readonly<{
   id: string;

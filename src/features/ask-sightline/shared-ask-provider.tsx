@@ -47,7 +47,8 @@ export function SharedAskProvider({
   storageIdentity: string;
   children: ReactNode;
 }) {
-  const { advisorMode, selectedProjectId } = useDashboardState();
+  const { advisorMode, selectedProjectId, setAdvisorMode } =
+    useDashboardState();
   const { canUseAi } = useWorkspaceResources();
   const [messages, setMessages] = useState<readonly SharedAskMessage[]>([]);
   const [conversations, setConversations] = useState<
@@ -223,12 +224,13 @@ export function SharedAskProvider({
   const clearConversation = useCallback(() => {
     setMessages([]);
     setActiveConversationId(null);
+    setAdvisorMode("auto");
     setError(null);
     setRetryQuestion(null);
     try {
       window.localStorage.removeItem(activeKey);
     } catch {}
-  }, [activeKey]);
+  }, [activeKey, setAdvisorMode]);
 
   const selectConversation = useCallback(
     (conversationId: string) => {
@@ -421,8 +423,21 @@ function normalizeMessages(value: unknown): SharedAskMessage[] {
                   )
                   .slice(0, 4)
               : [],
+          routedAdvisorMode:
+            "routedAdvisorMode" in message &&
+            isRoutedAdvisorMode(message.routedAdvisorMode)
+              ? message.routedAdvisorMode
+              : null,
         },
       ];
     })
     .slice(-30);
+}
+
+function isRoutedAdvisorMode(
+  value: unknown,
+): value is NonNullable<SharedAskMessage["routedAdvisorMode"]> {
+  return ["project", "executive", "risk", "financial", "forecast"].includes(
+    String(value),
+  );
 }

@@ -1,6 +1,12 @@
 import type { AdvisorMode } from "@/features/workspace/types";
 
 const advisorPrompts: Record<AdvisorMode, readonly string[]> = {
+  auto: [
+    "What deserves my attention today?",
+    "Which projects are becoming risky?",
+    "What changed this week?",
+    "What should I do next?",
+  ],
   project: [
     "Which projects currently deserve attention?",
     "Which projects generate the most overdue actions?",
@@ -66,6 +72,10 @@ export function getSuggestedRiskPrompts(
   advisorMode: AdvisorMode,
 ): readonly string[] {
   const contextual: Record<AdvisorMode, readonly string[]> = {
+    auto: [
+      "Explain this risk and recommend the next step.",
+      "What evidence or information is missing?",
+    ],
     project: [
       "How could this risk affect its project?",
       "What project action should happen next?",
