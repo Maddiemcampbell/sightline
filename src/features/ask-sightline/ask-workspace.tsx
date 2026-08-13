@@ -6,7 +6,9 @@ import {
   ArrowUpRight,
   BookOpen,
   CheckCircle2,
+  Clock3,
   Database,
+  MessageSquareText,
   RotateCcw,
   Send,
   ShieldCheck,
@@ -21,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { AdvisorSelector } from "@/features/workspace/advisor-selector";
 import { ProjectFilter } from "@/features/workspace/project-filter";
 import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
+import { NewConversationControl } from "@/features/ask-sightline/new-conversation-control";
 import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import type { SharedAskMessage } from "@/features/ask-sightline/shared-types";
 import {
@@ -31,8 +34,12 @@ import {
 export function AskSightlineWorkspace() {
   const {
     messages,
+    conversations,
+    activeConversationId,
     ask,
     clearConversation,
+    selectConversation,
+    deleteConversation,
     pending,
     error,
     retryQuestion,
@@ -42,6 +49,7 @@ export function AskSightlineWorkspace() {
   const { projects, canUseAi } = useWorkspaceResources();
   const [question, setQuestion] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const selectedProject =
     projects.find((project) => project.id === selectedProjectId) ?? null;
   const prompts = getSuggestedOrganizationPrompts({
@@ -70,29 +78,30 @@ export function AskSightlineWorkspace() {
         eyebrow="AI workspace"
         title="Ask Sightline"
         description="Explore your portfolio with answers grounded in the records you are authorized to see. Every supported answer shows its sources and evidence limitations."
-        actions={
-          messages.length ? (
-            <button
-              type="button"
-              onClick={clearConversation}
-              className="border-border bg-surface hover:bg-background inline-flex min-h-10 items-center gap-2 rounded-md border px-4 text-sm font-semibold"
-            >
-              <Trash2 className="size-4" aria-hidden="true" />
-              New conversation
-            </button>
-          ) : null
-        }
       />
 
       <div className="mt-7 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="overflow-hidden p-0">
-          <div className="border-border bg-background/60 flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-6">
+          <div className="border-border flex flex-wrap items-center justify-between gap-4 border-b px-5 py-4 sm:px-6">
             <div>
-              <p className="text-sm font-semibold">Conversation</p>
+              <p className="font-semibold">Your conversation</p>
               <p className="text-muted mt-0.5 text-xs">
-                Scope applies to your next question
+                Ask a follow-up, or start fresh with a new topic.
               </p>
             </div>
+            <NewConversationControl
+              hasConversation={messages.length > 0}
+              onStart={() => {
+                clearConversation();
+                setQuestion("");
+                requestAnimationFrame(() => composerRef.current?.focus());
+              }}
+            />
+          </div>
+          <div className="border-border bg-background/60 flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3 sm:px-6">
+            <p className="text-muted text-xs font-semibold tracking-wide uppercase">
+              Answer settings
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <AdvisorSelector />
               <ProjectFilter />
@@ -173,6 +182,7 @@ export function AskSightlineWorkspace() {
               <label className="min-w-0 flex-1">
                 <span className="sr-only">Ask Sightline a question</span>
                 <textarea
+                  ref={composerRef}
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
                   onKeyDown={(event) => {
@@ -266,10 +276,83 @@ export function AskSightlineWorkspace() {
               </li>
             </ul>
           </Card>
+          <Card className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <MessageSquareText
+                  className="text-deep-green size-4"
+                  aria-hidden="true"
+                />
+                <h2 className="font-semibold">Conversation history</h2>
+              </div>
+              <span className="text-muted text-xs">{conversations.length}</span>
+            </div>
+            {conversations.length ? (
+              <ul className="mt-4 space-y-2">
+                {conversations.slice(0, 8).map((conversation) => {
+                  const active = conversation.id === activeConversationId;
+                  return (
+                    <li
+                      key={conversation.id}
+                      className={`group flex items-stretch rounded-lg border transition-colors ${
+                        active
+                          ? "border-accent-strong bg-soft-green"
+                          : "border-border hover:bg-background"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => selectConversation(conversation.id)}
+                        aria-current={active ? "true" : undefined}
+                        className="min-w-0 flex-1 px-3 py-2.5 text-left"
+                      >
+                        <span className="block truncate text-sm font-semibold">
+                          {conversation.title}
+                        </span>
+                        <span className="text-muted mt-1 flex items-center gap-1 text-[0.7rem]">
+                          <Clock3 className="size-3" aria-hidden="true" />
+                          {formatConversationTime(conversation.updatedAt)}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteConversation(conversation.id)}
+                        aria-label={`Delete conversation: ${conversation.title}`}
+                        className="text-muted hover:text-danger hover:bg-soft-red my-1.5 mr-1.5 grid size-8 shrink-0 place-items-center rounded-md"
+                      >
+                        <Trash2 className="size-3.5" aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="bg-background mt-4 rounded-lg p-4 text-center">
+                <p className="text-sm font-semibold">No conversations yet</p>
+                <p className="text-muted mt-1 text-xs leading-5">
+                  Your first question will appear here automatically.
+                </p>
+              </div>
+            )}
+            <p className="text-muted mt-3 text-[0.68rem] leading-4">
+              Recent conversations are saved privately in this browser.
+            </p>
+          </Card>
         </aside>
       </div>
     </div>
   );
+}
+
+function formatConversationTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function EmptyConversation({

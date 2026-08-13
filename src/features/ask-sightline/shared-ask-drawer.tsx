@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
+import { AlertTriangle, RotateCcw, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { MarkdownContent } from "@/components/markdown-content";
 import { getSuggestedOrganizationPrompts } from "@/features/ask-sightline/suggested-prompts";
+import { NewConversationControl } from "@/features/ask-sightline/new-conversation-control";
 import { useSharedAsk } from "@/features/ask-sightline/shared-ask-provider";
 import {
   useDashboardState,
@@ -96,16 +97,11 @@ export function SharedAskDrawer() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={clearConversation}
-                className="text-muted hover:bg-background grid size-9 place-items-center rounded-md"
-                aria-label="Clear conversation"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            )}
+            <NewConversationControl
+              compact
+              hasConversation={messages.length > 0}
+              onStart={clearConversation}
+            />
             <button
               ref={closeRef}
               type="button"

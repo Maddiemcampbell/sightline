@@ -9,3 +9,10 @@ export type SharedAskMessage = Readonly<{
   missingInformation: readonly string[];
   suggestedFollowUps: readonly string[];
 }>;
+
+export type SharedAskConversation = Readonly<{
+  id: string;
+  title: string;
+  updatedAt: string;
+  messages: readonly SharedAskMessage[];
+}>;

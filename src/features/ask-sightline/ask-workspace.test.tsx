@@ -27,6 +27,11 @@ describe("Ask Sightline workspace", () => {
     expect(markup).toContain("Your organization permissions");
     expect(markup).toContain("How answers work");
     expect(markup).toContain("Verify cited records before acting");
+    expect(markup).toContain("Start new conversation");
+    expect(markup).toContain("Answer settings");
+    expect(markup).toContain("Conversation history");
+    expect(markup).toContain("No conversations yet");
+    expect(markup).toContain("saved privately in this browser");
   });
 
   it("does not expose internal validation details to users", () => {
