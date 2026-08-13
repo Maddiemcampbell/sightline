@@ -10,6 +10,7 @@ import Link from "next/link";
 import { completeMeetingAction } from "@/app/meetings/actions";
 import { Card } from "@/components/ui/card";
 import { MeetingCapturePanel } from "@/features/meetings/meeting-capture-panel";
+import { MeetingAdvisorPanel } from "@/features/meetings/meeting-advisor-panel";
 import { getMeetingWorkspace } from "@/features/meetings/data";
 import { meetingTypeLabels } from "@/features/meetings/types";
 import { can } from "@/lib/auth/authorization";
@@ -133,6 +134,11 @@ export default async function MeetingPage({
           ))}
         </ol>
       </Card>
+
+      <MeetingAdvisorPanel
+        meetingId={meeting.id}
+        completed={meeting.status === "completed"}
+      />
 
       {editable ? (
         <MeetingCapturePanel

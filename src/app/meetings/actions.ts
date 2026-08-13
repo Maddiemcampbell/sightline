@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { recordAuditEvent } from "@/features/audit/service";
 import { getForecastingView } from "@/features/forecasting/data";
 import { MeetingService } from "@/features/meetings/service";
+import { generateMeetingAdvice } from "@/features/meetings/advisor-service";
+import { meetingAdvisorModeSchema } from "@/domain/ai/meeting-advisor";
 import {
   createMeetingSchema,
   meetingDecisionSchema,
@@ -21,6 +23,30 @@ export type MeetingActionState = Readonly<{
   message?: string;
   error?: string;
 }>;
+
+export type MeetingAdvisorActionState = Readonly<{
+  result?: Awaited<ReturnType<typeof generateMeetingAdvice>>;
+  error?: string;
+}>;
+
+export async function generateMeetingAdvisorAction(
+  _state: MeetingAdvisorActionState,
+  formData: FormData,
+): Promise<MeetingAdvisorActionState> {
+  try {
+    const context = await requireActorContext();
+    const meetingId = meetingIdSchema.parse(formData.get("meetingId"));
+    const mode = meetingAdvisorModeSchema.parse(formData.get("mode"));
+    const notes = String(formData.get("notes") ?? "")
+      .trim()
+      .slice(0, 8_000);
+    return {
+      result: await generateMeetingAdvice(context, { meetingId, mode, notes }),
+    };
+  } catch (error) {
+    return { error: message(error) };
+  }
+}
 
 export async function createMeetingAction(formData: FormData) {
   const context = await requireActorContext();

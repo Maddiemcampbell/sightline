@@ -26,8 +26,22 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
     }),
   ).toBeVisible();
 
+  await main.getByRole("button", { name: "Generate briefing" }).click();
+  await expect(main.getByText("Advisor draft", { exact: true })).toBeVisible();
+  await expect(main.getByText(/Deterministic fallback/)).toBeVisible();
   await main
-    .getByLabel("Decision")
+    .getByLabel(/Meeting notes/)
+    .fill("Leadership agreed to escalate the insurance renewal today.");
+  await main.getByRole("button", { name: "Draft outcomes from notes" }).click();
+  await expect(
+    main.getByRole("heading", { name: "Proposed decision" }),
+  ).toBeVisible();
+  await expect(
+    main.getByRole("heading", { name: "Proposed follow-up" }),
+  ).toBeVisible();
+
+  await main
+    .getByLabel("Decision", { exact: true })
     .fill("Escalate the insurance renewal today.");
   await main
     .getByLabel("Project (optional)")
@@ -35,12 +49,12 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
   await main.getByRole("button", { name: "Record decision" }).click();
   await expect(main.getByRole("status")).toContainText("Decision recorded");
   await expect(
-    main.getByText("Escalate the insurance renewal today."),
+    main.getByText(/^1\. Escalate the insurance renewal today\.$/),
   ).toBeVisible();
 
   await main.getByLabel("Related risk").selectOption({ index: 1 });
   await main
-    .getByLabel("Follow-up")
+    .getByLabel("Follow-up", { exact: true })
     .fill("Confirm renewed insurance certificate");
   await main
     .getByLabel("Definition of done")
@@ -66,4 +80,12 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
   await expect(
     main.getByRole("button", { name: "Record decision" }),
   ).toHaveCount(0);
+  await main.getByRole("button", { name: "Draft meeting recap" }).click();
+  await expect(main.getByLabel("Subject")).toHaveValue(
+    "Meeting recap: E2E leadership review",
+  );
+  const recap = main.getByLabel("Editable meeting recap email body");
+  await expect(recap).toHaveValue(/Meeting details/);
+  await expect(recap).toHaveValue(/Decisions/);
+  await expect(recap).toHaveValue(/Follow-up actions/);
 });
