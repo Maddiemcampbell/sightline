@@ -281,11 +281,15 @@ function formatDate(value: string) {
 
 function ConfirmationCheckbox({ label }: { label: string }) {
   return (
-    <label className="group flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1 text-sm text-white/85 transition-colors hover:bg-white/5">
-      <input required type="checkbox" className="peer sr-only" />
+    <label className="group relative flex min-h-10 cursor-pointer scroll-mb-28 items-center gap-3 rounded-md px-2 py-1 text-sm text-white/85 transition-colors hover:bg-white/5">
+      <input
+        required
+        type="checkbox"
+        className="peer absolute inset-0 cursor-pointer opacity-0"
+      />
       <span
         aria-hidden="true"
-        className="peer-checked:border-accent peer-checked:bg-accent peer-checked:text-deep-green peer-focus-visible:ring-accent peer-focus-visible:ring-offset-deep-green grid size-6 shrink-0 place-items-center rounded-md border-2 border-white/45 text-sm font-bold text-transparent transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2"
+        className="peer-checked:border-accent peer-checked:bg-accent peer-checked:text-deep-green peer-focus-visible:ring-accent peer-focus-visible:ring-offset-deep-green pointer-events-none grid size-6 shrink-0 place-items-center rounded-md border-2 border-white/45 text-sm font-bold text-transparent transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2"
       >
         ✓
       </span>
