@@ -1,4 +1,10 @@
-import { CheckCircle2, ExternalLink, ListChecks } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  FileText,
+  ListChecks,
+  TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 
 import { completeMeetingAction } from "@/app/meetings/actions";
@@ -51,6 +57,39 @@ export default async function MeetingPage({
           {meeting.status === "completed" ? "Completed" : "Ready to facilitate"}
         </span>
       </header>
+
+      <ol
+        aria-label="Meeting progress"
+        className="grid gap-2 text-sm sm:grid-cols-3"
+      >
+        {[
+          ["1", "Scope configured", true],
+          [
+            "2",
+            meeting.status === "completed"
+              ? "Meeting facilitated"
+              : "Facilitate meeting",
+            true,
+          ],
+          [
+            "3",
+            meeting.status === "completed"
+              ? "Record completed"
+              : "Close and share",
+            meeting.status === "completed",
+          ],
+        ].map(([number, label, complete], index) => (
+          <li
+            key={String(number)}
+            className={`flex items-center gap-2 rounded-md border px-3 py-2 ${complete || index === 1 ? "border-deep-green bg-soft-green text-deep-green" : "border-border text-muted"}`}
+          >
+            <span className="grid size-6 place-items-center rounded-full bg-white text-xs font-bold">
+              {String(number)}
+            </span>
+            <span className="font-semibold">{String(label)}</span>
+          </li>
+        ))}
+      </ol>
 
       <Card className="overflow-hidden p-0">
         <div className="border-border flex items-center gap-3 border-b p-5 sm:p-6">
@@ -167,21 +206,59 @@ export default async function MeetingPage({
 
       {editable ? (
         <Card className="bg-deep-green border-deep-green text-white">
-          <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <h2 className="text-lg font-semibold">Close the meeting</h2>
               <p className="mt-1 text-sm text-white/70">
-                Confirm every decision and follow-up before making this record
-                read-only.
+                Confirm the record is ready before making it read-only.
               </p>
             </div>
-            <form action={completeMeetingAction}>
+            <form action={completeMeetingAction} className="grid gap-3">
               <input type="hidden" name="meetingId" value={meeting.id} />
+              <ConfirmationCheckbox label="Meeting outcomes have been recorded." />
+              <ConfirmationCheckbox label="Accountability details are complete for every assigned action." />
               <button className="bg-accent text-deep-green inline-flex min-h-11 items-center gap-2 rounded-md px-5 text-sm font-semibold">
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 Complete meeting
               </button>
             </form>
+          </div>
+        </Card>
+      ) : null}
+
+      {meeting.status === "completed" ? (
+        <Card className="bg-soft-green border-deep-green/20">
+          <p className="text-deep-green text-xs font-semibold tracking-[0.08em] uppercase">
+            Meeting complete
+          </p>
+          <h2 className="mt-1 text-lg font-semibold">
+            Turn the outcomes into the next leadership update
+          </h2>
+          <p className="text-muted mt-1 text-sm">
+            Continue with the same evidence trail while the decisions are fresh.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/reports?deckTemplate=weekly-executive-review#deck-review"
+              className="bg-deep-green inline-flex min-h-10 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white"
+            >
+              <FileText className="size-4" aria-hidden="true" /> Create recap
+              deck
+            </Link>
+            <Link
+              href="/actions"
+              className="border-border bg-surface inline-flex min-h-10 items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+            >
+              <CheckCircle2 className="size-4" aria-hidden="true" /> Review
+              follow-ups
+            </Link>
+            <Link
+              href="/forecasts"
+              className="border-border bg-surface inline-flex min-h-10 items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+            >
+              <TrendingUp className="size-4" aria-hidden="true" /> Review
+              updated outlook
+            </Link>
           </div>
         </Card>
       ) : null}
@@ -194,4 +271,21 @@ function formatDate(value: string) {
     dateStyle: "full",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function ConfirmationCheckbox({ label }: { label: string }) {
+  return (
+    <label className="group flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1 text-sm text-white/85 transition-colors hover:bg-white/5">
+      <input required type="checkbox" className="peer sr-only" />
+      <span
+        aria-hidden="true"
+        className="peer-checked:border-accent peer-checked:bg-accent peer-checked:text-deep-green peer-focus-visible:ring-accent peer-focus-visible:ring-offset-deep-green grid size-6 shrink-0 place-items-center rounded-md border-2 border-white/45 text-sm font-bold text-transparent transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2"
+      >
+        ✓
+      </span>
+      <span className="leading-5 transition-colors group-hover:text-white">
+        {label}
+      </span>
+    </label>
+  );
 }

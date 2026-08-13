@@ -16,6 +16,12 @@ test("reviews the deterministic forecast and explores a scenario", async ({
   await expect(
     page.getByRole("heading", { name: "Can this forecast be trusted?" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /projects? need review/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Prepare meeting" }),
+  ).toBeVisible();
 
   const scenario = page.getByRole("region", { name: "What changes if…" });
   await scenario.getByLabel("Assumption").selectOption("completion_delay");
@@ -27,6 +33,7 @@ test("reviews the deterministic forecast and explores a scenario", async ({
   await expect(
     scenario.getByText(/does not infer financial delay costs/i),
   ).toBeVisible();
+  await expect(scenario.getByText("Official forecast unchanged")).toBeVisible();
 });
 
 test("forecasting remains readable without horizontal page overflow", async ({

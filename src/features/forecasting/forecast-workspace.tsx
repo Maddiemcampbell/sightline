@@ -6,11 +6,14 @@ import {
   AlertTriangle,
   ArrowRight,
   CalendarClock,
+  CalendarCheck2,
   CheckCircle2,
   ChevronRight,
   CircleDollarSign,
   ShieldAlert,
   SlidersHorizontal,
+  Presentation,
+  RotateCcw,
   TrendingDown,
 } from "lucide-react";
 
@@ -50,6 +53,8 @@ export function ForecastWorkspace({ view }: { view: ForecastingView }) {
       </header>
 
       <ForecastSummary view={view} />
+
+      <ForecastTakeaway view={view} />
 
       <section aria-labelledby="project-outlook-heading" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -92,6 +97,64 @@ export function ForecastWorkspace({ view }: { view: ForecastingView }) {
         <ScenarioPanel view={view} />
       ) : null}
     </div>
+  );
+}
+
+function ForecastTakeaway({ view }: { view: ForecastingView }) {
+  const attentionProjects = view.projects.filter(
+    (project) =>
+      (project.budgetVarianceCents !== null &&
+        project.budgetVarianceCents < 0) ||
+      ["critical", "high"].includes(project.highestScheduleSeverity ?? ""),
+  );
+  const confidenceGap = view.readiness.missingInputs.length;
+  const topProject = attentionProjects[0];
+  return (
+    <Card className="border-deep-green/20 bg-soft-green overflow-hidden p-0">
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div>
+          <p className="text-deep-green text-xs font-semibold tracking-[0.1em] uppercase">
+            What needs attention now
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">
+            {attentionProjects.length
+              ? `${attentionProjects.length} ${attentionProjects.length === 1 ? "project needs" : "projects need"} review${topProject ? `, starting with ${topProject.name}` : ""}.`
+              : "No project currently has a high-severity or unfavorable budget signal."}
+          </h2>
+          <p className="text-muted mt-2 text-sm leading-6">
+            Forecast confidence is {view.readiness.confidence}
+            {confidenceGap
+              ? ` because ${confidenceGap} calculation input ${confidenceGap === 1 ? "gap remains" : "gaps remain"}`
+              : "; required calculation inputs are available"}
+            .
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
+          {topProject ? (
+            <Link
+              href={`/projects/${topProject.id}`}
+              className="bg-deep-green inline-flex min-h-10 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white"
+            >
+              Review top project{" "}
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          ) : null}
+          <Link
+            href="/meetings"
+            className="border-border bg-surface inline-flex min-h-10 items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+          >
+            <CalendarCheck2 className="size-4" aria-hidden="true" /> Prepare
+            meeting
+          </Link>
+          <Link
+            href="/reports#executive-decks"
+            className="border-border bg-surface inline-flex min-h-10 items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold"
+          >
+            <Presentation className="size-4" aria-hidden="true" /> Create deck
+          </Link>
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -497,6 +560,11 @@ function ScenarioPanel({ view }: { view: ForecastingView }) {
     () => calculateScenario(project, kind, costIncrease),
     [project, kind, costIncrease],
   );
+  const resetScenario = () => {
+    setProjectId(view.projects[0]!.id);
+    setKind("reject_pending_change_orders");
+    setCostIncrease(10);
+  };
   return (
     <section aria-labelledby="scenario-heading">
       <Card className="overflow-hidden p-0">
@@ -617,13 +685,47 @@ function ScenarioPanel({ view }: { view: ForecastingView }) {
                 }
               />
             </dl>
-            <p className="mt-5 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+            <div className="mt-5 grid grid-cols-2 gap-3 rounded-lg bg-white p-3 text-sm">
+              <div>
+                <p className="text-muted text-xs">Budget impact</p>
+                <p className="mt-1 font-semibold">
+                  {formatMoney(
+                    result.varianceChangeCents,
+                    project.currencyCode,
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted text-xs">Record status</p>
+                <p className="mt-1 font-semibold">
+                  Official forecast unchanged
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-900">
               <AlertTriangle
                 className="mt-0.5 size-4 shrink-0"
                 aria-hidden="true"
               />
               {result.caveat}
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={resetScenario}
+                className="border-border inline-flex min-h-10 items-center gap-2 rounded-md border bg-white px-3 text-sm font-semibold"
+              >
+                <RotateCcw className="size-4" aria-hidden="true" /> Reset
+                scenario
+              </button>
+              <Link
+                href="/meetings"
+                className="bg-deep-green inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold text-white"
+              >
+                Add context to a meeting{" "}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </div>
       </Card>

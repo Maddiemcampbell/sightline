@@ -1,10 +1,10 @@
-import { CalendarCheck2, Clock3, Plus } from "lucide-react";
+import { Clock3, Plus } from "lucide-react";
 import Link from "next/link";
 
-import { createMeetingAction } from "@/app/meetings/actions";
 import { Card } from "@/components/ui/card";
 import { getMeetingPreparationData } from "@/features/meetings/data";
-import { meetingTypeLabels, MEETING_TYPES } from "@/features/meetings/types";
+import { MeetingConfigurator } from "@/features/meetings/meeting-configurator";
+import { meetingTypeLabels } from "@/features/meetings/types";
 import { can } from "@/lib/auth/authorization";
 
 export const dynamic = "force-dynamic";
@@ -41,70 +41,7 @@ export default async function MeetingsPage() {
               </p>
             </div>
           </div>
-          <form action={createMeetingAction} className="mt-6 grid gap-5">
-            <div className="grid gap-4 md:grid-cols-3">
-              <label className="grid gap-1 text-sm font-medium md:col-span-1">
-                Meeting name
-                <input
-                  name="title"
-                  required
-                  minLength={3}
-                  defaultValue="Weekly portfolio review"
-                  className="border-border bg-background h-11 rounded-md border px-3"
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Meeting type
-                <select
-                  name="meetingType"
-                  defaultValue="weekly_executive_review"
-                  className="border-border bg-background h-11 rounded-md border px-3"
-                >
-                  {MEETING_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {meetingTypeLabels[type]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm font-medium">
-                Starts at
-                <input
-                  name="startsAt"
-                  type="datetime-local"
-                  required
-                  defaultValue={defaultStart()}
-                  className="border-border bg-background h-11 rounded-md border px-3"
-                />
-              </label>
-            </div>
-            <fieldset>
-              <legend className="text-sm font-semibold">Project scope</legend>
-              <p className="text-muted mt-1 text-xs">
-                Leave all unchecked to include every project you can access.
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {forecast.projects.map((project) => (
-                  <label
-                    key={project.id}
-                    className="border-border flex min-h-11 items-center gap-3 rounded-md border px-3 py-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      name="projectId"
-                      value={project.id}
-                      className="size-4"
-                    />
-                    {project.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <button className="bg-deep-green inline-flex min-h-11 w-fit items-center gap-2 rounded-md px-5 text-sm font-semibold text-white">
-              <CalendarCheck2 className="size-4" aria-hidden="true" />
-              Generate agenda
-            </button>
-          </form>
+          <MeetingConfigurator projects={forecast.projects} />
         </Card>
       ) : (
         <Card>
@@ -169,14 +106,6 @@ export default async function MeetingsPage() {
       </section>
     </div>
   );
-}
-
-function defaultStart() {
-  const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  date.setMinutes(0, 0, 0);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
 }
 
 function formatDate(value: string) {

@@ -1,6 +1,7 @@
 import {
   ArrowDownToLine,
   ArrowRight,
+  CheckCircle2,
   CircleDollarSign,
   FileCheck2,
   Presentation,
@@ -99,6 +100,27 @@ export default async function ReportsPage({
           </span>
         </div>
 
+        <ol
+          aria-label="Executive deck workflow"
+          className="grid gap-2 text-sm sm:grid-cols-3"
+        >
+          {[
+            ["1", "Choose the audience"],
+            ["2", "Review slides and data"],
+            ["3", "Create editable deck"],
+          ].map(([number, label], index) => (
+            <li
+              key={number}
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 ${selectedTemplate ? "border-deep-green/30 bg-soft-green text-deep-green" : index === 0 ? "border-deep-green bg-soft-green text-deep-green" : "border-border text-muted"}`}
+            >
+              <span className="grid size-6 place-items-center rounded-full bg-white text-xs font-bold">
+                {number}
+              </span>
+              <span className="font-semibold">{label}</span>
+            </li>
+          ))}
+        </ol>
+
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           {executiveDeckTemplates.map((template) => {
             const selected = selectedTemplate === template.id;
@@ -114,11 +136,14 @@ export default async function ReportsPage({
                 }`}
               >
                 <p className="font-semibold">{template.name}</p>
+                <p className="text-deep-green mt-1 text-[0.68rem] font-semibold tracking-[0.06em] uppercase">
+                  For {template.audience}
+                </p>
                 <p className="text-muted mt-2 text-xs leading-5">
                   {template.description}
                 </p>
                 <p className="text-deep-green mt-4 text-xs font-semibold">
-                  Preview deck →
+                  Review this deck →
                 </p>
               </Link>
             );
@@ -157,16 +182,46 @@ export default async function ReportsPage({
                 Download editable PowerPoint
               </a>
             </div>
-            <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div
+              className="border-border bg-background grid gap-3 border-b p-5 sm:grid-cols-4 sm:p-6"
+              role="region"
+              aria-label="Deck preflight summary"
+            >
+              <PreflightMetric
+                label="Slides"
+                value={`${deckReview.slideCount}`}
+              />
+              <PreflightMetric
+                label="Affected projects"
+                value={`${riskAnalytics.summary.affectedProjects}`}
+              />
+              <PreflightMetric
+                label="Linked risk records"
+                value={`${riskAnalytics.metadata.recordsIncluded}`}
+              />
+              <PreflightMetric
+                label="Data limitations"
+                value={`${deckReview.limitations.length}`}
+                caution={deckReview.limitations.length > 0}
+              />
+            </div>
+            <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.2fr_0.8fr]">
               <div>
-                <h4 className="font-semibold">Slides included</h4>
-                <ol className="mt-4 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                <h4 className="font-semibold">Deck outline</h4>
+                <p className="text-muted mt-1 text-xs">
+                  The export follows this order. Every slide remains editable in
+                  PowerPoint.
+                </p>
+                <ol className="mt-4 grid gap-3 sm:grid-cols-2">
                   {deckReview.sections.map((section, index) => (
-                    <li key={section} className="flex gap-2">
-                      <span className="text-muted tabular-nums">
-                        {index + 1}.
+                    <li
+                      key={section}
+                      className="border-border bg-background flex min-h-20 gap-3 rounded-lg border p-3 text-sm"
+                    >
+                      <span className="bg-surface text-deep-green grid size-7 shrink-0 place-items-center rounded-md border text-xs font-bold tabular-nums">
+                        {index + 1}
                       </span>
-                      <span>{section}</span>
+                      <span className="leading-5 font-semibold">{section}</span>
                     </li>
                   ))}
                 </ol>
@@ -175,7 +230,13 @@ export default async function ReportsPage({
                 <h4 className="font-semibold">Source coverage</h4>
                 <ul className="text-muted mt-4 space-y-2 text-sm">
                   {deckReview.generatedFrom.map((source) => (
-                    <li key={source}>✓ {source}</li>
+                    <li key={source} className="flex items-start gap-2">
+                      <CheckCircle2
+                        className="text-deep-green mt-0.5 size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span>{source}</span>
+                    </li>
                   ))}
                 </ul>
                 <p className="text-muted mt-4 text-xs leading-5">
@@ -184,14 +245,35 @@ export default async function ReportsPage({
                   are linked directly from the deck.
                 </p>
                 {deckReview.limitations.length ? (
-                  <p className="bg-soft-amber text-warning mt-4 rounded-md p-3 text-xs">
-                    Data limitations:{" "}
-                    {deckReview.limitations
-                      .map(formatDataLimitation)
-                      .join(", ")}
-                    .
-                  </p>
+                  <div className="bg-soft-amber text-warning mt-4 rounded-md p-3 text-xs">
+                    <p className="font-semibold">Review before distribution</p>
+                    <p className="mt-1">
+                      Data limitations:{" "}
+                      {deckReview.limitations
+                        .map(formatDataLimitation)
+                        .join(", ")}
+                      .
+                    </p>
+                    <Link
+                      href="/forecasts/readiness"
+                      className="mt-2 inline-flex font-semibold underline underline-offset-2"
+                    >
+                      Improve forecast readiness
+                    </Link>
+                  </div>
                 ) : null}
+                <div className="border-border mt-4 border-t pt-4">
+                  <p className="text-xs font-semibold">
+                    Need to align leadership first?
+                  </p>
+                  <Link
+                    href="/meetings"
+                    className="text-deep-green mt-2 inline-flex items-center gap-1 text-sm font-semibold"
+                  >
+                    Prepare a meeting from this portfolio{" "}
+                    <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                </div>
               </div>
             </div>
           </Card>
@@ -531,6 +613,27 @@ export default async function ReportsPage({
           </a>
         </div>
       </Card>
+    </div>
+  );
+}
+
+function PreflightMetric({
+  label,
+  value,
+  caution = false,
+}: {
+  label: string;
+  value: string;
+  caution?: boolean;
+}) {
+  return (
+    <div className="border-border bg-surface rounded-lg border p-3">
+      <p className="text-muted text-xs">{label}</p>
+      <p
+        className={`mt-1 text-xl font-semibold ${caution ? "text-warning" : ""}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

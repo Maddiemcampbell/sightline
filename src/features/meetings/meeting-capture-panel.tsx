@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 
 import {
   createMeetingFollowUpAction,
@@ -36,71 +36,102 @@ export function MeetingCapturePanel({
     MeetingActionState,
     FormData
   >(createMeetingFollowUpAction, {});
+  const [decisionProjectId, setDecisionProjectId] = useState("");
+  const [followUpProjectId, setFollowUpProjectId] = useState("");
+  const decisionRisks = useMemo(
+    () =>
+      decisionProjectId
+        ? risks.filter((risk) => risk.project_id === decisionProjectId)
+        : risks,
+    [decisionProjectId, risks],
+  );
+  const followUpRisks = useMemo(
+    () =>
+      followUpProjectId
+        ? risks.filter((risk) => risk.project_id === followUpProjectId)
+        : risks,
+    [followUpProjectId, risks],
+  );
 
   return (
     <div className="grid gap-5 xl:grid-cols-2">
-      <Card>
+      <Card className="flex min-w-0 flex-col">
         <h2 className="text-lg font-semibold">Record a decision</h2>
         <p className="text-muted mt-1 text-sm">
           Preserve the outcome and the context leadership used.
         </p>
-        <form action={decisionAction} className="mt-5 grid gap-4">
+        <form
+          action={decisionAction}
+          className="mt-5 flex flex-1 flex-col gap-4"
+        >
           <input type="hidden" name="meetingId" value={meetingId} />
-          <label className="grid gap-1 text-sm font-medium">
+          <label className="grid min-w-0 gap-1 text-sm font-medium">
             Decision
             <textarea
               name="summary"
               required
               minLength={3}
-              rows={3}
-              className="border-border bg-background rounded-md border px-3 py-2"
+              rows={5}
+              className="border-border bg-background w-full min-w-0 rounded-md border px-3 py-2"
               placeholder="What was decided?"
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             <Select
               name="projectId"
               label="Project (optional)"
               options={projects}
+              value={decisionProjectId}
+              onChange={setDecisionProjectId}
             />
             <Select
               name="riskId"
               label="Risk (optional)"
-              options={risks.map((risk) => ({ id: risk.id, name: risk.title }))}
+              options={decisionRisks.map((risk) => ({
+                id: risk.id,
+                name: risk.title,
+              }))}
             />
           </div>
-          <label className="grid gap-1 text-sm font-medium">
+          <label className="flex min-h-32 min-w-0 flex-1 flex-col gap-1 text-sm font-medium">
             Rationale (optional)
             <textarea
               name="rationale"
-              rows={2}
-              className="border-border bg-background rounded-md border px-3 py-2"
+              rows={4}
+              className="border-border bg-background min-h-28 w-full min-w-0 flex-1 resize-y rounded-md border px-3 py-2"
               placeholder="Why was this decision made?"
             />
           </label>
-          <Button type="submit" disabled={decisionPending}>
+          <ActionMessage state={decisionState} />
+          <Button type="submit" disabled={decisionPending} className="w-full">
             {decisionPending ? "Recording…" : "Record decision"}
           </Button>
-          <ActionMessage state={decisionState} />
         </form>
       </Card>
 
-      <Card>
+      <Card className="min-w-0">
         <h2 className="text-lg font-semibold">Create a follow-up</h2>
         <p className="text-muted mt-1 text-sm">
           Add an accepted action to the organization action register.
         </p>
         <form action={followUpAction} className="mt-5 grid gap-4">
           <input type="hidden" name="meetingId" value={meetingId} />
-          <label className="grid gap-1 text-sm font-medium">
+          <Select
+            name="followUpProjectId"
+            label="Project"
+            options={projects}
+            value={followUpProjectId}
+            onChange={setFollowUpProjectId}
+          />
+          <label className="grid min-w-0 gap-1 text-sm font-medium">
             Related risk
             <select
               name="riskId"
               required
-              className="border-border bg-background h-11 rounded-md border px-3"
+              className="border-border bg-background h-11 w-full min-w-0 rounded-md border px-3"
             >
               <option value="">Select a risk</option>
-              {risks.map((risk) => (
+              {followUpRisks.map((risk) => (
                 <option key={risk.id} value={risk.id}>
                   {risk.title}
                 </option>
@@ -113,7 +144,7 @@ export function MeetingCapturePanel({
               name="title"
               required
               minLength={3}
-              className="border-border bg-background h-11 rounded-md border px-3"
+              className="border-border bg-background h-11 w-full min-w-0 rounded-md border px-3"
               placeholder="Confirm recovery plan"
             />
           </label>
@@ -124,18 +155,23 @@ export function MeetingCapturePanel({
               required
               minLength={3}
               rows={2}
-              className="border-border bg-background rounded-md border px-3 py-2"
+              className="border-border bg-background w-full min-w-0 rounded-md border px-3 py-2"
               placeholder="What evidence confirms completion?"
             />
           </label>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Select name="ownerUserId" label="Owner" options={owners} />
-            <label className="grid gap-1 text-sm font-medium">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Select
+              name="ownerUserId"
+              label="Owner"
+              options={owners}
+              required
+            />
+            <label className="grid min-w-0 gap-1 text-sm font-medium">
               Priority
               <select
                 name="priority"
                 defaultValue="normal"
-                className="border-border bg-background h-11 rounded-md border px-3"
+                className="border-border bg-background h-11 w-full min-w-0 rounded-md border px-3"
               >
                 <option value="normal">Normal</option>
                 <option value="high">High</option>
@@ -143,12 +179,13 @@ export function MeetingCapturePanel({
                 <option value="low">Low</option>
               </select>
             </label>
-            <label className="grid gap-1 text-sm font-medium">
+            <label className="grid min-w-0 gap-1 text-sm font-medium sm:col-span-2 lg:col-span-1">
               Due date
               <input
                 name="dueAt"
                 type="datetime-local"
-                className="border-border bg-background h-11 rounded-md border px-3"
+                required
+                className="border-border bg-background h-11 w-full min-w-0 rounded-md border px-3"
               />
             </label>
           </div>
@@ -166,19 +203,31 @@ function Select({
   name,
   label,
   options,
+  value,
+  onChange,
+  required = false,
 }: {
   name: string;
   label: string;
   options: readonly Option[];
+  value?: string;
+  onChange?: (value: string) => void;
+  required?: boolean;
 }) {
   return (
-    <label className="grid gap-1 text-sm font-medium">
+    <label className="grid min-w-0 gap-1 text-sm font-medium">
       {label}
       <select
         name={name}
-        className="border-border bg-background h-11 rounded-md border px-3"
+        required={required}
+        {...(value !== undefined
+          ? { value, onChange: (event) => onChange?.(event.target.value) }
+          : {})}
+        className="border-border bg-background h-11 w-full min-w-0 rounded-md border px-3"
       >
-        <option value="">Not specified</option>
+        <option value="">
+          {required ? "Select an owner" : "Not specified"}
+        </option>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.name}

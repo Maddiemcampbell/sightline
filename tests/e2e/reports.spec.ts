@@ -27,6 +27,12 @@ test("presents live portfolio reporting and downloads authorized PDFs", async ({
   await expect(
     main.getByRole("link", { name: "Download editable PowerPoint" }),
   ).toBeVisible();
+  await expect(
+    main.getByRole("region", { name: "Deck preflight summary" }),
+  ).toBeVisible();
+  await expect(
+    main.getByRole("heading", { name: "Deck outline" }),
+  ).toBeVisible();
   const deckResponse = await page.request.get(
     "/api/reports/executive-deck?template=weekly-executive-review",
   );

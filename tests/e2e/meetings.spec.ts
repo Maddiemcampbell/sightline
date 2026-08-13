@@ -11,8 +11,9 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
 
   await main.getByLabel("Meeting name").fill("E2E leadership review");
   await main.getByLabel("Meeting type").selectOption("weekly_executive_review");
+  await main.getByRole("button", { name: /Selected projects/ }).click();
   await main.getByText("Cedar Grove Medical Pavilion", { exact: true }).click();
-  await main.getByRole("button", { name: "Generate agenda" }).click();
+  await main.getByRole("button", { name: "Build and review agenda" }).click();
 
   await expect(page).toHaveURL(/\/meetings\/[0-9a-f-]+$/);
   await expect(
@@ -45,6 +46,7 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
     .getByLabel("Definition of done")
     .fill("Renewed certificate is attached to the risk record.");
   await main.getByLabel("Owner").selectOption({ index: 1 });
+  await main.getByLabel("Due date").fill("2026-08-21T17:00");
   await main.getByRole("button", { name: "Create follow-up action" }).click();
   await expect(
     main.getByText("Follow-up action created.", { exact: true }),
@@ -53,6 +55,12 @@ test("prepares a meeting, records a decision, and creates follow-up work", async
     main.getByRole("link", { name: "Confirm renewed insurance certificate" }),
   ).toBeVisible();
 
+  await main.getByLabel("Meeting outcomes have been recorded.").check();
+  await main
+    .getByLabel(
+      "Accountability details are complete for every assigned action.",
+    )
+    .check();
   await main.getByRole("button", { name: "Complete meeting" }).click();
   await expect(main.getByText("Completed", { exact: true })).toBeVisible();
   await expect(
